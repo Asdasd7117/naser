@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>شاشة المندوب</title>
 <link rel="stylesheet" href="css/style.css">
-<script src="js/app.js" defer></script> <!-- نحتفظ بكل وظائف app.js -->
+<script src="js/app.js" defer></script>
 <script defer>
-  // ===================== الترجمات داخل الصفحة =====================
+  // ===================== الترجمات =====================
   const translations = {
     ar: {
       tasks_title: "المهام اليومية",
@@ -51,7 +51,7 @@
   }
 
   function applyTranslations(lang) {
-    document.querySelectorAll("[data-translate]").forEach(el=>{
+    document.querySelectorAll("[data-translate]").forEach(el => {
       const key = el.getAttribute("data-translate");
       if(translations[lang][key]) el.innerText = translations[lang][key];
     });
@@ -64,31 +64,105 @@
       hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Africa/Cairo"
     });
     const name = translations[document.documentElement.lang]["delegate_name"];
-    const header = document.getElementById("delegate-name");
-    if(header) header.innerText = `👤 ${name} | 🕒 ${now}`;
+    document.getElementById("delegate-name").innerText = `👤 ${name} | 🕒 ${now}`;
   }
   setInterval(updateDelegateHeader, 60000);
+
+  // ===================== مصفوفة المهام =====================
+  let tasks = [
+    { client: "شركة أبجد", address: "القاهرة", time: "10:00 صباحًا", status: "قيد التنفيذ" },
+    { client: "مؤسسة ألف", address: "الإسكندرية", time: "11:00", status: "مؤجلة" }
+  ];
+
+  // ===================== عرض المهام =====================
+  function loadTasks() {
+    const list = document.getElementById("tasks-list");
+    list.innerHTML = "";
+    tasks.forEach((t, idx) => {
+      const div = document.createElement("div");
+      div.className = "task-card";
+      div.innerHTML = `
+        <strong>العميل:</strong> ${t.client || ""}<br>
+        <strong>العنوان:</strong> ${t.address || ""}<br>
+        <strong>وقت الزيارة:</strong> ${t.time || ""}<br>
+        <label>الحالة:
+          <select data-index="${idx}">
+            <option value="قيد التنفيذ" ${t.status==="قيد التنفيذ"?"selected":""}>قيد التنفيذ</option>
+            <option value="مكتملة" ${t.status==="مكتملة"?"selected":""}>مكتملة</option>
+            <option value="مؤجلة" ${t.status==="مؤجلة"?"selected":""}>مؤجلة</option>
+          </select>
+        </label>
+      `;
+      list.appendChild(div);
+    });
+
+    document.querySelectorAll('#tasks-list select').forEach(sel=>{
+      sel.onchange = function(){
+        const index = this.dataset.index;
+        tasks[index].status = this.value;
+        loadTasks();
+        alert(`تم تحديث حالة المهمة إلى: ${this.value}`);
+      }
+    });
+  }
+
+  // ===================== رفع التقرير =====================
+  function submitDelegateReport() {
+    const notes = document.getElementById('report-notes').value;
+    alert(`تم إرسال التقرير ✅\nالملاحظات: ${notes}`);
+    document.getElementById('report-notes').value = "";
+  }
+
+  // ===================== الإشعارات =====================
+  function loadNotifications() {
+    const notifs = [
+      "تذكير: زيارة شركة أبجد الساعة 10:00 صباحًا",
+      "تنبيه: تأخرت عن مهمة مؤسسة ألف بـ 15 دقيقة"
+    ];
+    const ul = document.getElementById("notifications-list");
+    ul.innerHTML = "";
+    notifs.forEach(n => {
+      const li = document.createElement("li");
+      li.textContent = n;
+      ul.appendChild(li);
+    });
+  }
+
+  // ===================== الخريطة =====================
+  function initMap() {
+    document.getElementById("map-container").innerHTML = "خريطة افتراضية (يمكن ربط Google Maps API)";
+  }
+  function updateLocation() {
+    alert("تم تحديث الموقع ✅");
+  }
+
+  // ===================== التحكم في الأقسام =====================
+  function showSection(id) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+    document.querySelectorAll(".bottom-nav button").forEach(b => b.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+    document.getElementById("btn-" + id).classList.add("active");
+  }
 
   // ===================== عند تحميل الصفحة =====================
   window.onload = function(){
     applyTranslations(document.documentElement.lang);
-
-    // === استدعاء كل وظائف app.js بدون حذف أي شيء ===
-    if(typeof showSection === "function") showSection('tasks');
-    if(typeof loadTasks === "function") loadTasks();
-    if(typeof loadNotifications === "function") loadNotifications();
-    if(typeof initMap === "function") initMap();
-
+    showSection('tasks');
+    loadTasks();
+    loadNotifications();
+    initMap();
     updateDelegateHeader();
-  };
+  }
 </script>
 </head>
 <body>
 
+<!-- الهيدر -->
 <header class="app-header">
   <h1 id="delegate-name"></h1>
 </header>
 
+<!-- شاشات المندوب -->
 <section id="tasks" class="screen">
   <h2 data-translate="tasks_title">المهام اليومية</h2>
   <div id="tasks-list"></div>
@@ -113,6 +187,7 @@
   <ul id="notifications-list"></ul>
 </section>
 
+<!-- شريط التنقل -->
 <nav class="bottom-nav">
   <button id="btn-tasks" onclick="showSection('tasks')" data-translate="tasks_tab">المهام</button>
   <button id="btn-report" onclick="showSection('report')" data-translate="report_tab">التقرير</button>
@@ -120,6 +195,7 @@
   <button id="btn-notifications" onclick="showSection('notifications')" data-translate="notifications_tab">الإشعارات</button>
 </nav>
 
+<!-- زر اللغة -->
 <button class="lang-btn" onclick="toggleLanguage()" data-translate="toggle_lang">عربي/English</button>
 
 </body>
