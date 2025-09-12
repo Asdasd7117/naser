@@ -2,19 +2,19 @@
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
-<title>المدير</title>
+<title>Manager</title>
 <link rel="stylesheet" href="css/style.css">
 <script src="js/lang.js" defer></script>
 <script src="js/app.js" defer></script>
 </head>
 <body onload="loadReports();">
 
-<h1>لوحة التحكم والإحصائيات</h1>
+<h1 data-translate="tasks_title">لوحة التحكم والإحصائيات</h1>
 
-<h2>التقارير والملاحظات</h2>
+<h2 data-translate="report_title">التقارير والملاحظات</h2>
 <div id="reports-list"></div>
 
-<button onclick="toggleLanguage()">عربي/English</button>
+<button onclick="toggleLanguage()" data-translate="toggle_lang">عربي/English</button>
 
 <script>
 async function loadReports(){
