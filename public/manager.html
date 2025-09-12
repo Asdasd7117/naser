@@ -5,10 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>شاشة المدير / الموارد البشرية</title>
   <link rel="stylesheet" href="css/style.css">
-  <script src="js/lang.js" defer></script>
-  <script src="js/app.js" defer></script>
 </head>
-<body onload="showSection('reports'); loadReports(); loadAttendance(); loadTasksAdmin();">
+<body onload="initManager()">
+
+  <!-- الهيدر -->
+  <header class="app-header">
+    <h1 id="manager-info">👤 المدير: محمد علي | 🕒 --:--</h1>
+  </header>
+
+  <!-- شريط التنقل -->
+  <nav class="bottom-nav">
+    <button id="btn-reports" onclick="showSection('reports')" data-translate="reports_tab">التقارير</button>
+    <button id="btn-attendance" onclick="showSection('attendance')" data-translate="attendance_tab">الحضور</button>
+    <button id="btn-admin" onclick="showSection('admin')" data-translate="admin_tab">لوحة التحكم</button>
+  </nav>
 
   <!-- التقارير والتحليلات -->
   <section id="reports" class="screen">
@@ -53,17 +63,76 @@
     <button onclick="sendBroadcast()" data-translate="send_broadcast_btn">إرسال الإشعار</button>
   </section>
 
-  <!-- شريط التنقل -->
-  <nav class="bottom-nav">
-    <button id="btn-reports" onclick="showSection('reports')" data-translate="reports_tab">التقارير</button>
-    <button id="btn-attendance" onclick="showSection('attendance')" data-translate="attendance_tab">الحضور</button>
-    <button id="btn-admin" onclick="showSection('admin')" data-translate="admin_tab">لوحة التحكم</button>
-  </nav>
-
   <!-- زر اللغة -->
-  <button class="lang-btn" onclick="toggleLanguage()" data-translate="toggle_lang">عربي/English</button>
+  <button class="lang-btn" onclick="toggleLanguage()" data-translate="toggle_lang">عربي / English</button>
 
   <script>
+    // ================= الترجمات =================
+    const translations = {
+      ar: {
+        reports_tab: "التقارير",
+        attendance_tab: "الحضور",
+        admin_tab: "لوحة التحكم",
+        reports_title: "التقارير والتحليلات",
+        delegate_name: "المندوب",
+        tasks_complete: "المهام المكتملة",
+        tasks_pending: "المهام المؤجلة",
+        completion_rate: "نسبة الإنجاز",
+        attendance_title: "الحضور والانصراف",
+        add_task: "إضافة / تعديل المهام",
+        add_task_btn: "إضافة مهمة",
+        edit_delegate: "تعديل بيانات المندوبين",
+        update_delegate_btn: "تحديث بيانات المندوب",
+        broadcast: "إرسال إشعارات جماعية",
+        send_broadcast_btn: "إرسال الإشعار",
+        toggle_lang: "عربي / English"
+      },
+      en: {
+        reports_tab: "Reports",
+        attendance_tab: "Attendance",
+        admin_tab: "Admin Panel",
+        reports_title: "Reports & Analytics",
+        delegate_name: "Delegate",
+        tasks_complete: "Tasks Completed",
+        tasks_pending: "Tasks Pending",
+        completion_rate: "Completion Rate",
+        attendance_title: "Attendance",
+        add_task: "Add / Edit Tasks",
+        add_task_btn: "Add Task",
+        edit_delegate: "Edit Delegate Info",
+        update_delegate_btn: "Update Delegate",
+        broadcast: "Send Broadcast",
+        send_broadcast_btn: "Send Broadcast",
+        toggle_lang: "Arabic / English"
+      }
+    };
+
+    function applyTranslations() {
+      const lang = document.documentElement.lang || "ar";
+      document.querySelectorAll("[data-translate]").forEach(el => {
+        const key = el.getAttribute("data-translate");
+        if (translations[lang][key]) el.innerText = translations[lang][key];
+      });
+    }
+
+    function toggleLanguage() {
+      if (document.documentElement.lang === "ar") {
+        document.documentElement.lang = "en";
+        document.documentElement.dir = "ltr";
+      } else {
+        document.documentElement.lang = "ar";
+        document.documentElement.dir = "rtl";
+      }
+      applyTranslations();
+    }
+
+    // ================= الهيدر (اسم المدير + الساعة) =================
+    function updateTime() {
+      const now = new Date().toLocaleTimeString("ar-EG", { hour:"2-digit", minute:"2-digit", hour12:false, timeZone:"Africa/Cairo" });
+      document.getElementById("manager-info").innerText = `👤 المدير: محمد علي | 🕒 ${now}`;
+    }
+
+    // ================= إظهار الأقسام =================
     function showSection(id) {
       document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
       document.querySelectorAll(".bottom-nav button").forEach(b => b.classList.remove("active"));
@@ -71,7 +140,7 @@
       document.getElementById("btn-" + id).classList.add("active");
     }
 
-    // بيانات افتراضية للتقارير
+    // ================= تحميل البيانات الافتراضية =================
     function loadReports() {
       const reports = [
         {delegate:"أحمد", complete:5, pending:2, percent:71},
@@ -86,7 +155,6 @@
       });
     }
 
-    // بيانات افتراضية للحضور
     function loadAttendance() {
       const attendance = [
         {delegate:"أحمد", login:"09:00", logout:"17:00", deviation:"تأخير 10 دقائق"},
@@ -102,7 +170,6 @@
       });
     }
 
-    // بيانات افتراضية لإدارة المهام
     function loadTasksAdmin() {
       console.log("جهز بيانات المهام للمسؤول");
     }
@@ -121,15 +188,14 @@
       else alert("أدخل رسالة قبل الإرسال!");
     }
 
-    function toggleLanguage() {
-      if (document.documentElement.lang === "ar") {
-        document.documentElement.lang = "en";
-        document.documentElement.dir = "ltr";
-      } else {
-        document.documentElement.lang = "ar";
-        document.documentElement.dir = "rtl";
-      }
-      applyTranslations(); // استدعاء وظائف الترجمة من js/lang.js
+    function initManager() {
+      showSection("reports");
+      loadReports();
+      loadAttendance();
+      loadTasksAdmin();
+      updateTime();
+      setInterval(updateTime, 60000);
+      applyTranslations();
     }
   </script>
 </body>
