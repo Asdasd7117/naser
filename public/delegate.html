@@ -7,11 +7,19 @@
   <link rel="stylesheet" href="css/style.css">
   <script src="js/lang.js" defer></script>
   <script defer>
+    // ===================== اسم المندوب =====================
+    let currentDelegate = "المندوب: أحمد علي"; // ← ممكن يجي من تسجيل الدخول
+
     // ===================== مصفوفة المهام =====================
     let tasks = [
       { client: "شركة أبجد", address: "القاهرة", time: "10:00 صباحًا", status: "قيد التنفيذ" },
       { client: "مؤسسة ألف", address: "الإسكندرية", time: "11:00", status: "مؤجلة" }
     ];
+
+    // ===================== عرض اسم المندوب =====================
+    function showDelegateName() {
+      document.getElementById("delegate-name").textContent = currentDelegate;
+    }
 
     // ===================== عرض المهام =====================
     function loadTasks() {
@@ -49,7 +57,7 @@
     // ===================== رفع التقرير =====================
     function submitDelegateReport() {
       const notes = document.getElementById('report-notes').value;
-      alert(`تم إرسال التقرير بنجاح ✅\nالملاحظات: ${notes}`);
+      alert(`تم إرسال التقرير ✅\nالملاحظات: ${notes}`);
       document.getElementById('report-notes').value = "";
     }
 
@@ -99,6 +107,7 @@
 
     // ===================== عند تحميل الصفحة =====================
     window.onload = function(){
+      showDelegateName();
       showSection('tasks');
       loadTasks();
       loadNotifications();
@@ -108,9 +117,14 @@
 </head>
 <body>
 
+  <!-- الهيدر -->
+  <header class="app-header">
+    <h1 id="delegate-name"></h1>
+  </header>
+
   <!-- شاشات المندوب -->
   <section id="tasks" class="screen">
-    <h1 data-translate="tasks_title">المهام اليومية</h1>
+    <h2 data-translate="tasks_title">المهام اليومية</h2>
     <div id="tasks-list"></div>
   </section>
 
