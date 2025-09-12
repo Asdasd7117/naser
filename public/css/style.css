@@ -1,170 +1,205 @@
-/* عام */
+/* ========== عام ========== */
 body {
-  font-family: Tahoma, Arial, sans-serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   margin: 0;
   padding: 0;
-  background-color: #f5f5f5;
+  background-color: #f0f2f5;
   color: #333;
   direction: rtl;
 }
 
 /* رؤوس العناوين */
-h1, h2, h3, h4 {
+h1, h2, h3 {
   text-align: center;
   margin: 10px 0;
+  color: #333;
 }
 
-/* إدخالات النصوص، الأزرار، القوائم */
-input, select, textarea, button {
+/* الروابط الصغيرة */
+.forgot {
+  display: block;
+  text-align: center;
+  margin-top: 8px;
+  color: #e53935;
+  cursor: pointer;
+}
+
+/* ========== تسجيل الدخول ========== */
+.login-container {
+  width: 320px;
+  margin: 80px auto;
+  background: #fff;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.login-container input,
+.login-container select,
+.login-container button {
   width: 100%;
-  margin: 5px 0;
+  margin: 10px 0;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+}
+
+.login-container button {
+  background-color: #2196F3;
+  color: white;
+  font-weight: bold;
+  font-size: 16px;
+  border: none;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.login-container button:hover {
+  background-color: #1976D2;
+}
+
+/* ========== البطاقات العامة ========== */
+.card {
+  background-color: #fff;
+  margin: 10px 15px;
+  padding: 12px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* بطاقات المهام */
+.task-card {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+/* قائمة التقارير */
+.report-card img {
+  max-width: 80px;
+  margin: 3px;
+  border-radius: 4px;
+}
+
+/* ========== إدخالات عامة ========== */
+input, select, textarea {
+  width: 100%;
   padding: 10px;
+  margin: 6px 0;
   border-radius: 6px;
   border: 1px solid #ccc;
   box-sizing: border-box;
 }
 
+/* textarea قابل للتكبير */
+textarea { resize: vertical; }
+
+/* input type file */
+input[type="file"] { padding: 4px; }
+
+/* ========== أزرار عامة ========== */
 button {
-  background-color: #2196F3;
-  color: white;
-  border: none;
   cursor: pointer;
+  border-radius: 6px;
+  padding: 10px;
   font-size: 14px;
-  transition: background 0.3s;
+  font-weight: bold;
+  transition: 0.3s;
 }
 
-button:hover {
-  background-color: #1976D2;
+button:hover { opacity: 0.9; }
+
+/* أزرار حالة المندوب */
+.status {
+  font-weight: bold;
 }
 
-/* رابط نسيان كلمة المرور */
-.forgot {
-  display: block;
-  margin-top: 10px;
-  color: #f44336;
-  cursor: pointer;
-  text-align: center;
-}
+.status.active { color: #4caf50; }
+.status.inactive { color: #f44336; }
+.status.break { color: #ff9800; }
 
-/* البطاقات العامة */
-.card, .task-card, .delegate-card, .report-card {
-  background: white;
-  margin: 8px 10px;
-  padding: 10px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-/* القوائم */
-#tasks-list div, 
-#supervisor-list div, 
-#reports-list div, 
-#delegateList div, 
-#reportList div, 
-#notifications-list li {
-  background: #e3f2fd;
-  margin: 5px 0;
-  padding: 10px;
-  border-radius: 5px;
-}
-
-/* شريط التنقل السفلي */
+/* ========== شريط التنقل السفلي ========== */
 .bottom-nav {
   position: fixed;
   bottom: 0;
   width: 100%;
   display: flex;
-  background: #007bff;
+  background-color: #007bff;
+  box-shadow: 0 -2px 6px rgba(0,0,0,0.15);
 }
 
 .bottom-nav button {
   flex: 1;
   padding: 12px;
-  border: none;
   background: #007bff;
   color: white;
+  border: none;
   font-size: 14px;
 }
 
-.bottom-nav button.active {
-  background: #0056b3;
-}
+.bottom-nav button.active { background-color: #0056b3; }
 
-/* زر اللغة */
+/* ========== زر اللغة ========== */
 .lang-btn {
   position: fixed;
-  top: 10px;
-  left: 10px;
-  padding: 6px 10px;
-  background: #ff9800;
+  top: 12px;
+  left: 12px;
+  padding: 6px 12px;
+  background-color: #ff9800;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 5px;
+  font-weight: bold;
   cursor: pointer;
+  z-index: 1000;
 }
 
-/* الخريطة */
+/* ========== الخريطة ========== */
 #map, #map-container, #mapView {
-  width: 100%;
+  width: 95%;
+  max-width: 600px;
   height: 300px;
+  margin: 15px auto;
   background: #ddd;
-  border-radius: 8px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  text-align: center;
-  line-height: 300px;
-  margin: 10px 0;
+  font-size: 16px;
+  color: #555;
 }
 
-/* جدول المدير */
+/* ========== الجداول (مدير) ========== */
 table {
-  width: 100%;
+  width: 95%;
+  max-width: 700px;
+  margin: 10px auto;
   border-collapse: collapse;
-  margin: 10px 0;
-}
-
-table, th, td {
-  border: 1px solid #ccc;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 th, td {
-  padding: 6px;
+  border: 1px solid #ccc;
+  padding: 8px;
   text-align: center;
 }
 
-/* textarea قابل للتكبير */
-textarea {
-  resize: vertical;
+th {
+  background-color: #2196F3;
+  color: white;
 }
 
-/* ملفات */
-input[type="file"] {
-  padding: 3px;
-}
-
-/* select */
-select {
-  padding: 6px;
-}
-
-/* حالة المندوب */
-.status.active { color: green; font-weight: bold; }
-.status.inactive { color: red; font-weight: bold; }
-.status.break { color: orange; font-weight: bold; }
-
-/* صفحة تسجيل الدخول */
-.login-container {
-  width: 300px;
-  margin: 80px auto;
+/* ========== إشعارات ========== */
+#notifications-list li {
+  margin: 5px 10px;
+  padding: 8px;
   background: #fff;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
 }
 
-.login-container input, .login-container select, .login-container button {
-  width: 100%;
-  margin: 8px 0;
-  padding: 10px;
-}
+/* ========== قوائم منسدلة ========== */
+select { cursor: pointer; }
