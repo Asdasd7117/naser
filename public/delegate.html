@@ -2,7 +2,7 @@
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
-<title>المندوب</title>
+<title>Delegate</title>
 <link rel="stylesheet" href="css/style.css">
 <script src="js/lang.js" defer></script>
 <script src="js/app.js" defer></script>
@@ -10,17 +10,17 @@
 </head>
 <body onload="loadTasks(); initMap();">
 
-<h1>المهام اليومية</h1>
+<h1 data-translate="tasks_title">المهام اليومية</h1>
 <div id="tasks-list"></div>
 
-<h2>رفع التقرير</h2>
-<textarea id="report-notes" placeholder="اكتب ملاحظات"></textarea>
+<h2 data-translate="report_title">رفع التقرير</h2>
+<textarea id="report-notes" placeholder="" data-translate="report_notes"></textarea>
 <input type="file" id="report-images" multiple>
 <input type="file" id="report-signature">
-<button onclick="submitDelegateReport()">إرسال التقرير</button>
+<button onclick="submitDelegateReport()" data-translate="send_report">إرسال التقرير</button>
 
 <div id="map" style="width:100%;height:300px;margin-top:10px;"></div>
-<button onclick="toggleLanguage()">عربي/English</button>
+<button onclick="toggleLanguage()" data-translate="toggle_lang">عربي/English</button>
 
 </body>
 </html>
