@@ -48,6 +48,13 @@
     }
   };
 
+  // ===================== بيانات المستخدمين التجريبية =====================
+  const users = [
+    { user: "delegate1", password: "12345", role: "delegate" },
+    { user: "supervisor1", password: "12345", role: "supervisor" },
+    { user: "manager1", password: "12345", role: "manager" }
+  ];
+
   // ===================== اللغة =====================
   function toggleLanguage() {
     const current = document.documentElement.lang;
@@ -63,32 +70,32 @@
     });
   }
 
-  // ===================== بيانات افتراضية للمستخدمين =====================
-  const users = [
-    { user: "delegate1", pass: "12345", role: "delegate" },
-    { user: "supervisor1", pass: "12345", role: "supervisor" },
-    { user: "manager1", pass: "12345", role: "manager" }
-  ];
-
   // ===================== تسجيل الدخول =====================
   function login() {
-    const userInput = document.getElementById("login-user").value;
-    const passInput = document.getElementById("login-pass").value;
-    const roleSelect = document.getElementById("role").value;
+    const username = document.getElementById("login-user").value;
+    const password = document.getElementById("login-pass").value;
+    const role = document.getElementById("role").value;
 
-    const user = users.find(u => u.user === userInput && u.pass === passInput && u.role === roleSelect);
-    if(user){
-      alert(`تم تسجيل الدخول كـ ${roleSelect}`);
-      // التوجيه للشاشة المناسبة حسب الدور
-      if(roleSelect === "delegate"){
-        window.location.href = "delegate.html";
-      } else if(roleSelect === "supervisor"){
-        window.location.href = "supervisor.html";
-      } else if(roleSelect === "manager"){
-        window.location.href = "manager.html";
+    const user = users.find(u => u.user === username && u.password === password && u.role === role);
+
+    if(user) {
+      // تحويل إلى الشاشة حسب الدور
+      switch(role) {
+        case "delegate":
+          alert("تم تسجيل الدخول كمندوب ✅");
+          window.location.href = "delegate.html"; // ضع رابط شاشة المندوب
+          break;
+        case "supervisor":
+          alert("تم تسجيل الدخول كمشرف ✅");
+          window.location.href = "supervisor.html"; // ضع رابط شاشة المشرف
+          break;
+        case "manager":
+          alert("تم تسجيل الدخول كمدير ✅");
+          window.location.href = "manager.html"; // ضع رابط شاشة المدير
+          break;
       }
     } else {
-      alert("بيانات الدخول غير صحيحة!");
+      alert("خطأ في بيانات الدخول! حاول مرة أخرى.");
     }
   }
 
