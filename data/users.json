@@ -1,1 +1,5 @@
-[{"user":"ahmed","password":"1234","role":"delegate"},{"user":"mohammed","password":"1234","role":"supervisor"},{"user":"admin","password":"1234","role":"manager"}]
+[
+  {"user":"delegate1","password":"12345","role":"delegate","email":"delegate1@example.com","phone":"0501234567"},
+  {"user":"supervisor1","password":"12345","role":"supervisor","email":"supervisor1@example.com","phone":"0502345678"},
+  {"user":"manager1","password":"12345","role":"manager","email":"manager1@example.com","phone":"0503456789"}
+]
