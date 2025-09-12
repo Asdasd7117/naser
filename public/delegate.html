@@ -5,10 +5,61 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>شاشة المندوب</title>
   <link rel="stylesheet" href="css/style.css">
-  <script src="js/lang.js" defer></script>
   <script defer>
+    // ===================== الترجمات =====================
+    const translations = {
+      ar: {
+        tasks_title: "المهام اليومية",
+        report_title: "رفع التقرير",
+        report_notes: "أدخل الملاحظات",
+        send_report: "إرسال التقرير",
+        map_title: "الخريطة",
+        update_location: "تحديث الموقع",
+        notifications_title: "الإشعارات",
+        tasks_tab: "المهام",
+        report_tab: "التقرير",
+        map_tab: "الخريطة",
+        notifications_tab: "الإشعارات",
+        toggle_lang: "عربي / English",
+        delegate_name: "المندوب: أحمد علي"
+      },
+      en: {
+        tasks_title: "Daily Tasks",
+        report_title: "Submit Report",
+        report_notes: "Write your notes",
+        send_report: "Send Report",
+        map_title: "Map",
+        update_location: "Update Location",
+        notifications_title: "Notifications",
+        tasks_tab: "Tasks",
+        report_tab: "Report",
+        map_tab: "Map",
+        notifications_tab: "Notifications",
+        toggle_lang: "Arabic / English",
+        delegate_name: "Delegate: Ahmed Ali"
+      }
+    };
+
+    // ===================== اللغة =====================
+    function toggleLanguage() {
+      const current = document.documentElement.lang;
+      const newLang = current === "ar" ? "en" : "ar";
+      document.documentElement.lang = newLang;
+      document.documentElement.dir = newLang === "ar" ? "rtl" : "ltr";
+      applyTranslations(newLang);
+    }
+
+    function applyTranslations(lang) {
+      document.querySelectorAll("[data-translate]").forEach(el => {
+        const key = el.getAttribute("data-translate");
+        if (translations[lang][key]) {
+          el.innerText = translations[lang][key];
+        }
+      });
+    }
+
     // ===================== اسم المندوب =====================
-    let currentDelegate = "المندوب: أحمد علي"; // ← ممكن يجي من تسجيل الدخول
+    let currentDelegate = "delegate_name"; // المفتاح من الترجمات
 
     // ===================== مصفوفة المهام =====================
     let tasks = [
@@ -18,7 +69,7 @@
 
     // ===================== عرض اسم المندوب =====================
     function showDelegateName() {
-      document.getElementById("delegate-name").textContent = currentDelegate;
+      document.getElementById("delegate-name").setAttribute("data-translate", currentDelegate);
     }
 
     // ===================== عرض المهام =====================
@@ -43,12 +94,11 @@
         list.appendChild(div);
       });
 
-      // ربط الأحداث بعد الرسم
       document.querySelectorAll('#tasks-list select').forEach(sel=>{
         sel.onchange = function(){
           const index = this.dataset.index;
           tasks[index].status = this.value;
-          loadTasks(); // إعادة الرسم بعد التحديث
+          loadTasks();
           alert(`تم تحديث حالة المهمة إلى: ${this.value}`);
         }
       });
@@ -92,19 +142,6 @@
       document.getElementById("btn-" + id).classList.add("active");
     }
 
-    // ===================== التبديل بين العربية والانجليزية =====================
-    function toggleLanguage() {
-      const current = document.documentElement.lang;
-      if(current === "ar") {
-        document.documentElement.lang = "en";
-        document.documentElement.dir = "ltr";
-      } else {
-        document.documentElement.lang = "ar";
-        document.documentElement.dir = "rtl";
-      }
-      applyTranslations();
-    }
-
     // ===================== عند تحميل الصفحة =====================
     window.onload = function(){
       showDelegateName();
@@ -112,6 +149,7 @@
       loadTasks();
       loadNotifications();
       initMap();
+      applyTranslations(document.documentElement.lang);
     }
   </script>
 </head>
