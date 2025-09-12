@@ -1,6 +1,45 @@
-body{font-family:sans-serif;background:#f0f8ff;color:#003366;margin:0;padding:0;}
-.login-container{background:#fff;padding:30px;border-radius:10px;box-shadow:0 0 10px rgba(0,0,0,0.2);width:300px;margin:100px auto;}
-input,select,textarea{width:100%;padding:8px;margin:8px 0;border-radius:5px;border:1px solid #ccc;}
-button{width:100%;padding:10px;background:#008CBA;color:white;border:none;border-radius:5px;cursor:pointer;margin-top:10px;}
-button:hover{background:#006f94;}
-#tasks-list div{margin-bottom:10px;padding:5px;border:1px solid #ccc;border-radius:5px;}
+body{
+  font-family: Arial, sans-serif;
+  margin:0; padding:0;
+  background-color:#f5f5f5;
+  direction: rtl;
+}
+.login-container{
+  width: 300px;
+  margin: 50px auto;
+  background: #fff;
+  padding: 20px;
+  border-radius:10px;
+  box-shadow:0 0 10px rgba(0,0,0,0.1);
+}
+input, select, button, textarea{
+  width:100%;
+  margin:5px 0;
+  padding:10px;
+  border-radius:5px;
+  border:1px solid #ccc;
+}
+button{
+  background-color:#2196F3;
+  color:white;
+  border:none;
+  cursor:pointer;
+}
+button:hover{
+  background-color:#1976D2;
+}
+h1,h2,h3,h4{
+  color:#333;
+}
+.forgot{
+  display:block;
+  margin-top:10px;
+  color:#f44336;
+  cursor:pointer;
+}
+#tasks-list div, #supervisor-list div, #reports-list div{
+  background:#e3f2fd;
+  margin:5px 0;
+  padding:10px;
+  border-radius:5px;
+}
