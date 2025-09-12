@@ -2,7 +2,7 @@
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
-<title>المشرف</title>
+<title>Supervisor</title>
 <link rel="stylesheet" href="css/style.css">
 <script src="js/lang.js" defer></script>
 <script src="js/app.js" defer></script>
@@ -10,13 +10,13 @@
 </head>
 <body onload="loadSupervisorList(); initMap();">
 
-<h1>لوحة متابعة المندوبين</h1>
+<h1 data-translate="tasks_title">لوحة متابعة المندوبين</h1>
 <div id="supervisor-list"></div>
 
-<h2>خريطة المندوبين</h2>
+<h2 data-translate="report_title">خريطة المندوبين</h2>
 <div id="map" style="width:100%;height:400px;"></div>
 
-<button onclick="toggleLanguage()">عربي/English</button>
+<button onclick="toggleLanguage()" data-translate="toggle_lang">عربي/English</button>
 
 <script>
 async function loadSupervisorList(){
