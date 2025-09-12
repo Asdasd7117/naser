@@ -1,34 +1,143 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<title>Manager</title>
-<link rel="stylesheet" href="css/style.css">
-<script src="js/lang.js" defer></script>
-<script src="js/app.js" defer></script>
+  <meta charset="UTF-8">
+  <title>شاشة المدير / الموارد البشرية</title>
+  <style>
+    body { font-family: Tahoma, Arial, sans-serif; margin: 0; padding: 0; background: #f9f9f9; color: #333; }
+    h1, h2 { text-align: center; margin: 10px 0; }
+    .screen { display: none; padding: 10px; min-height: calc(100vh - 60px); }
+    .screen.active { display: block; }
+    .card { background: white; margin: 8px; padding: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #007bff; display: flex; }
+    .bottom-nav button { flex: 1; padding: 12px; border: none; background: #007bff; color: white; font-size: 14px; }
+    .bottom-nav button.active { background: #0056b3; }
+    .lang-btn { position: fixed; top: 10px; left: 10px; padding: 6px 10px; }
+    table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+    table, th, td { border: 1px solid #ccc; }
+    th, td { padding: 6px; text-align: center; }
+    textarea, input { width: 100%; margin: 6px 0; padding: 6px; border-radius: 6px; border: 1px solid #ccc; }
+  </style>
 </head>
-<body onload="loadReports();">
+<body onload="showSection('reports'); loadReports(); loadAttendance(); loadTasksAdmin();">
 
-<h1 data-translate="tasks_title">لوحة التحكم والإحصائيات</h1>
+  <!-- التقارير والتحليلات -->
+  <section id="reports" class="screen">
+    <h1>التقارير والتحليلات</h1>
+    <table>
+      <thead>
+        <tr><th>المندوب</th><th>المهام المكتملة</th><th>المهام المؤجلة</th><th>نسبة الإنجاز</th></tr>
+      </thead>
+      <tbody id="reports-table"></tbody>
+    </table>
+  </section>
 
-<h2 data-translate="report_title">التقارير والملاحظات</h2>
-<div id="reports-list"></div>
+  <!-- الحضور والانصراف -->
+  <section id="attendance" class="screen">
+    <h1>الحضور والانصراف</h1>
+    <div id="attendance-list"></div>
+  </section>
 
-<button onclick="toggleLanguage()" data-translate="toggle_lang">عربي/English</button>
+  <!-- لوحة التحكم -->
+  <section id="admin" class="screen">
+    <h1>لوحة التحكم</h1>
+    
+    <h2>إضافة / تعديل المهام</h2>
+    <input type="text" id="task-client" placeholder="اسم العميل">
+    <input type="text" id="task-address" placeholder="العنوان">
+    <input type="time" id="task-time">
+    <button onclick="addTask()">إضافة مهمة</button>
 
-<script>
-async function loadReports(){
-  const res = await fetch('/api/reports');
-  const reports = await res.json();
-  const container = document.getElementById('reports-list');
-  container.innerHTML='';
-  reports.forEach(r=>{
-    const div = document.createElement('div');
-    div.innerHTML=`<b>مندوب:</b> ${r.delegate} | <b>ملاحظات:</b> ${r.notes} | <b>تاريخ:</b> ${new Date(r.createdAt).toLocaleString()}
-    <button onclick="alert('إضافة ملاحظات / تعليمات')">إضافة تعليمات</button>`;
-    container.appendChild(div);
-  });
-}
-</script>
+    <h2>تعديل بيانات المندوبين</h2>
+    <input type="text" id="delegate-name" placeholder="اسم المندوب">
+    <input type="text" id="delegate-phone" placeholder="رقم الهاتف">
+    <input type="email" id="delegate-email" placeholder="البريد الإلكتروني">
+    <button onclick="updateDelegate()">تحديث بيانات المندوب</button>
+
+    <h2>إرسال إشعارات جماعية</h2>
+    <textarea id="broadcast-message" placeholder="اكتب الرسالة هنا"></textarea>
+    <button onclick="sendBroadcast()">إرسال الإشعار</button>
+  </section>
+
+  <!-- شريط التنقل -->
+  <nav class="bottom-nav">
+    <button id="btn-reports" onclick="showSection('reports')">التقارير</button>
+    <button id="btn-attendance" onclick="showSection('attendance')">الحضور</button>
+    <button id="btn-admin" onclick="showSection('admin')">لوحة التحكم</button>
+  </nav>
+
+  <!-- زر اللغة -->
+  <button class="lang-btn" onclick="toggleLanguage()">عربي/English</button>
+
+  <script>
+    function showSection(id) {
+      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+      document.querySelectorAll(".bottom-nav button").forEach(b => b.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+      document.getElementById("btn-" + id).classList.add("active");
+    }
+
+    // بيانات افتراضية للتقارير
+    function loadReports() {
+      const reports = [
+        {delegate:"أحمد", complete:5, pending:2, percent:71},
+        {delegate:"سعيد", complete:7, pending:1, percent:87}
+      ];
+      const tbody = document.getElementById("reports-table");
+      tbody.innerHTML = "";
+      reports.forEach(r=>{
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${r.delegate}</td><td>${r.complete}</td><td>${r.pending}</td><td>${r.percent}%</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // بيانات افتراضية للحضور
+    function loadAttendance() {
+      const attendance = [
+        {delegate:"أحمد", login:"09:00", logout:"17:00", deviation:"تأخير 10 دقائق"},
+        {delegate:"سعيد", login:"08:45", logout:"17:00", deviation:"سليم"}
+      ];
+      const container = document.getElementById("attendance-list");
+      container.innerHTML = "";
+      attendance.forEach(a=>{
+        const div = document.createElement("div");
+        div.className = "card";
+        div.innerHTML = `<strong>${a.delegate}</strong><br>دخول: ${a.login} - خروج: ${a.logout}<br>حالة: ${a.deviation}`;
+        container.appendChild(div);
+      });
+    }
+
+    // بيانات افتراضية لإدارة المهام
+    function loadTasksAdmin() {
+      console.log("جهز بيانات المهام للمسؤول");
+    }
+
+    function addTask() {
+      alert("تم إضافة المهمة ✅");
+    }
+
+    function updateDelegate() {
+      alert("تم تحديث بيانات المندوب ✅");
+    }
+
+    function sendBroadcast() {
+      const msg = document.getElementById("broadcast-message").value;
+      if(msg) alert("تم إرسال الإشعار: " + msg);
+      else alert("أدخل رسالة قبل الإرسال!");
+    }
+
+    function toggleLanguage() {
+      if (document.documentElement.lang === "ar") {
+        document.documentElement.lang = "en";
+        document.documentElement.dir = "ltr";
+        alert("Switched to English");
+      } else {
+        document.documentElement.lang = "ar";
+        document.documentElement.dir = "rtl";
+        alert("تم التبديل إلى العربية");
+      }
+    }
+  </script>
 </body>
 </html>
