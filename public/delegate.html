@@ -8,7 +8,7 @@
   <script src="js/lang.js" defer></script>
   <script src="js/app.js" defer></script>
 </head>
-<body onload="showSection('tasks'); loadTasks(); loadNotifications(); initMap();">
+<body onload="initDelegateScreen()">
 
   <!-- شاشات المندوب -->
   <section id="tasks" class="screen">
@@ -47,27 +47,37 @@
   <button class="lang-btn" onclick="toggleLanguage()" data-translate="toggle_lang">عربي/English</button>
 
   <script>
-    function showSection(id) {
-      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-      document.querySelectorAll(".bottom-nav button").forEach(b => b.classList.remove("active"));
-      document.getElementById(id).classList.add("active");
-      document.getElementById("btn-" + id).classList.add("active");
+    // مصفوفة عالمية للمهام
+    let tasks = [
+      { client: "شركة أبجد", address: "القاهرة", time: "10:00 صباحًا", status: "قيد التنفيذ" },
+      { client: "مؤسسة ألف", address: "الإسكندرية", time: "12:00 ظهرًا", status: "مؤجلة" }
+    ];
+
+    // تهيئة الشاشة
+    function initDelegateScreen(){
+      showSection('tasks');
+      loadTasks();
+      loadNotifications();
+      initMap();
     }
 
-    function loadTasks() {
-      const tasks = [
-        { client: "شركة أبجد", address: "القاهرة", time: "10:00 صباحًا", status: "قيد التنفيذ" },
-        { client: "مؤسسة ألف", address: "الإسكندرية", time: "12:00 ظهرًا", status: "مؤجلة" }
-      ];
+    function showSection(id){
+      document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+      document.querySelectorAll(".bottom-nav button").forEach(b=>b.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+      document.getElementById("btn-"+id).classList.add("active");
+    }
+
+    function loadTasks(){
       const list = document.getElementById("tasks-list");
       list.innerHTML = "";
-      tasks.forEach((t, idx) => {
+      tasks.forEach((t, idx)=>{
         const div = document.createElement("div");
         div.className = "task-card";
         div.innerHTML = `
-          <strong>${t.client}</strong><br>
-          ${t.address}<br>
-          ${t.time}<br>
+          <strong>العميل:</strong> ${t.client}<br>
+          <strong>العنوان:</strong> ${t.address}<br>
+          <strong>وقت الزيارة:</strong> ${t.time}<br>
           <label>الحالة: 
             <select onchange="updateTaskStatus(${idx}, this.value)">
               <option ${t.status==="قيد التنفيذ"?"selected":""}>قيد التنفيذ</option>
@@ -80,46 +90,51 @@
       });
     }
 
-    function updateTaskStatus(index, newStatus) {
+    function updateTaskStatus(index, newStatus){
+      tasks[index].status = newStatus; // تحديث المصفوفة
+      loadTasks(); // إعادة رسم القائمة
       alert("تم تحديث حالة المهمة إلى: " + newStatus);
     }
 
-    function submitDelegateReport() {
+    function submitDelegateReport(){
       alert("تم إرسال التقرير بنجاح ✅");
+      document.getElementById('report-notes').value = '';
+      document.getElementById('report-images').value = '';
+      document.getElementById('report-signature').value = '';
     }
 
-    function initMap() {
+    function initMap(){
       document.getElementById("map-container").innerHTML = "خريطة افتراضية (يمكن ربط Google Maps API)";
     }
 
-    function updateLocation() {
+    function updateLocation(){
       alert("تم تحديث الموقع ✅");
     }
 
-    function loadNotifications() {
+    function loadNotifications(){
       const notifs = [
         "تذكير: زيارة شركة أبجد الساعة 10:00 صباحًا",
         "تنبيه: تأخرت عن مهمة مؤسسة ألف بـ 15 دقيقة"
       ];
       const ul = document.getElementById("notifications-list");
       ul.innerHTML = "";
-      notifs.forEach(n => {
+      notifs.forEach(n=>{
         const li = document.createElement("li");
         li.textContent = n;
         ul.appendChild(li);
       });
     }
 
-    function toggleLanguage() {
+    function toggleLanguage(){
       const current = document.documentElement.lang;
-      if(current === "ar") {
+      if(current === "ar"){
         document.documentElement.lang = "en";
         document.documentElement.dir = "ltr";
-      } else {
+      }else{
         document.documentElement.lang = "ar";
         document.documentElement.dir = "rtl";
       }
-      applyTranslations(); // استدعاء وظائف الترجمة من js/lang.js
+      applyTranslations();
     }
   </script>
 </body>
