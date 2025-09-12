@@ -63,15 +63,32 @@
     });
   }
 
-  // ===================== تسجيل الدخول افتراضي =====================
+  // ===================== بيانات افتراضية للمستخدمين =====================
+  const users = [
+    { user: "delegate1", pass: "12345", role: "delegate" },
+    { user: "supervisor1", pass: "12345", role: "supervisor" },
+    { user: "manager1", pass: "12345", role: "manager" }
+  ];
+
+  // ===================== تسجيل الدخول =====================
   function login() {
-    const user = document.getElementById("login-user").value;
-    const pass = document.getElementById("login-pass").value;
-    const role = document.getElementById("role").value;
-    if(user && pass){
-      alert(`تم تسجيل الدخول كـ ${role}`);
+    const userInput = document.getElementById("login-user").value;
+    const passInput = document.getElementById("login-pass").value;
+    const roleSelect = document.getElementById("role").value;
+
+    const user = users.find(u => u.user === userInput && u.pass === passInput && u.role === roleSelect);
+    if(user){
+      alert(`تم تسجيل الدخول كـ ${roleSelect}`);
+      // التوجيه للشاشة المناسبة حسب الدور
+      if(roleSelect === "delegate"){
+        window.location.href = "delegate.html";
+      } else if(roleSelect === "supervisor"){
+        window.location.href = "supervisor.html";
+      } else if(roleSelect === "manager"){
+        window.location.href = "manager.html";
+      }
     } else {
-      alert("الرجاء إدخال بيانات الدخول!");
+      alert("بيانات الدخول غير صحيحة!");
     }
   }
 
