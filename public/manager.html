@@ -2,31 +2,25 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>شاشة المدير / الموارد البشرية</title>
-  <style>
-    body { font-family: Tahoma, Arial, sans-serif; margin: 0; padding: 0; background: #f9f9f9; color: #333; }
-    h1, h2 { text-align: center; margin: 10px 0; }
-    .screen { display: none; padding: 10px; min-height: calc(100vh - 60px); }
-    .screen.active { display: block; }
-    .card { background: white; margin: 8px; padding: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #007bff; display: flex; }
-    .bottom-nav button { flex: 1; padding: 12px; border: none; background: #007bff; color: white; font-size: 14px; }
-    .bottom-nav button.active { background: #0056b3; }
-    .lang-btn { position: fixed; top: 10px; left: 10px; padding: 6px 10px; }
-    table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-    table, th, td { border: 1px solid #ccc; }
-    th, td { padding: 6px; text-align: center; }
-    textarea, input { width: 100%; margin: 6px 0; padding: 6px; border-radius: 6px; border: 1px solid #ccc; }
-  </style>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/lang.js" defer></script>
+  <script src="js/app.js" defer></script>
 </head>
 <body onload="showSection('reports'); loadReports(); loadAttendance(); loadTasksAdmin();">
 
   <!-- التقارير والتحليلات -->
   <section id="reports" class="screen">
-    <h1>التقارير والتحليلات</h1>
+    <h1 data-translate="reports_title">التقارير والتحليلات</h1>
     <table>
       <thead>
-        <tr><th>المندوب</th><th>المهام المكتملة</th><th>المهام المؤجلة</th><th>نسبة الإنجاز</th></tr>
+        <tr>
+          <th data-translate="delegate_name">المندوب</th>
+          <th data-translate="tasks_complete">المهام المكتملة</th>
+          <th data-translate="tasks_pending">المهام المؤجلة</th>
+          <th data-translate="completion_rate">نسبة الإنجاز</th>
+        </tr>
       </thead>
       <tbody id="reports-table"></tbody>
     </table>
@@ -34,40 +28,40 @@
 
   <!-- الحضور والانصراف -->
   <section id="attendance" class="screen">
-    <h1>الحضور والانصراف</h1>
+    <h1 data-translate="attendance_title">الحضور والانصراف</h1>
     <div id="attendance-list"></div>
   </section>
 
   <!-- لوحة التحكم -->
   <section id="admin" class="screen">
-    <h1>لوحة التحكم</h1>
-    
-    <h2>إضافة / تعديل المهام</h2>
+    <h1 data-translate="admin_title">لوحة التحكم</h1>
+
+    <h2 data-translate="add_task">إضافة / تعديل المهام</h2>
     <input type="text" id="task-client" placeholder="اسم العميل">
     <input type="text" id="task-address" placeholder="العنوان">
     <input type="time" id="task-time">
-    <button onclick="addTask()">إضافة مهمة</button>
+    <button onclick="addTask()" data-translate="add_task_btn">إضافة مهمة</button>
 
-    <h2>تعديل بيانات المندوبين</h2>
+    <h2 data-translate="edit_delegate">تعديل بيانات المندوبين</h2>
     <input type="text" id="delegate-name" placeholder="اسم المندوب">
     <input type="text" id="delegate-phone" placeholder="رقم الهاتف">
     <input type="email" id="delegate-email" placeholder="البريد الإلكتروني">
-    <button onclick="updateDelegate()">تحديث بيانات المندوب</button>
+    <button onclick="updateDelegate()" data-translate="update_delegate_btn">تحديث بيانات المندوب</button>
 
-    <h2>إرسال إشعارات جماعية</h2>
+    <h2 data-translate="broadcast">إرسال إشعارات جماعية</h2>
     <textarea id="broadcast-message" placeholder="اكتب الرسالة هنا"></textarea>
-    <button onclick="sendBroadcast()">إرسال الإشعار</button>
+    <button onclick="sendBroadcast()" data-translate="send_broadcast_btn">إرسال الإشعار</button>
   </section>
 
   <!-- شريط التنقل -->
   <nav class="bottom-nav">
-    <button id="btn-reports" onclick="showSection('reports')">التقارير</button>
-    <button id="btn-attendance" onclick="showSection('attendance')">الحضور</button>
-    <button id="btn-admin" onclick="showSection('admin')">لوحة التحكم</button>
+    <button id="btn-reports" onclick="showSection('reports')" data-translate="reports_tab">التقارير</button>
+    <button id="btn-attendance" onclick="showSection('attendance')" data-translate="attendance_tab">الحضور</button>
+    <button id="btn-admin" onclick="showSection('admin')" data-translate="admin_tab">لوحة التحكم</button>
   </nav>
 
   <!-- زر اللغة -->
-  <button class="lang-btn" onclick="toggleLanguage()">عربي/English</button>
+  <button class="lang-btn" onclick="toggleLanguage()" data-translate="toggle_lang">عربي/English</button>
 
   <script>
     function showSection(id) {
@@ -131,12 +125,11 @@
       if (document.documentElement.lang === "ar") {
         document.documentElement.lang = "en";
         document.documentElement.dir = "ltr";
-        alert("Switched to English");
       } else {
         document.documentElement.lang = "ar";
         document.documentElement.dir = "rtl";
-        alert("تم التبديل إلى العربية");
       }
+      applyTranslations(); // استدعاء وظائف الترجمة من js/lang.js
     }
   </script>
 </body>
