@@ -7,8 +7,74 @@
   <link rel="stylesheet" href="css/style.css">
   <script src="js/lang.js" defer></script>
   <script src="js/app.js" defer></script>
+  <style>
+    body {
+      font-family: Tahoma, Arial, sans-serif;
+      margin: 0; padding: 0;
+      background: #f5f5f5;
+      color: #333;
+    }
+    h1, h2 { text-align: center; margin: 10px 0; }
+    .screen { display: none; padding: 10px; min-height: calc(100vh - 60px); }
+    .screen.active { display: block; }
+    .task-card, .report-card, .notification-card {
+      background: #fff;
+      margin: 8px 0;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      display: flex;
+      background: #007bff;
+    }
+    .bottom-nav button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      background: #007bff;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .bottom-nav button.active { background: #0056b3; }
+    .lang-btn {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      padding: 6px 10px;
+      z-index: 100;
+      cursor: pointer;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+    }
+    #map-container {
+      width: 100%;
+      height: 300px;
+      background: #ddd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    select, textarea, input, button {
+      width: 100%;
+      margin: 6px 0;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    button:hover { opacity: 0.9; }
+  </style>
 </head>
-<body onload="initDelegateScreen()">
+<body onload="showSection('tasks'); loadTasks(); loadNotifications(); initMap();">
 
   <!-- شاشات المندوب -->
   <section id="tasks" class="screen">
@@ -18,9 +84,9 @@
 
   <section id="report" class="screen">
     <h2 data-translate="report_title">رفع التقرير</h2>
-    <textarea id="report-notes" placeholder="" data-translate="report_notes"></textarea><br>
-    <input type="file" id="report-images" multiple><br>
-    <input type="file" id="report-signature"><br>
+    <textarea id="report-notes" placeholder="" data-translate="report_notes"></textarea>
+    <input type="file" id="report-images" multiple>
+    <input type="file" id="report-signature">
     <button onclick="submitDelegateReport()" data-translate="send_report">إرسال التقرير</button>
   </section>
 
@@ -50,35 +116,27 @@
     // مصفوفة عالمية للمهام
     let tasks = [
       { client: "شركة أبجد", address: "القاهرة", time: "10:00 صباحًا", status: "قيد التنفيذ" },
-      { client: "مؤسسة ألف", address: "الإسكندرية", time: "12:00 ظهرًا", status: "مؤجلة" }
+      { client: "مؤسسة ألف", address: "الإسكندرية", time: "11:00", status: "مؤجلة" }
     ];
 
-    // تهيئة الشاشة
-    function initDelegateScreen(){
-      showSection('tasks');
-      loadTasks();
-      loadNotifications();
-      initMap();
-    }
-
-    function showSection(id){
-      document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-      document.querySelectorAll(".bottom-nav button").forEach(b=>b.classList.remove("active"));
+    function showSection(id) {
+      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+      document.querySelectorAll(".bottom-nav button").forEach(b => b.classList.remove("active"));
       document.getElementById(id).classList.add("active");
-      document.getElementById("btn-"+id).classList.add("active");
+      document.getElementById("btn-" + id).classList.add("active");
     }
 
-    function loadTasks(){
+    function loadTasks() {
       const list = document.getElementById("tasks-list");
       list.innerHTML = "";
-      tasks.forEach((t, idx)=>{
+      tasks.forEach((t, idx) => {
         const div = document.createElement("div");
         div.className = "task-card";
         div.innerHTML = `
           <strong>العميل:</strong> ${t.client}<br>
           <strong>العنوان:</strong> ${t.address}<br>
           <strong>وقت الزيارة:</strong> ${t.time}<br>
-          <label>الحالة: 
+          <label>الحالة:
             <select onchange="updateTaskStatus(${idx}, this.value)">
               <option ${t.status==="قيد التنفيذ"?"selected":""}>قيد التنفيذ</option>
               <option ${t.status==="مكتملة"?"selected":""}>مكتملة</option>
@@ -90,47 +148,44 @@
       });
     }
 
-    function updateTaskStatus(index, newStatus){
-      tasks[index].status = newStatus; // تحديث المصفوفة
-      loadTasks(); // إعادة رسم القائمة
-      alert("تم تحديث حالة المهمة إلى: " + newStatus);
+    function updateTaskStatus(index, newStatus) {
+      tasks[index].status = newStatus;
+      loadTasks(); // إعادة رسم المهام بعد التغيير
+      alert(`تم تحديث حالة المهمة إلى: ${newStatus}`);
     }
 
-    function submitDelegateReport(){
+    function submitDelegateReport() {
       alert("تم إرسال التقرير بنجاح ✅");
-      document.getElementById('report-notes').value = '';
-      document.getElementById('report-images').value = '';
-      document.getElementById('report-signature').value = '';
     }
 
-    function initMap(){
+    function initMap() {
       document.getElementById("map-container").innerHTML = "خريطة افتراضية (يمكن ربط Google Maps API)";
     }
 
-    function updateLocation(){
+    function updateLocation() {
       alert("تم تحديث الموقع ✅");
     }
 
-    function loadNotifications(){
+    function loadNotifications() {
       const notifs = [
         "تذكير: زيارة شركة أبجد الساعة 10:00 صباحًا",
         "تنبيه: تأخرت عن مهمة مؤسسة ألف بـ 15 دقيقة"
       ];
       const ul = document.getElementById("notifications-list");
       ul.innerHTML = "";
-      notifs.forEach(n=>{
+      notifs.forEach(n => {
         const li = document.createElement("li");
         li.textContent = n;
         ul.appendChild(li);
       });
     }
 
-    function toggleLanguage(){
+    function toggleLanguage() {
       const current = document.documentElement.lang;
-      if(current === "ar"){
+      if(current === "ar") {
         document.documentElement.lang = "en";
         document.documentElement.dir = "ltr";
-      }else{
+      } else {
         document.documentElement.lang = "ar";
         document.documentElement.dir = "rtl";
       }
