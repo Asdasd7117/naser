@@ -46,7 +46,7 @@ app.post('/api/login',(req,res)=>{
   const users = readJSON(USERS_FILE);
 
   const found = users.find(u =>
-    (u.user === user || u.email === user || u.phone === user) &&
+    (u.user === user || u.email === user || String(u.phone) === String(user)) &&
     u.password === password &&
     u.role === role
   );
