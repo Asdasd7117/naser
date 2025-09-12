@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>شاشة المندوب</title>
 <link rel="stylesheet" href="css/style.css">
-<script src="js/app.js" defer></script> <!-- استدعاء app.js فقط -->
+<script src="js/app.js" defer></script> <!-- نحتفظ بكل وظائف app.js -->
 <script defer>
   // ===================== الترجمات داخل الصفحة =====================
   const translations = {
@@ -64,18 +64,22 @@
       hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Africa/Cairo"
     });
     const name = translations[document.documentElement.lang]["delegate_name"];
-    document.getElementById("delegate-name").innerText = `👤 ${name} | 🕒 ${now}`;
+    const header = document.getElementById("delegate-name");
+    if(header) header.innerText = `👤 ${name} | 🕒 ${now}`;
   }
   setInterval(updateDelegateHeader, 60000);
 
   // ===================== عند تحميل الصفحة =====================
   window.onload = function(){
     applyTranslations(document.documentElement.lang);
-    if(typeof tasks !== "undefined" && tasks.length>0) loadTasks(); // استخدام tasks من app.js
+
+    // === استدعاء كل وظائف app.js بدون حذف أي شيء ===
+    if(typeof showSection === "function") showSection('tasks');
+    if(typeof loadTasks === "function") loadTasks();
     if(typeof loadNotifications === "function") loadNotifications();
     if(typeof initMap === "function") initMap();
+
     updateDelegateHeader();
-    showSection('tasks');
   };
 </script>
 </head>
