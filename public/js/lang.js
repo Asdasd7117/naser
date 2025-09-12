@@ -14,6 +14,7 @@ const translations = {
     forgot_pass: "نسيت كلمة المرور؟",
 
     // المندوب
+    delegate_name: "اسم المندوب",
     tasks_title: "المهام اليومية",
     report_title: "رفع التقرير",
     report_notes: "أدخل الملاحظات",
@@ -50,6 +51,7 @@ const translations = {
     forgot_pass: "Forgot Password?",
 
     // Delegate
+    delegate_name: "Delegate Name",
     tasks_title: "Daily Tasks",
     report_title: "Submit Report",
     report_notes: "Write your notes",
@@ -95,10 +97,16 @@ function applyTranslations() {
   const lang = localStorage.getItem('lang') || 'ar';
   document.documentElement.lang = lang;
   document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
-  
+
   document.querySelectorAll('[data-translate]').forEach(el => {
     const key = el.getAttribute('data-translate');
-    if(translations[lang][key]) el.innerText = translations[lang][key];
+    if (translations[lang][key]) {
+      if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
+        el.placeholder = translations[lang][key]; // لو كان input أو textarea نحط placeholder
+      } else {
+        el.innerText = translations[lang][key];
+      }
+    }
   });
 }
 
