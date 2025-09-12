@@ -3,24 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تسجيل الدخول</title>
+<title>Login</title>
 <link rel="stylesheet" href="css/style.css">
 <script src="js/lang.js" defer></script>
 <script src="js/app.js" defer></script>
 </head>
 <body>
 <div class="login-container">
-<h2>تسجيل الدخول</h2>
-<input type="text" id="login-user" placeholder="البريد الإلكتروني / رقم الهاتف">
-<input type="password" id="login-pass" placeholder="كلمة المرور">
-<select id="role">
-<option value="delegate">مندوب</option>
-<option value="supervisor">مشرف</option>
-<option value="manager">مدير</option>
-</select>
-<button onclick="login()">تسجيل الدخول</button>
-<span class="forgot" onclick="alert('يرجى التواصل مع الإدارة لإعادة تعيين كلمة المرور')">نسيت كلمة المرور؟</span>
-<button onclick="toggleLanguage()">عربي / English</button>
+  <h2 data-translate="login_title">تسجيل الدخول</h2>
+  <input type="text" id="login-user" placeholder="" data-translate="login_user">
+  <input type="password" id="login-pass" placeholder="" data-translate="login_pass">
+  <select id="role">
+    <option value="delegate" data-translate="role_delegate">مندوب</option>
+    <option value="supervisor" data-translate="role_supervisor">مشرف</option>
+    <option value="manager" data-translate="role_manager">مدير</option>
+  </select>
+  <button onclick="login()" data-translate="login_button">تسجيل الدخول</button>
+  <span class="forgot" onclick="alert('يرجى التواصل مع الإدارة لإعادة تعيين كلمة المرور')" data-translate="forgot_pass">نسيت كلمة المرور؟</span>
+  <button onclick="toggleLanguage()" data-translate="toggle_lang">عربي / English</button>
 </div>
 </body>
 </html>
