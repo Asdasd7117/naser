@@ -1,21 +1,17 @@
-<!DOCTYPE html>  
-<html lang="ar">  
-<head>  
-<meta charset="UTF-8">  
-<meta name="viewport" content="width=device-width, initial-scale=1.0">  
-<title>Login</title>  
-<style>
-  body { font-family: Arial, sans-serif; background: #f4f4f4; margin:0; padding:0; display:flex; justify-content:center; align-items:center; height:100vh; }
-  .login-container { background:#fff; padding:30px; border-radius:10px; box-shadow:0 0 15px rgba(0,0,0,0.2); width:300px; text-align:center; }
-  .login-container h1 { color:green; margin-bottom:20px; font-size:24px; }
-  .login-container input, .login-container select, .login-container button { width:100%; margin:8px 0; padding:10px; border-radius:5px; border:1px solid #ccc; }
-  .login-container button { background:green; color:#fff; border:none; cursor:pointer; }
-  .login-container .forgot { display:block; margin-top:10px; font-size:14px; color:#555; cursor:pointer; }
-</style>
-<script>
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="js/lang.js" defer></script>
+<script src="js/app.js" defer></script>
+<script defer>
   // ===================== الترجمات =====================
   const translations = {
     ar: {
+      system_title: "نظام إدارة الزيارات",
       login_title: "تسجيل الدخول",
       login_user: "البريد الإلكتروني / رقم الهاتف",
       login_pass: "كلمة المرور",
@@ -24,10 +20,10 @@
       role_manager: "مدير",
       login_button: "تسجيل الدخول",
       forgot_pass: "نسيت كلمة المرور؟",
-      toggle_lang: "عربي / English",
-      system_title: "نظام إدارة الزيارات"
+      toggle_lang: "عربي / English"
     },
     en: {
+      system_title: "Visit Management System",
       login_title: "Login",
       login_user: "Email / Phone",
       login_pass: "Password",
@@ -36,11 +32,11 @@
       role_manager: "Manager",
       login_button: "Login",
       forgot_pass: "Forgot Password?",
-      toggle_lang: "Arabic / English",
-      system_title: "Visit Management System"
+      toggle_lang: "Arabic / English"
     }
   };
 
+  // ===================== تبديل اللغة =====================
   function toggleLanguage() {
     const current = document.documentElement.lang;
     const newLang = current === "ar" ? "en" : "ar";
@@ -54,35 +50,54 @@
       const key = el.getAttribute("data-translate");
       if(translations[lang][key]) el.innerText = translations[lang][key];
     });
-    document.getElementById("system-title").innerText = translations[lang]["system_title"];
-    document.getElementById("login-user").placeholder = translations[lang]["login_user"];
-    document.getElementById("login-pass").placeholder = translations[lang]["login_pass"];
   }
 
-  function login() {
-    const role = document.getElementById("role").value;
-    alert("تم تسجيل الدخول كـ: " + role);
-  }
-
-  window.onload = function(){
+  // ===================== عند تحميل الصفحة =====================
+  window.onload = function() {
     applyTranslations(document.documentElement.lang);
-  }
+  };
 </script>
-</head>  
-<body>  
-<div class="login-container">  
-  <h1 id="system-title">نظام إدارة الزيارات</h1>
-  <h2 data-translate="login_title">تسجيل الدخول</h2>  
-  <input type="text" id="login-user" placeholder="البريد الإلكتروني / رقم الهاتف" data-translate="login_user">  
-  <input type="password" id="login-pass" placeholder="كلمة المرور" data-translate="login_pass">  
+<style>
+  /* عنوان أنيق باللون الأخضر أعلى الصفحة */
+  .system-title {
+    text-align: center;
+    font-size: 28px;
+    font-weight: bold;
+    color: green;
+    margin-bottom: 20px;
+  }
+</style>
+</head>
+<body>
+
+<!-- العنوان -->
+<h1 class="system-title" data-translate="system_title"></h1>
+
+<div class="login-container">
+  <h2 data-translate="login_title">تسجيل الدخول</h2>
+  
+  <!-- البريد الإلكتروني / الهاتف -->
+  <input type="text" id="login-user" placeholder="البريد الإلكتروني / رقم الهاتف" data-translate="login_user">
+  
+  <!-- كلمة المرور -->
+  <input type="password" id="login-pass" placeholder="كلمة المرور" data-translate="login_pass">
+  
+  <!-- اختيار الدور -->
   <select id="role">
     <option value="delegate" data-translate="role_delegate">مندوب</option>
     <option value="supervisor" data-translate="role_supervisor">مشرف</option>
     <option value="manager" data-translate="role_manager">مدير</option>
-  </select>  
-  <button onclick="login()" data-translate="login_button">تسجيل الدخول</button>  
-  <span class="forgot" onclick="alert('يرجى التواصل مع الإدارة لإعادة تعيين كلمة المرور')" data-translate="forgot_pass">نسيت كلمة المرور؟</span>  
-  <button onclick="toggleLanguage()" data-translate="toggle_lang">عربي / English</button>  
-</div>  
-</body>  
+  </select>
+  
+  <!-- زر تسجيل الدخول -->
+  <button onclick="login()" data-translate="login_button">تسجيل الدخول</button>
+  
+  <!-- نسيت كلمة المرور -->
+  <span class="forgot" onclick="alert('يرجى التواصل مع الإدارة لإعادة تعيين كلمة المرور')" data-translate="forgot_pass">نسيت كلمة المرور؟</span>
+  
+  <!-- تبديل اللغة -->
+  <button onclick="toggleLanguage()" data-translate="toggle_lang">عربي / English</button>
+</div>
+
+</body>
 </html>
