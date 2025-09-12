@@ -5,11 +5,87 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login</title>
 <link rel="stylesheet" href="css/style.css">
-<script src="js/lang.js" defer></script>
-<script src="js/app.js" defer></script>
+<style>
+  .login-header {
+    text-align: center;
+    font-size: 1.8em;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #2c3e50;
+  }
+  .login-container {
+    max-width: 400px;
+    margin: auto;
+    padding: 20px;
+  }
+</style>
+<script defer>
+  // ===================== الترجمات =====================
+  const translations = {
+    ar: {
+      page_title: "أهلاً بك في نظام إدارة الزيارات",
+      login_title: "تسجيل الدخول",
+      login_user: "البريد الإلكتروني / رقم الهاتف",
+      login_pass: "كلمة المرور",
+      role_delegate: "مندوب",
+      role_supervisor: "مشرف",
+      role_manager: "مدير",
+      login_button: "تسجيل الدخول",
+      forgot_pass: "نسيت كلمة المرور؟",
+      toggle_lang: "عربي / English"
+    },
+    en: {
+      page_title: "Welcome to the Visit Management System",
+      login_title: "Login",
+      login_user: "Email / Phone",
+      login_pass: "Password",
+      role_delegate: "Delegate",
+      role_supervisor: "Supervisor",
+      role_manager: "Manager",
+      login_button: "Login",
+      forgot_pass: "Forgot Password?",
+      toggle_lang: "Arabic / English"
+    }
+  };
+
+  // ===================== اللغة =====================
+  function toggleLanguage() {
+    const current = document.documentElement.lang;
+    const newLang = current === "ar" ? "en" : "ar";
+    document.documentElement.lang = newLang;
+    applyTranslations(newLang);
+  }
+
+  function applyTranslations(lang) {
+    document.querySelectorAll("[data-translate]").forEach(el => {
+      const key = el.getAttribute("data-translate");
+      if (translations[lang][key]) el.innerText = translations[lang][key];
+    });
+  }
+
+  // ===================== تسجيل الدخول افتراضي =====================
+  function login() {
+    const user = document.getElementById("login-user").value;
+    const pass = document.getElementById("login-pass").value;
+    const role = document.getElementById("role").value;
+    if(user && pass){
+      alert(`تم تسجيل الدخول كـ ${role}`);
+    } else {
+      alert("الرجاء إدخال بيانات الدخول!");
+    }
+  }
+
+  window.onload = function(){
+    applyTranslations(document.documentElement.lang);
+  }
+</script>
 </head>
 <body>
 <div class="login-container">
+
+  <!-- عنوان أنيق أعلى الصفحة -->
+  <div class="login-header" data-translate="page_title">أهلاً بك في نظام إدارة الزيارات</div>
+
   <h2 data-translate="login_title">تسجيل الدخول</h2>
   
   <!-- البريد الإلكتروني / الهاتف -->
