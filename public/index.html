@@ -11,15 +11,27 @@
 <body>
 <div class="login-container">
   <h2 data-translate="login_title">تسجيل الدخول</h2>
-  <input type="text" id="login-user" placeholder="" data-translate="login_user">
-  <input type="password" id="login-pass" placeholder="" data-translate="login_pass">
+  
+  <!-- البريد الإلكتروني / الهاتف -->
+  <input type="text" id="login-user" placeholder="البريد الإلكتروني / رقم الهاتف" data-translate="login_user">
+  
+  <!-- كلمة المرور -->
+  <input type="password" id="login-pass" placeholder="كلمة المرور" data-translate="login_pass">
+  
+  <!-- اختيار الدور -->
   <select id="role">
     <option value="delegate" data-translate="role_delegate">مندوب</option>
     <option value="supervisor" data-translate="role_supervisor">مشرف</option>
     <option value="manager" data-translate="role_manager">مدير</option>
   </select>
+  
+  <!-- زر تسجيل الدخول -->
   <button onclick="login()" data-translate="login_button">تسجيل الدخول</button>
+  
+  <!-- نسيت كلمة المرور -->
   <span class="forgot" onclick="alert('يرجى التواصل مع الإدارة لإعادة تعيين كلمة المرور')" data-translate="forgot_pass">نسيت كلمة المرور؟</span>
+  
+  <!-- تبديل اللغة -->
   <button onclick="toggleLanguage()" data-translate="toggle_lang">عربي / English</button>
 </div>
 </body>
