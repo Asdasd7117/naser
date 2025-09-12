@@ -1,23 +1,20 @@
-/* style.css - شامل لجميع الشاشات */
-
-/* الجسم والخطوط */
+/* عام */
 body {
   font-family: Tahoma, Arial, sans-serif;
   margin: 0;
   padding: 0;
   background-color: #f5f5f5;
   color: #333;
-  direction: rtl; /* سيغيره lang.js عند التبديل */
+  direction: rtl;
 }
 
 /* رؤوس العناوين */
 h1, h2, h3, h4 {
   text-align: center;
   margin: 10px 0;
-  color: #333;
 }
 
-/* إدخالات النصوص والأزرار والقوائم */
+/* إدخالات النصوص، الأزرار، القوائم */
 input, select, textarea, button {
   width: 100%;
   margin: 5px 0;
@@ -40,7 +37,7 @@ button:hover {
   background-color: #1976D2;
 }
 
-/* روابط النسيان */
+/* رابط نسيان كلمة المرور */
 .forgot {
   display: block;
   margin-top: 10px;
@@ -49,7 +46,7 @@ button:hover {
   text-align: center;
 }
 
-/* البطاقات */
+/* البطاقات العامة */
 .card, .task-card, .delegate-card, .report-card {
   background: white;
   margin: 8px 10px;
@@ -58,7 +55,7 @@ button:hover {
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* قوائم المهام، المندوبين، التقارير */
+/* القوائم */
 #tasks-list div, 
 #supervisor-list div, 
 #reports-list div, 
@@ -136,29 +133,38 @@ th, td {
   text-align: center;
 }
 
-/* عناصر أخرى */
+/* textarea قابل للتكبير */
 textarea {
   resize: vertical;
 }
 
+/* ملفات */
 input[type="file"] {
   padding: 3px;
 }
 
+/* select */
 select {
   padding: 6px;
 }
 
 /* حالة المندوب */
-.status.active {
-  color: green;
-  font-weight: bold;
+.status.active { color: green; font-weight: bold; }
+.status.inactive { color: red; font-weight: bold; }
+.status.break { color: orange; font-weight: bold; }
+
+/* صفحة تسجيل الدخول */
+.login-container {
+  width: 300px;
+  margin: 80px auto;
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
-.status.inactive {
-  color: red;
-  font-weight: bold;
-}
-.status.break {
-  color: orange;
-  font-weight: bold;
+
+.login-container input, .login-container select, .login-container button {
+  width: 100%;
+  margin: 8px 0;
+  padding: 10px;
 }
