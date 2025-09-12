@@ -82,9 +82,9 @@
       const div = document.createElement("div");
       div.className = "task-card";
       div.innerHTML = `
-        <strong>العميل:</strong> ${t.client || ""}<br>
-        <strong>العنوان:</strong> ${t.address || ""}<br>
-        <strong>وقت الزيارة:</strong> ${t.time || ""}<br>
+        <strong>العميل:</strong> ${t.client}<br>
+        <strong>العنوان:</strong> ${t.address}<br>
+        <strong>وقت الزيارة:</strong> ${t.time}<br>
         <label>الحالة:
           <select data-index="${idx}">
             <option value="قيد التنفيذ" ${t.status==="قيد التنفيذ"?"selected":""}>قيد التنفيذ</option>
@@ -157,12 +157,10 @@
 </head>
 <body>
 
-<!-- الهيدر -->
 <header class="app-header">
   <h1 id="delegate-name"></h1>
 </header>
 
-<!-- شاشات المندوب -->
 <section id="tasks" class="screen">
   <h2 data-translate="tasks_title">المهام اليومية</h2>
   <div id="tasks-list"></div>
@@ -187,7 +185,6 @@
   <ul id="notifications-list"></ul>
 </section>
 
-<!-- شريط التنقل -->
 <nav class="bottom-nav">
   <button id="btn-tasks" onclick="showSection('tasks')" data-translate="tasks_tab">المهام</button>
   <button id="btn-report" onclick="showSection('report')" data-translate="report_tab">التقرير</button>
@@ -195,7 +192,6 @@
   <button id="btn-notifications" onclick="showSection('notifications')" data-translate="notifications_tab">الإشعارات</button>
 </nav>
 
-<!-- زر اللغة -->
 <button class="lang-btn" onclick="toggleLanguage()" data-translate="toggle_lang">عربي/English</button>
 
 </body>
