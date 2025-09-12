@@ -5,21 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>لوحة المشرف</title>
   <link rel="stylesheet" href="css/style.css">
-  <script src="js/lang.js" defer></script>
-  <script src="js/app.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
-<body onload="showSection('delegates'); loadDelegates(); loadReports(); loadNotifications();">
+<body onload="initSupervisor()">
 
-  <header>
-    <h1 data-translate="supervisor_title">📊 لوحة المشرف / مدير المبيعات</h1>
-    <nav class="bottom-nav">
-      <button id="btn-delegates" onclick="showSection('delegates')" data-translate="delegates_tab">المندوبين</button>
-      <button id="btn-map" onclick="showSection('map')" data-translate="map_tab">الخريطة</button>
-      <button id="btn-reports" onclick="showSection('reports')" data-translate="reports_tab">التقارير</button>
-      <button id="btn-notifications" onclick="showSection('notifications')" data-translate="notifications_tab">الإشعارات</button>
-    </nav>
+  <!-- الهيدر -->
+  <header class="app-header">
+    <h1 id="supervisor-info">👤 المشرف: أحمد محمد | 🕒 --:--</h1>
   </header>
+
+  <!-- شريط التنقل -->
+  <nav class="bottom-nav">
+    <button id="btn-delegates" onclick="showSection('delegates')" data-translate="delegates_tab">المندوبين</button>
+    <button id="btn-map" onclick="showSection('map')" data-translate="map_tab">الخريطة</button>
+    <button id="btn-reports" onclick="showSection('reports')" data-translate="reports_tab">التقارير</button>
+    <button id="btn-notifications" onclick="showSection('notifications')" data-translate="notifications_tab">الإشعارات</button>
+  </nav>
 
   <!-- قسم المندوبين -->
   <section id="delegates" class="screen">
@@ -51,95 +52,153 @@
   </section>
 
   <!-- زر اللغة -->
-  <button class="lang-btn" onclick="toggleLanguage()" data-translate="toggle_lang">عربي/English</button>
+  <button class="lang-btn" onclick="toggleLanguage()" data-translate="toggle_lang">عربي / English</button>
 
   <script>
+    // ================= الترجمات =================
+    const translations = {
+      ar: {
+        delegates_tab: "المندوبين",
+        map_tab: "الخريطة",
+        reports_tab: "التقارير",
+        notifications_tab: "الإشعارات",
+        delegates_title: "متابعة المندوبين",
+        map_title: "الخريطة",
+        all_delegates: "عرض الجميع",
+        reports_title: "التقارير",
+        notifications_title: "الإشعارات",
+        toggle_lang: "عربي / English"
+      },
+      en: {
+        delegates_tab: "Delegates",
+        map_tab: "Map",
+        reports_tab: "Reports",
+        notifications_tab: "Notifications",
+        delegates_title: "Delegates Tracking",
+        map_title: "Map",
+        all_delegates: "Show All",
+        reports_title: "Reports",
+        notifications_title: "Notifications",
+        toggle_lang: "Arabic / English"
+      }
+    };
+
+    function applyTranslations() {
+      const lang = document.documentElement.lang || "ar";
+      document.querySelectorAll("[data-translate]").forEach(el => {
+        const key = el.getAttribute("data-translate");
+        if (translations[lang][key]) {
+          el.innerText = translations[lang][key];
+        }
+      });
+    }
+
+    function toggleLanguage() {
+      const current = document.documentElement.lang;
+      if (current === "ar") {
+        document.documentElement.lang = "en";
+        document.documentElement.dir = "ltr";
+      } else {
+        document.documentElement.lang = "ar";
+        document.documentElement.dir = "rtl";
+      }
+      applyTranslations();
+    }
+
+    // ================= الهيدر (اسم المشرف + الساعة) =================
+    function updateTime() {
+      const now = new Date().toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Africa/Cairo" });
+      document.getElementById("supervisor-info").innerText = `👤 المشرف: أحمد محمد | 🕒 ${now}`;
+    }
+
+    // ================= إظهار الأقسام =================
     function showSection(id) {
-      document.querySelectorAll('.screen').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-      document.getElementById('btn-' + id).classList.add('active');
+      document.querySelectorAll(".screen").forEach(p => p.classList.remove("active"));
+      document.querySelectorAll(".bottom-nav button").forEach(b => b.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+      document.getElementById("btn-" + id).classList.add("active");
     }
 
+    // ================= تحميل المندوبين =================
     async function loadDelegates() {
-      try {
-        const res = await axios.get('/api/users');
-        const delegates = res.data.filter(u => u.role === 'delegate');
-        const container = document.getElementById('delegateList');
-        const select = document.getElementById('delegateSelect');
-        container.innerHTML = '';
-        select.innerHTML = '<option value="all" data-translate="all_delegates">عرض الجميع</option>';
-
-        delegates.forEach(d => {
-          const card = document.createElement('div');
-          card.className = 'card';
-          card.innerHTML = `
-            <h3>${d.user}</h3>
-            <p>📱 ${d.phone}</p>
-            <p>الحالة: <span class="status active">نشط</span></p>
-            <button onclick="showOnMap('${d.user}')">📍 عرض الموقع</button>
-          `;
-          container.appendChild(card);
-
-          const opt = document.createElement('option');
-          opt.value = d.user;
-          opt.textContent = d.user;
-          select.appendChild(opt);
-        });
-
-        applyTranslations();
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    async function loadReports() {
-      try {
-        const res = await axios.get('/api/reports');
-        const reports = res.data;
-        const container = document.getElementById('reportList');
-        container.innerHTML = '';
-        reports.forEach(r => {
-          const card = document.createElement('div');
-          card.className = 'card';
-          card.innerHTML = `
-            <h3>📝 تقرير ${r.delegate}</h3>
-            <p><b>ملاحظات:</b> ${r.notes}</p>
-            ${r.images.map(img => `<img src="${img}" style="max-width:100px;">`).join('')}
-            ${r.signature ? `<p><b>توقيع:</b><img src="${r.signature}" style="max-width:100px;"></p>` : ''}
-            <textarea placeholder="أضف ملاحظات المشرف"></textarea>
-            <button>💾 حفظ</button>
-          `;
-          container.appendChild(card);
-        });
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    function loadNotifications() {
-      const notifs = [
-        "🚨 المندوب أحمد تأخر عن المهمة 20 دقيقة",
-        "✅ المندوب سامي أكمل مهمة العميل X"
+      const delegates = [
+        { user: "delegate1", phone: "71234567" },
+        { user: "delegate2", phone: "71234568" }
       ];
-      const list = document.getElementById('notificationsList');
-      list.innerHTML = '';
+      const container = document.getElementById("delegateList");
+      const select = document.getElementById("delegateSelect");
+      container.innerHTML = "";
+      select.innerHTML = `<option value="all" data-translate="all_delegates">عرض الجميع</option>`;
+      delegates.forEach(d => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <h3>${d.user}</h3>
+          <p>📱 ${d.phone}</p>
+          <p>الحالة: <span class="status active">نشط</span></p>
+          <button onclick="showOnMap('${d.user}')">📍 عرض الموقع</button>
+        `;
+        container.appendChild(card);
+
+        const opt = document.createElement("option");
+        opt.value = d.user;
+        opt.textContent = d.user;
+        select.appendChild(opt);
+      });
+      applyTranslations();
+    }
+
+    // ================= تحميل التقارير =================
+    function loadReports() {
+      const reports = [
+        { delegate: "delegate1", notes: "تمت الزيارة بنجاح", images: [], signature: "" }
+      ];
+      const container = document.getElementById("reportList");
+      container.innerHTML = "";
+      reports.forEach(r => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <h3>📝 تقرير ${r.delegate}</h3>
+          <p><b>ملاحظات:</b> ${r.notes}</p>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // ================= تحميل الإشعارات =================
+    function loadNotifications() {
+      const notifs = ["🚨 المندوب أحمد تأخر 20 دقيقة", "✅ المندوب سامي أكمل المهمة"];
+      const list = document.getElementById("notificationsList");
+      list.innerHTML = "";
       notifs.forEach(n => {
-        const li = document.createElement('li');
+        const li = document.createElement("li");
         li.textContent = n;
         list.appendChild(li);
       });
     }
 
+    // ================= الخريطة =================
     function showOnMap(user) {
-      document.getElementById('mapView').innerHTML = `📍 موقع ${user}`;
-      showSection('map');
+      document.getElementById("mapView").innerHTML = `📍 موقع ${user}`;
+      showSection("map");
     }
 
     function filterMap() {
-      const sel = document.getElementById('delegateSelect').value;
-      document.getElementById('mapView').innerHTML =
-        sel === 'all' ? "🗺️ عرض كل المندوبين" : `📍 عرض ${sel}`;
+      const sel = document.getElementById("delegateSelect").value;
+      document.getElementById("mapView").innerHTML =
+        sel === "all" ? "🗺️ عرض كل المندوبين" : `📍 عرض ${sel}`;
+    }
+
+    // ================= تهيئة الصفحة =================
+    function initSupervisor() {
+      showSection("delegates");
+      loadDelegates();
+      loadReports();
+      loadNotifications();
+      updateTime();
+      setInterval(updateTime, 60000); // تحديث كل دقيقة
+      applyTranslations();
     }
   </script>
 </body>
