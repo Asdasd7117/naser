@@ -1,87 +1,59 @@
+// serve.js
 const express = require('express');
-const bodyParser = require('body-parser');
-const fs = require('fs');
 const path = require('path');
-const cors = require('cors');
-const multer = require('multer');
-const { v4: uuidv4 } = require('uuid');
-
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 
-// Middleware
-app.use(cors());
-app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'public')));
+// ==== إعداد الجسم JSON + FormData ====
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// مجلدات البيانات والرفع
-const DATA_DIR = path.join(__dirname,'data');
-const UPLOADS_DIR = path.join(__dirname,'uploads');
-if(!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
-if(!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR);
+// ==== استضافة ملفات المشروع الثابتة ====
+app.use('/css', express.static(path.join(__dirname, 'css')));
+app.use('/js', express.static(path.join(__dirname, 'js')));
+app.use('/images', express.static(path.join(__dirname, 'images')));
 
-// Multer للملفات
-const storage = multer.diskStorage({
-  destination: (req,file,cb)=>cb(null, UPLOADS_DIR),
-  filename: (req,file,cb)=>cb(null, Date.now()+'-'+file.originalname)
-});
-const upload = multer({ storage });
+// ==== صفحات HTML ====
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'login.html')));
+app.get('/delegate.html', (req, res) => res.sendFile(path.join(__dirname, 'delegate.html')));
+app.get('/supervisor.html', (req, res) => res.sendFile(path.join(__dirname, 'supervisor.html')));
+app.get('/manager.html', (req, res) => res.sendFile(path.join(__dirname, 'manager.html')));
 
-// ملفات البيانات
-const USERS_FILE = path.join(DATA_DIR,'users.json');
-const TASKS_FILE = path.join(DATA_DIR,'tasks.json');
-const REPORTS_FILE = path.join(DATA_DIR,'reports.json');
+// ==== API وهمي لتجربة login قبل Supabase ====
+const users = [
+  { user: "delegate1", password: "12345", role: "delegate", email: "delegate1@example.com", phone: "71234567" },
+  { user: "supervisor1", password: "12345", role: "supervisor", email: "supervisor1@example.com", phone: "712345678" },
+  { user: "manager1", password: "12345", role: "manager", email: "manager1@example.com", phone: "7123456789" }
+];
 
-function readJSON(file){ 
-  if(!fs.existsSync(file)) fs.writeFileSync(file,JSON.stringify([])); 
-  return JSON.parse(fs.readFileSync(file)); 
-}
-function writeJSON(file,data){ 
-  fs.writeFileSync(file,JSON.stringify(data,null,2)); 
-}
-
-// تسجيل الدخول المرن (اسم مستخدم أو بريد أو هاتف)
-app.post('/api/login',(req,res)=>{
-  const { user, password, role } = req.body;
-  const users = readJSON(USERS_FILE);
-
-  const found = users.find(u =>
-    (u.user === user || u.email === user || String(u.phone) === String(user)) &&
-    u.password === password &&
-    u.role === role
-  );
-
-  if(found) res.json({ success: true, role, user: found.user });
-  else res.json({ success: false, message: "بيانات الدخول خاطئة" });
+app.post('/api/login', (req, res) => {
+  const { user, password } = req.body;
+  const u = users.find(u => (u.email === user || u.phone === user) && u.password === password);
+  if(u) res.json({ success: true, role: u.role });
+  else res.json({ success: false, message: 'بيانات الدخول غير صحيحة!' });
 });
 
-// المهام
-app.get('/api/tasks',(req,res)=>res.json(readJSON(TASKS_FILE)));
-app.post('/api/tasks',(req,res)=>{
-  let tasks = readJSON(TASKS_FILE);
-  const task = req.body;
-  if(!task.id) task.id=uuidv4();
-  const idx = tasks.findIndex(t=>t.id===task.id);
-  if(idx!==-1) tasks[idx]=task; else tasks.push(task);
-  writeJSON(TASKS_FILE,tasks);
-  res.json({success:true});
+// ==== API وهمي للمهام والتقارير (Delegate / Admin / Supervisor) ====
+let tasks = [
+  { id:1, delegate:"delegate1", client:"شركة أبجد", address:"القاهرة", time:"10:00", status:"قيد التنفيذ" },
+  { id:2, delegate:"delegate1", client:"مؤسسة ألف", address:"الإسكندرية", time:"11:00", status:"مؤجلة" }
+];
+
+app.get('/api/tasks', (req, res) => res.json(tasks));
+app.post('/api/tasks', (req, res) => {
+  const { id, status } = req.body;
+  const task = tasks.find(t => t.id === id);
+  if(task) task.status = status;
+  res.json({ success: true });
 });
 
-// التقارير
-app.get('/api/reports',(req,res)=>res.json(readJSON(REPORTS_FILE)));
-app.post('/api/reports',upload.fields([{name:'images'},{name:'signature'}]),(req,res)=>{
-  const {notes,delegate}=req.body;
-  const images=req.files['images']?req.files['images'].map(f=>'/uploads/'+f.filename):[];
-  const signature=req.files['signature']?'/uploads/'+req.files['signature'][0].filename:'';
-  const reports=readJSON(REPORTS_FILE);
-  const report={id:uuidv4(),notes,delegate,images,signature,createdAt:new Date().toISOString()};
-  reports.push(report);
-  writeJSON(REPORTS_FILE,reports);
-  res.json({success:true,report});
+let reports = [];
+app.get('/api/reports', (req, res) => res.json(reports));
+app.post('/api/reports', (req, res) => {
+  const { delegate, notes } = req.body;
+  reports.push({ delegate, notes, createdAt: new Date() });
+  res.json({ success: true });
 });
 
-// المستخدمين
-app.get('/api/users',(req,res)=>res.json(readJSON(USERS_FILE)));
-
-// تشغيل السيرفر
-app.listen(PORT,()=>console.log(`Server running on port ${PORT}`));
+// ==== تشغيل السيرفر ====
+app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
