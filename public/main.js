@@ -1,5 +1,5 @@
 // إعداد Supabase (استبدل بـ Anon Key الخاص بك)
-const supabase = Supabase.createClient('https://olwguiyogqwzraikq.supabase.co', 'your-anon-key');
+const supabase = Supabase.createClient('https://olwguiyogqwzraikq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9sd2d1aXlvZ3F3enJhaWtxdW5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NjY2MTAsImV4cCI6MjA3MzM0MjYxMH0.m_nFTy7JLgoKfgjzf9X7c9xyfv_YbBZ9vaEwJcUTwD4');
 
 // إعداد i18next للترجمة
 i18next.init({
