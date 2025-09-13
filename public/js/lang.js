@@ -1,4 +1,4 @@
-// lang.js – إدارة اللغة والتبديل بين العربية والإنجليزية
+// js/lang.js – إدارة اللغة والتبديل بين العربية والإنجليزية
 
 const translations = {
   ar: {
@@ -16,11 +16,16 @@ const translations = {
     // المندوب
     delegate_name: "اسم المندوب",
     tasks_title: "المهام اليومية",
+    tasks_tab: "المهام", // زر شريط التنقل
     report_title: "رفع التقرير",
+    report_tab: "التقرير", // زر شريط التنقل
     report_notes: "أدخل الملاحظات",
     send_report: "إرسال التقرير",
     map_title: "الخريطة",
+    map_tab: "الخريطة", // زر شريط التنقل
+    update_location: "تحديث الموقع", // زر تحديث الموقع
     notifications_title: "الإشعارات",
+    notifications_tab: "الإشعارات", // زر شريط التنقل
     toggle_lang: "عربي / English",
 
     // المشرف
@@ -31,13 +36,18 @@ const translations = {
 
     // المدير
     manager_reports_title: "التقارير والتحليلات",
+    reports_tab: "التقارير", // زر شريط التنقل
     manager_attendance_title: "الحضور والانصراف",
+    attendance_tab: "الحضور", // زر شريط التنقل
     manager_admin_title: "لوحة التحكم",
-    add_task: "إضافة مهمة",
-    update_delegate: "تحديث بيانات المندوب",
-    send_broadcast: "إرسال الإشعار"
+    admin_tab: "لوحة التحكم", // زر شريط التنقل
+    add_task: "إضافة / تعديل المهام",
+    add_task_btn: "إضافة مهمة",
+    edit_delegate: "تعديل بيانات المندوبين",
+    update_delegate_btn: "تحديث بيانات المندوب",
+    broadcast: "إرسال إشعارات جماعية",
+    send_broadcast_btn: "إرسال الإشعار"
   },
-
   en: {
     // Login
     login_title: "Login",
@@ -53,11 +63,16 @@ const translations = {
     // Delegate
     delegate_name: "Delegate Name",
     tasks_title: "Daily Tasks",
+    tasks_tab: "Tasks", // زر شريط التنقل
     report_title: "Submit Report",
+    report_tab: "Report", // زر شريط التنقل
     report_notes: "Write your notes",
     send_report: "Send Report",
     map_title: "Map",
+    map_tab: "Map", // زر شريط التنقل
+    update_location: "Update Location", // زر تحديث الموقع
     notifications_title: "Notifications",
+    notifications_tab: "Notifications", // زر شريط التنقل
     toggle_lang: "Arabic / English",
 
     // Supervisor
@@ -68,11 +83,17 @@ const translations = {
 
     // Manager
     manager_reports_title: "Reports & Analytics",
+    reports_tab: "Reports", // زر شريط التنقل
     manager_attendance_title: "Attendance",
+    attendance_tab: "Attendance", // زر شريط التنقل
     manager_admin_title: "Admin Panel",
-    add_task: "Add Task",
-    update_delegate: "Update Delegate Info",
-    send_broadcast: "Send Broadcast"
+    admin_tab: "Admin Panel", // زر شريط التنقل
+    add_task: "Add / Edit Tasks",
+    add_task_btn: "Add Task",
+    edit_delegate: "Edit Delegate Info",
+    update_delegate_btn: "Update Delegate",
+    broadcast: "Send Broadcast",
+    send_broadcast_btn: "Send Broadcast"
   }
 };
 
