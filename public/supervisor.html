@@ -1,1 +1,95 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة المشرف</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/i18next@23.15.1/dist/umd/i18next.min.js"></script>
+</head>
+<body>
+  <div class="language-switcher">
+    <button onclick="changeLanguage('ar')">العربية</button>
+    <button onclick="changeLanguage('en')">English</button>
+  </div>
+  <div class="supervisor-dashboard">
+    <h2 data-i18n="delegates">المندوبون</h2>
+    <div id="delegates-list"></div>
+    <div id="map" style="height: 400px; margin: 20px 0;"></div>
+    <div class="reports">
+      <h3 data-i18n="reports">التقارير</h3>
+      <div id="reports-list"></div>
+    </div>
+    <button onclick="logout()" data-i18n="logout">تسجيل الخروج</button>
+  </div>
+  <script src="main.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async function() {
+      const user = supabase.auth.getUser();
+      if (!user.data.user) {
+        window.location.href = 'index.html';
+        return;
+      }
 
+      // تحميل المندوبين
+      const { data: delegates } = await supabase.from('users').select('*').eq('role', 'delegate');
+      const delegatesList = document.getElementById('delegates-list');
+      delegates.forEach(delegate => {
+        const delegateCard = document.createElement('div');
+        delegateCard.className = 'delegate-card';
+        delegateCard.innerHTML = `
+          <p>${delegate.name}</p>
+          <button onclick="viewDelegateOnMap(${delegate.latitude || 51.505}, ${delegate.longitude || -0.09}, '${delegate.name}')">${i18next.t('view_on_map')}</button>
+        `;
+        delegatesList.appendChild(delegateCard);
+      });
+
+      // تحميل التقارير
+      const { data: reports } = await supabase.from('reports').select('*');
+      const reportsList = document.getElementById('reports-list');
+      reports.forEach(report => {
+        const reportCard = document.createElement('div');
+        reportCard.className = 'report-card';
+        reportCard.innerHTML = `
+          <p>${i18next.t('report_notes')}: ${report.notes}</p>
+          ${report.image_url ? `<img src="${supabase.storage.from('reports').getPublicUrl(report.image_url).data.publicUrl}" width="100">` : ''}
+          <p>${i18next.t('client_signature')}: ${report.signature}</p>
+          <input type="text" placeholder="${i18next.t('add_comment')}">
+        `;
+        reportsList.appendChild(reportCard);
+      });
+
+      // إعداد الخريطة
+      const map = L.map('map').setView([51.505, -0.09], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+      }).addTo(map);
+
+      delegates.forEach(delegate => {
+        if (delegate.latitude && delegate.longitude) {
+          L.marker([delegate.latitude, delegate.longitude]).addTo(map).bindPopup(delegate.name);
+        }
+      });
+
+      // تحديث مواقع المندوبين في الوقت الفعلي
+      supabase
+        .channel('users')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'users', filter: 'role=eq.delegate' }, payload => {
+          const marker = L.marker([payload.new.latitude, payload.new.longitude]).addTo(map).bindPopup(payload.new.name);
+        })
+        .subscribe();
+    });
+
+    function viewDelegateOnMap(lat, lng, name) {
+      const map = L.map('map').setView([lat, lng], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+      }).addTo(map);
+      L.marker([lat, lng]).addTo(map).bindPopup(name).openPopup();
+    }
+  </script>
+</body>
+</html>
