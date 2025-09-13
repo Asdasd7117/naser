@@ -1,11 +1,26 @@
 {
   "name": "field-force-app",
   "version": "1.0.0",
-  "description": "Field Force App as a Static Site",
+  "description": "Field Force App - Static Frontend with Supabase Integration",
+  "main": "public/index.html",
   "scripts": {
-    "start": "npx serve public"
+    "start": "npx serve public",          // لتشغيل الموقع محلياً
+    "build": "echo 'No build step required for static site'", 
+    "deploy": "echo 'Upload public folder to Render or your hosting provider'"
   },
+  "keywords": [
+    "field-force",
+    "supabase",
+    "dashboard",
+    "delegate",
+    "manager",
+    "supervisor"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
   "dependencies": {
-    "serve": "^14.2.3"
+    "serve": "^14.2.3",
+    "@supabase/supabase-js": "^2.0.0",
+    "chart.js": "^4.3.0"
   }
 }
