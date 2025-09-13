@@ -1,1 +1,127 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة المندوب</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/i18next@23.15.1/dist/umd/i18next.min.js"></script>
+</head>
+<body>
+  <div class="language-switcher">
+    <button onclick="changeLanguage('ar')">العربية</button>
+    <button onclick="changeLanguage('en')">English</button>
+  </div>
+  <div class="delegate-dashboard">
+    <h2 data-i18n="tasks">المهام</h2>
+    <div id="tasks-list"></div>
+    <div id="map" style="height: 400px; margin: 20px 0;"></div>
+    <div class="notifications">
+      <h3 data-i18n="notifications">الإشعارات</h3>
+      <div id="notifications-list"></div>
+    </div>
+    <button onclick="logout()" data-i18n="logout">تسجيل الخروج</button>
+  </div>
+  <script src="main.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async function() {
+      const user = supabase.auth.getUser();
+      if (!user.data.user) {
+        window.location.href = 'index.html';
+        return;
+      }
 
+      // تحميل المهام
+      const { data: tasks } = await supabase.from('tasks').select('*').eq('delegate_id', user.data.user.id);
+      const tasksList = document.getElementById('tasks-list');
+      tasks.forEach(task => {
+        const taskCard = document.createElement('div');
+        taskCard.className = 'task-card';
+        taskCard.innerHTML = `
+          <p>${i18next.t('client_name')}: ${task.client_name}</p>
+          <p>${i18next.t('address')}: ${task.address}</p>
+          <p>${i18next.t('visit_time')}: ${new Date(task.visit_time).toLocaleString()}</p>
+          <p>${i18next.t('status')}: ${i18next.t(task.status)}</p>
+          <select onchange="updateTaskStatus(${task.id}, this.value)">
+            <option value="in_progress" ${task.status === 'in_progress' ? 'selected' : ''}>${i18next.t('in_progress')}</option>
+            <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>${i18next.t('completed')}</option>
+            <option value="postponed" ${task.status === 'postponed' ? 'selected' : ''}>${i18next.t('postponed')}</option>
+          </select>
+          <textarea placeholder="${i18next.t('report_notes')}"></textarea>
+          <input type="file" accept="image/*" data-i18n="[placeholder]upload_images">
+          <input type="text" placeholder="${i18next.t('client_signature')}">
+          <button onclick="submitReport(${task.id}, this.parentElement)">${i18next.t('submit_report')}</button>
+        `;
+        tasksList.appendChild(taskCard);
+      });
+
+      // تحميل الإشعارات
+      const { data: notifications } = await supabase.from('notifications').select('*').eq('user_id', user.data.user.id);
+      const notificationsList = document.getElementById('notifications-list');
+      notifications.forEach(notif => {
+        const p = document.createElement('p');
+        p.textContent = notif.message;
+        notificationsList.appendChild(p);
+      });
+
+      // إعداد الخريطة
+      const map = L.map('map').setView([51.505, -0.09], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+      }).addTo(map);
+
+      // عرض الموقع الحالي
+      navigator.geolocation.getCurrentPosition(pos => {
+        const { latitude, longitude } = pos.coords;
+        L.marker([latitude, longitude]).addTo(map).bindPopup(i18next.t('your_location') || 'موقعك الحالي').openPopup();
+        map.setView([latitude, longitude], 13);
+        supabase.from('users').update({ latitude, longitude }).eq('id', user.data.user.id).then();
+      });
+
+      // تحديث الإشعارات في الوقت الفعلي
+      supabase
+        .channel('notifications')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.data.user.id}` }, payload => {
+          const p = document.createElement('p');
+          p.textContent = payload.new.message;
+          notificationsList.prepend(p);
+        })
+        .subscribe();
+    });
+
+    async function updateTaskStatus(taskId, status) {
+      await supabase.from('tasks').update({ status }).eq('id', taskId);
+      updateContent();
+    }
+
+    async function submitReport(taskId, form) {
+      const notes = form.querySelector('textarea').value;
+      const fileInput = form.querySelector('input[type="file"]');
+      const signature = form.querySelector('input[type="text"]').value;
+
+      let imageUrl = null;
+      if (fileInput.files[0]) {
+        const fileName = `images/${Date.now()}.jpg`;
+        const { data, error } = await supabase.storage.from('reports').upload(fileName, fileInput.files[0]);
+        if (error) {
+          alert('خطأ في رفع الصورة');
+          return;
+        }
+        imageUrl = data.path;
+      }
+
+      await supabase.from('reports').insert({
+        task_id: taskId,
+        delegate_id: supabase.auth.getUser().data.user.id,
+        notes,
+        image_url: imageUrl,
+        signature
+      });
+      alert(i18next.t('report_submitted'));
+    }
+  </script>
+</body>
+</html>
