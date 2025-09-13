@@ -1,6 +1,6 @@
 // ====== إعداد Supabase ======
 const SUPABASE_URL = "https://olwguiyogqwzraikq.supabase.co";
-const SUPABASE_KEY = "PUBLIC_ANON_KEY_HERE"; // ضع مفتاح Supabase العام هنا
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5c3dxZGRjd3Frd2RsZXB2ZGJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4MDA2MjIsImV4cCI6MjA3MzM3NjYyMn0.WbBlOesDGGhFLNp_WI0JFpdvuDgD-A8U4CDIlt8Wvhs"; // ضع مفتاح Supabase العام هنا
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ====== تبديل اللغة ======
