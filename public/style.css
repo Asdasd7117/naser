@@ -1,84 +1,158 @@
-body {
-  font-family: Arial, sans-serif;
-  background-color: #f0f4f8;
+/* ====== إعدادات عامة ====== */
+* {
+  box-sizing: border-box;
   margin: 0;
-  padding: 20px;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-.language-switcher {
-  position: fixed;
-  top: 10px;
-  right: 10px;
+body {
+  background-color: #f5f8fa;
+  color: #333;
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
-.language-switcher button {
-  margin: 0 5px;
-  padding: 5px 10px;
-  background-color: #28a745;
-  color: white;
+header {
+  background-color: #2a7cc7;
+  color: #fff;
+  padding: 1rem;
+  text-align: center;
+}
+
+header select {
+  margin-top: 0.5rem;
+  padding: 0.3rem 0.5rem;
+  border-radius: 5px;
   border: none;
-  border-radius: 4px;
-  cursor: pointer;
 }
 
-.language-switcher button:hover {
-  background-color: #218838;
+main {
+  flex: 1;
+  padding: 1rem;
 }
 
-.login-container, .delegate-dashboard, .supervisor-dashboard, .manager-dashboard {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  max-width: 800px;
-  margin: 0 auto;
+/* ====== النماذج ====== */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  max-width: 400px;
+  margin: 2rem auto;
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
-.task-card, .delegate-card, .report-card {
-  border: 1px solid #ddd;
-  padding: 15px;
-  margin: 10px 0;
-  border-radius: 4px;
-  background-color: #f9f9f9;
+input, select, textarea {
+  padding: 0.6rem;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
 }
 
 button {
-  background-color: #007bff;
-  color: white;
+  padding: 0.8rem;
   border: none;
-  padding: 10px 20px;
-  border-radius: 4px;
+  border-radius: 7px;
+  background-color: #2a7cc7;
+  color: #fff;
+  font-size: 1rem;
   cursor: pointer;
-  margin: 5px;
+  transition: 0.3s;
 }
 
 button:hover {
-  background-color: #0056b3;
+  background-color: #1b5e99;
 }
 
-input, textarea, select {
+a {
+  text-decoration: none;
+  color: #2a7cc7;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+/* ====== البطاقات ====== */
+.card {
+  background-color: #fff;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+/* ====== الخريطة ====== */
+.map {
   width: 100%;
-  padding: 8px;
-  margin: 5px 0;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  box-sizing: border-box;
+  height: 300px;
+  background-color: #e1e5ea;
+  border-radius: 10px;
+  margin-bottom: 1rem;
 }
 
-.error {
-  color: red;
-  font-size: 14px;
+/* ====== التنقل السفلي ====== */
+.bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  background-color: #2a7cc7;
+  padding: 0.5rem 0;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
 }
 
-.map-container {
-  margin: 20px 0;
+.bottom-nav button {
+  flex: 1;
+  background: none;
+  color: #fff;
+  font-size: 1rem;
 }
 
-img {
+/* ====== الإشعارات ====== */
+.notification-list {
+  list-style: none;
+}
+
+.notification-list li {
+  padding: 0.7rem;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.notification-list li.unread {
+  background-color: #ffe3e3;
+}
+
+/* ====== توقيع العميل ====== */
+canvas.signature {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  width: 100%;
+  height: 150px;
+  margin-bottom: 1rem;
+}
+
+/* ====== الصور ====== */
+.report-img {
   max-width: 100%;
-  height: auto;
+  border-radius: 10px;
+  margin-bottom: 0.5rem;
 }
 
+/* ====== بطاقات تحليل الأداء ====== */
+#tasksChart {
+  width: 100%;
+  max-width: 700px;
+  margin: 1rem auto;
+}
+
+/* ====== اتجاه النص RTL / LTR ====== */
 [dir="rtl"] {
   text-align: right;
 }
