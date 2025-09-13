@@ -1,126 +1,159 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>لوحة المندوب</title>
+  <title data-translate="delegate"></title>
   <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/i18next@23.15.1/dist/umd/i18next.min.js"></script>
+  <script src="lang.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    header { display: flex; justify-content: space-between; padding: 10px; background: #2a7cc7; color: white; }
+    .container { padding: 15px; }
+    .card {
+      background: #fff; border-radius: 10px; padding: 15px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 15px;
+    }
+    .task-status span { margin-right: 10px; font-weight: bold; }
+    .status-in-progress { color: orange; }
+    .status-completed { color: green; }
+    .status-delayed { color: red; }
+    .scroll-view { max-height: 300px; overflow-y: auto; }
+    textarea { width: 100%; padding: 10px; margin: 10px 0; }
+    .upload-preview img { width: 70px; margin: 5px; border-radius: 5px; }
+    #signature-pad { border: 2px dashed #aaa; width: 100%; height: 150px; }
+    button {
+      background: #2a7cc7; color: white; border: none; padding: 10px 15px;
+      border-radius: 6px; cursor: pointer; margin-top: 10px;
+    }
+    button.green { background: green; }
+    #map { width: 100%; height: 300px; background: #eaeaea; margin: 10px 0; }
+    .notification { padding: 10px; border-bottom: 1px solid #ccc; }
+    .notification.unread { background: #ffe5e5; }
+    nav { position: fixed; bottom: 0; left: 0; width: 100%;
+      display: flex; justify-content: space-around; background: #2a7cc7; color: white; padding: 10px 0; }
+    nav a { color: white; text-decoration: none; text-align: center; }
+    nav a i { display: block; font-size: 20px; }
+  </style>
 </head>
-<body>
-  <div class="language-switcher">
-    <button onclick="changeLanguage('ar')">العربية</button>
-    <button onclick="changeLanguage('en')">English</button>
-  </div>
-  <div class="delegate-dashboard">
-    <h2 data-i18n="tasks">المهام</h2>
-    <div id="tasks-list"></div>
-    <div id="map" style="height: 400px; margin: 20px 0;"></div>
-    <div class="notifications">
-      <h3 data-i18n="notifications">الإشعارات</h3>
-      <div id="notifications-list"></div>
+<body onload="setLanguage(currentLang)">
+
+  <!-- ====== الهيدر ====== -->
+  <header>
+    <span data-translate="delegate"></span>
+    <div>
+      <button onclick="setLanguage('ar')" data-translate="switchArabic"></button>
+      <button onclick="setLanguage('en')" data-translate="switchEnglish"></button>
     </div>
-    <button onclick="logout()" data-i18n="logout">تسجيل الخروج</button>
+  </header>
+
+  <div class="container">
+    <!-- ====== لوحة المهام اليومية ====== -->
+    <h2 data-translate="dailyTasks"></h2>
+    <div class="scroll-view">
+      <div class="card">
+        <p><i class="fa-solid fa-user"></i> <b data-translate="clientName"></b>: شركة أبجد</p>
+        <p><i class="fa-solid fa-location-dot"></i> <b data-translate="address"></b>: الرياض، شارع الملك فهد</p>
+        <p><i class="fa-solid fa-clock"></i> <b data-translate="visitTime"></b>: 10:00 صباحًا</p>
+        <p class="task-status">
+          <i class="fa-solid fa-spinner status-in-progress"></i>
+          <span data-translate="status"></span>: <span class="status-in-progress">قيد التنفيذ</span>
+        </p>
+        <button data-translate="updateStatus"></button>
+      </div>
+    </div>
+
+    <!-- ====== رفع التقرير ====== -->
+    <h2 data-translate="report"></h2>
+    <form>
+      <label data-translate="notes"></label>
+      <textarea rows="4"></textarea>
+
+      <label><i class="fa-solid fa-camera"></i> <span data-translate="uploadImage"></span></label>
+      <input type="file" multiple onchange="previewImages(event)">
+      <div class="upload-preview" id="preview"></div>
+
+      <label><i class="fa-solid fa-pen"></i> <span data-translate="clientSignature"></span></label>
+      <canvas id="signature-pad"></canvas>
+      <button type="button" onclick="clearSignature()">🧹 مسح التوقيع</button>
+
+      <button class="green" type="submit" data-translate="sendReport"></button>
+    </form>
+
+    <!-- ====== الخريطة ====== -->
+    <h2 data-translate="map"></h2>
+    <div id="map">[خريطة جوجل]</div>
+    <button onclick="refreshLocation()">🔄 تحديث الموقع</button>
+
+    <!-- ====== الإشعارات ====== -->
+    <h2 data-translate="notifications"></h2>
+    <div class="scroll-view">
+      <div class="notification unread">
+        <i class="fa-solid fa-bell"></i> تذكير: مهمة مع العميل أبجد الساعة 10:00 صباحًا
+      </div>
+      <div class="notification">
+        <i class="fa-solid fa-clock"></i> تأخرت عن مهمة العميل بـ 15 دقيقة
+      </div>
+    </div>
   </div>
-  <script src="main.js"></script>
+
+  <!-- ====== شريط التنقل ====== -->
+  <nav>
+    <a href="#tasks"><i class="fa-solid fa-list-check"></i><span data-translate="dailyTasks"></span></a>
+    <a href="#report"><i class="fa-solid fa-file-signature"></i><span data-translate="report"></span></a>
+    <a href="#map"><i class="fa-solid fa-map-location-dot"></i><span data-translate="map"></span></a>
+    <a href="#notifications"><i class="fa-solid fa-bell"></i><span data-translate="notifications"></span></a>
+  </nav>
+
   <script>
-    document.addEventListener('DOMContentLoaded', async function() {
-      const user = supabase.auth.getUser();
-      if (!user.data.user) {
-        window.location.href = 'index.html';
-        return;
+    // ===== معاينة الصور =====
+    function previewImages(event) {
+      const preview = document.getElementById("preview");
+      preview.innerHTML = "";
+      for (let file of event.target.files) {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const img = document.createElement("img");
+          img.src = e.target.result;
+          preview.appendChild(img);
+        };
+        reader.readAsDataURL(file);
       }
-
-      // تحميل المهام
-      const { data: tasks } = await supabase.from('tasks').select('*').eq('delegate_id', user.data.user.id);
-      const tasksList = document.getElementById('tasks-list');
-      tasks.forEach(task => {
-        const taskCard = document.createElement('div');
-        taskCard.className = 'task-card';
-        taskCard.innerHTML = `
-          <p>${i18next.t('client_name')}: ${task.client_name}</p>
-          <p>${i18next.t('address')}: ${task.address}</p>
-          <p>${i18next.t('visit_time')}: ${new Date(task.visit_time).toLocaleString()}</p>
-          <p>${i18next.t('status')}: ${i18next.t(task.status)}</p>
-          <select onchange="updateTaskStatus(${task.id}, this.value)">
-            <option value="in_progress" ${task.status === 'in_progress' ? 'selected' : ''}>${i18next.t('in_progress')}</option>
-            <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>${i18next.t('completed')}</option>
-            <option value="postponed" ${task.status === 'postponed' ? 'selected' : ''}>${i18next.t('postponed')}</option>
-          </select>
-          <textarea placeholder="${i18next.t('report_notes')}"></textarea>
-          <input type="file" accept="image/*" data-i18n="[placeholder]upload_images">
-          <input type="text" placeholder="${i18next.t('client_signature')}">
-          <button onclick="submitReport(${task.id}, this.parentElement)">${i18next.t('submit_report')}</button>
-        `;
-        tasksList.appendChild(taskCard);
-      });
-
-      // تحميل الإشعارات
-      const { data: notifications } = await supabase.from('notifications').select('*').eq('user_id', user.data.user.id);
-      const notificationsList = document.getElementById('notifications-list');
-      notifications.forEach(notif => {
-        const p = document.createElement('p');
-        p.textContent = notif.message;
-        notificationsList.appendChild(p);
-      });
-
-      // إعداد الخريطة
-      const map = L.map('map').setView([51.505, -0.09], 13);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap'
-      }).addTo(map);
-
-      // عرض الموقع الحالي
-      navigator.geolocation.getCurrentPosition(pos => {
-        const { latitude, longitude } = pos.coords;
-        L.marker([latitude, longitude]).addTo(map).bindPopup(i18next.t('your_location') || 'موقعك الحالي').openPopup();
-        map.setView([latitude, longitude], 13);
-        supabase.from('users').update({ latitude, longitude }).eq('id', user.data.user.id).then();
-      });
-
-      // تحديث الإشعارات في الوقت الفعلي
-      supabase
-        .channel('notifications')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.data.user.id}` }, payload => {
-          const p = document.createElement('p');
-          p.textContent = payload.new.message;
-          notificationsList.prepend(p);
-        })
-        .subscribe();
-    });
-
-    async function updateTaskStatus(taskId, status) {
-      await supabase.from('tasks').update({ status }).eq('id', taskId);
-      updateContent();
     }
 
-    async function submitReport(taskId, form) {
-      const notes = form.querySelector('textarea').value;
-      const fileInput = form.querySelector('input[type="file"]');
-      const signature = form.querySelector('input[type="text"]').value;
+    // ===== التوقيع =====
+    const canvas = document.getElementById("signature-pad");
+    const ctx = canvas.getContext("2d");
+    let drawing = false;
 
-      let imageUrl = null;
-      if (fileInput.files[0]) {
-        const fileName = `images/${Date.now()}.jpg`;
-        const { data, error } = await supabase.storage.from('reports').upload(fileName, fileInput.files[0]);
-        if (error) {
-          alert('خطأ في رفع الصورة');
-          return;
-        }
-        imageUrl = data.path;
+    canvas.addEventListener("mousedown", () => drawing = true);
+    canvas.addEventListener("mouseup", () => drawing = false);
+    canvas.addEventListener("mousemove", draw);
+
+    function draw(e) {
+      if (!drawing) return;
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      ctx.strokeStyle = "#000";
+      ctx.lineTo(e.offsetX, e.offsetY);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(e.offsetX, e.offsetY);
+    }
+
+    function clearSignature() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // ===== الموقع (Google Maps API أو HTML5 Geolocation) =====
+    function refreshLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+          alert("موقعك الحالي: " + pos.coords.latitude + ", " + pos.coords.longitude);
+        });
+      } else {
+        alert("الموقع غير مدعوم");
       }
-
-      await supabase.from('reports').insert({
-        task_id: taskId,
-        delegate_id: supabase.auth.getUser().data.user.id,
-        notes,
-        image_url: imageUrl,
-        signature
-      });
-      alert(i18next.t('report_submitted'));
     }
   </script>
 </body>
