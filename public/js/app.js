@@ -1,494 +1,260 @@
-// js/app.js
+// =======================
+// إعداد Supabase
+// =======================
+const SUPABASE_URL = "https://olwguiyogqwzraikquni.supabase.co";
+const SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY"; // ضع هنا مفتاح ANON الخاص بك
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ====== تسجيل الدخول ======
-async function login() {
-  const user = document.getElementById('login-user')?.value;
-  const password = document.getElementById('login-pass')?.value;
-  const role = document.getElementById('role')?.value;
-
-  if (!user || !password || !role) return; // التحقق من وجود العناصر
-
-  try {
-    const res = await fetch('/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user, password, role })
-    });
-    const data = await res.json();
-
-    if (data.success) {
-      alert(data.message || translations[document.documentElement.lang || 'ar'].login_success || 'تم تسجيل الدخول بنجاح!');
-      if (role === 'delegate') window.location = 'delegate.html';
-      else if (role === 'supervisor') window.location = 'supervisor.html';
-      else window.location = 'manager.html';
-    } else {
-      alert(data.message || translations[document.documentElement.lang || 'ar'].login_failed || 'فشل تسجيل الدخول');
-    }
-  } catch (err) {
-    console.error(err);
-    alert(translations[document.documentElement.lang || 'ar'].login_error || 'حدث خطأ أثناء تسجيل الدخول');
+// =======================
+// ترجمة واجهة المستخدم
+// =======================
+const translations = {
+  en: {
+    login_title:"Login",
+    login_user:"Email / Phone",
+    login_pass:"Password",
+    login_button:"Login",
+    forgot_pass:"Forgot Password?",
+    tasks_title:"Daily Tasks",
+    report_title:"Submit Report",
+    report_notes:"Write your notes",
+    send_report:"Send Report",
+    map_title:"Map",
+    update_location:"Update Location",
+    notifications_title:"Notifications",
+    tasks_tab:"Tasks",
+    report_tab:"Report",
+    map_tab:"Map",
+    notifications_tab:"Notifications",
+    toggle_lang:"Arabic / English"
+  },
+  ar: {
+    login_title:"تسجيل الدخول",
+    login_user:"البريد الإلكتروني / رقم الهاتف",
+    login_pass:"كلمة المرور",
+    login_button:"تسجيل الدخول",
+    forgot_pass:"نسيت كلمة المرور؟",
+    tasks_title:"المهام اليومية",
+    report_title:"رفع التقرير",
+    report_notes:"اكتب ملاحظاتك",
+    send_report:"إرسال التقرير",
+    map_title:"الخريطة",
+    update_location:"تحديث الموقع",
+    notifications_title:"الإشعارات",
+    tasks_tab:"المهام",
+    report_tab:"التقرير",
+    map_tab:"الخريطة",
+    notifications_tab:"الإشعارات",
+    toggle_lang:"عربي / English"
   }
+};
+
+function applyTranslations(){
+  const lang = localStorage.getItem('lang') || 'ar';
+  document.querySelectorAll('[data-translate]').forEach(el=>{
+    const key = el.getAttribute('data-translate');
+    if(translations[lang][key]) el.innerText = translations[lang][key];
+  });
 }
 
-// ====== المندوب – تحميل المهام ======
-async function loadTasks() {
-  try {
-    const res = await fetch('/api/tasks');
-    const tasks = await res.json();
-    const container = document.getElementById('tasks-list');
-    if (!container) return;
-    container.innerHTML = '';
-    tasks.forEach((t, idx) => {
-      const div = document.createElement('div');
-      div.className = 'task-card';
-      div.innerHTML = `
-        <b data-translate="client_label">العميل:</b> ${t.client}<br>
-        <b data-translate="address_label">العنوان:</b> ${t.address}<br>
-        <b data-translate="time_label">وقت الزيارة:</b> ${t.time}<br>
-        <b data-translate="status_label">الحالة:</b>
-        <select onchange="updateTaskStatus('${t.id}', this.value)">
-          <option value="قيد التنفيذ" ${t.status === 'قيد التنفيذ' ? 'selected' : ''} data-translate="status_in_progress">قيد التنفيذ</option>
-          <option value="مكتملة" ${t.status === 'مكتملة' ? 'selected' : ''} data-translate="status_completed">مكتملة</option>
-          <option value="مؤجلة" ${t.status === 'مؤجلة' ? 'selected' : ''} data-translate="status_pending">مؤجلة</option>
-        </select>
-      `;
-      container.appendChild(div);
-    });
-    applyTranslations(); // تطبيق الترجمات على العناصر الديناميكية
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-// ====== المندوب – تحديث حالة المهمة ======
-async function updateTaskStatus(id, newStatus) {
-  try {
-    const res = await fetch('/api/tasks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, status: newStatus })
-    });
-    const data = await res.json();
-    if (data.success) {
-      loadTasks(); // تحديث قائمة المهام
-      // إرسال إشعار إلى المشرف والمدير
-      await notifySupervisorAndManager({
-        taskId: id,
-        status: newStatus,
-        message: `تم تحديث المهمة ${id} إلى ${newStatus} بواسطة المندوب`
-      });
-    }
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-// ====== المندوب – رفع التقرير ======
-async function submitDelegateReport() {
-  try {
-    const notes = document.getElementById('report-notes')?.value;
-    const images = document.getElementById('report-images')?.files || [];
-    const signature = document.getElementById('report-signature')?.files[0];
-    const formData = new FormData();
-    formData.append('notes', notes);
-    formData.append('delegate', 'delegate1'); // استبدل باسم المستخدم الفعلي
-
-    for (let i = 0; i < images.length; i++) formData.append('images', images[i]);
-    if (signature) formData.append('signature', signature);
-
-    const res = await fetch('/api/reports', { method: 'POST', body: formData });
-    const data = await res.json();
-    if (data.success) {
-      alert(translations[document.documentElement.lang || 'ar'].report_success || 'تم إرسال التقرير ✅');
-      if (document.getElementById('report-notes')) document.getElementById('report-notes').value = '';
-      // إرسال إشعار إلى المشرف والمدير
-      await notifySupervisorAndManager({
-        reportId: data.reportId,
-        delegate: 'delegate1',
-        notes: notes,
-        message: `تم رفع تقرير جديد بواسطة delegate1`
-      });
-    }
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-// ====== المشرف – قائمة المندوبين ======
-async function loadSupervisorList() {
-  try {
-    const res = await fetch('/api/users');
-    const users = await res.json();
-    const container = document.getElementById('supervisor-list');
-    if (!container) return;
-    container.innerHTML = '';
-    users.filter(u => u.role === 'delegate').forEach(u => {
-      const div = document.createElement('div');
-      div.className = 'card';
-      div.innerHTML = `
-        <b data-translate="delegate_name">${u.user}</b> | <b data-translate="phone_label">الهاتف:</b> ${u.phone} 
-        <button onclick="viewDelegateLocation('${u.user}')" data-translate="view_map_btn">عرض على الخريطة</button>
-      `;
-      container.appendChild(div);
-    });
-    applyTranslations(); // تطبيق الترجمات
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-// ====== المشرف – تحميل تقارير المندوبين ======
-async function loadSupervisorReports() {
-  try {
-    const res = await fetch('/api/reports');
-    const reports = await res.json();
-    const container = document.getElementById('supervisor-reports-list');
-    if (!container) return;
-    container.innerHTML = '';
-    reports.forEach(r => {
-      const div = document.createElement('div');
-      div.className = 'card';
-      div.innerHTML = `
-        <b data-translate="delegate_name">مندوب:</b> ${r.delegate} | 
-        <b data-translate="notes_label">ملاحظات:</b> ${r.notes} | 
-        <b data-translate="date_label">تاريخ:</b> ${new Date(r.createdAt).toLocaleString()}<br>
-        <button onclick="sendInstructionsToDelegate('${r.delegate}', '${r.reportId}')" data-translate="send_instructions_btn">إضافة تعليمات</button>
-      `;
-      container.appendChild(div);
-    });
-    applyTranslations(); // تطبيق الترجمات
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-// ====== المشرف – إرسال تعليمات إلى المندوب ======
-async function sendInstructionsToDelegate(delegate, reportId) {
-  const instructions = prompt(translations[document.documentElement.lang || 'ar'].enter_instructions || 'أدخل التعليمات للمندوب:');
-  if (instructions) {
-    try {
-      const res = await fetch('/api/instructions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ delegate, reportId, instructions })
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert(translations[document.documentElement.lang || 'ar'].instructions_sent || 'تم إرسال التعليمات ✅');
-        // إرسال إشعار إلى المندوب
-        await notifyDelegate({
-          delegate,
-          message: `تعليمات جديدة من المشرف: ${instructions}`
-        });
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  }
-}
-
-// ====== المشرف – عرض موقع المندوب ======
-async function viewDelegateLocation(delegate) {
-  alert(translations[document.documentElement.lang || 'ar'].view_location || `عرض موقع ${delegate} على الخريطة`);
-  // يمكن إضافة تكامل مع Google Maps API هنا
-}
-
-// ====== المدير – تحميل التقارير ======
-async function loadReports() {
-  try {
-    const res = await fetch('/api/reports');
-    const reports = await res.json();
-    const container = document.getElementById('reports-table');
-    if (!container) return;
-    container.innerHTML = '';
-    reports.forEach(r => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td data-translate="delegate_name">${r.delegate}</td>
-        <td>${r.complete || 0}</td>
-        <td>${r.pending || 0}</td>
-        <td>${r.percent || 0}%</td>
-        <td><button onclick="sendInstructionsToDelegate('${r.delegate}', '${r.reportId}')" data-translate="send_instructions_btn">إضافة تعليمات</button></td>
-      `;
-      container.appendChild(tr);
-    });
-    applyTranslations(); // تطبيق الترجمات
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-// ====== المدير – إضافة مهمة جديدة ======
-async function addTask() {
-  const client = document.getElementById('task-client')?.value;
-  const address = document.getElementById('task-address')?.value;
-  const time = document.getElementById('task-time')?.value;
-
-  if (!client || !address || !time) {
-    alert(translations[document.documentElement.lang || 'ar'].task_missing || 'يرجى إدخال جميع بيانات المهمة');
-    return;
-  }
-
-  try {
-    const res = await fetch('/api/tasks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ client, address, time, status: 'قيد التنفيذ' })
-    });
-    const data = await res.json();
-    if (data.success) {
-      alert(translations[document.documentElement.lang || 'ar'].task_added || 'تم إضافة المهمة ✅');
-      // إرسال إشعار إلى المندوب والمشرف
-      await notifyDelegateAndSupervisor({
-        taskId: data.taskId,
-        client,
-        address,
-        time,
-        message: `مهمة جديدة: ${client} في ${address}`
-      });
-    }
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-// ====== المدير – تحديث بيانات المندوب ======
-async function updateDelegate() {
-  const name = document.getElementById('delegate-name')?.value;
-  const phone = document.getElementById('delegate-phone')?.value;
-  const email = document.getElementById('delegate-email')?.value;
-
-  if (!name || !phone || !email) {
-    alert(translations[document.documentElement.lang || 'ar'].delegate_missing || 'يرجى إدخال جميع بيانات المندوب');
-    return;
-  }
-
-  try {
-    const res = await fetch('/api/users', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, phone, email, role: 'delegate' })
-    });
-    const data = await res.json();
-    if (data.success) {
-      alert(translations[document.documentElement.lang || 'ar'].delegate_updated || 'تم تحديث بيانات المندوب ✅');
-    }
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-// ====== المدير – إرسال إشعار جماعي ======
-async function sendBroadcast() {
-  const msg = document.getElementById('broadcast-message')?.value;
-  if (!msg) {
-    alert(translations[document.documentElement.lang || 'ar'].message_missing || 'أدخل رسالة قبل الإرسال!');
-    return;
-  }
-
-  try {
-    const res = await fetch('/api/broadcast', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: msg })
-    });
-    const data = await res.json();
-    if (data.success) {
-      alert(translations[document.documentElement.lang || 'ar'].broadcast_sent || 'تم إرسال الإشعار: ' + msg);
-      // إرسال إشعار إلى جميع المندوبين والمشرفين
-      await notifyDelegateAndSupervisor({
-        message: `إشعار من المدير: ${msg}`
-      });
-    }
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-// ====== تحميل الحضور والانصراف (المدير) ======
-async function loadAttendance() {
-  try {
-    const res = await fetch('/api/attendance');
-    const attendance = await res.json();
-    const container = document.getElementById('attendance-list');
-    if (!container) return;
-    container.innerHTML = '';
-    attendance.forEach(a => {
-      const div = document.createElement('div');
-      div.className = 'card';
-      div.innerHTML = `
-        <b data-translate="delegate_name">${a.delegate}</b><br>
-        <b data-translate="login_label">دخول:</b> ${a.login} - 
-        <b data-translate="logout_label">خروج:</b> ${a.logout}<br>
-        <b data-translate="deviation_label">حالة:</b> ${a.deviation}
-      `;
-      container.appendChild(div);
-    });
-    applyTranslations(); // تطبيق الترجمات
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-// ====== إرسال إشعارات إلى المشرف والمدير ======
-async function notifySupervisorAndManager(data) {
-  try {
-    await fetch('/api/notifications', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        recipients: ['supervisor', 'manager'],
-        message: data.message,
-        data
-      })
-    });
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-// ====== إرسال إشعارات إلى المندوب والمشرف ======
-async function notifyDelegateAndSupervisor(data) {
-  try {
-    await fetch('/api/notifications', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        recipients: ['delegate', 'supervisor'],
-        message: data.message,
-        data
-      })
-    });
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-// ====== إرسال إشعار إلى المندوب ======
-async function notifyDelegate(data) {
-  try {
-    await fetch('/api/notifications', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        recipients: [data.delegate],
-        message: data.message
-      })
-    });
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-// ====== تحميل الإشعارات (المندوب والمشرف) ======
-async function loadNotifications() {
-  try {
-    const res = await fetch('/api/notifications');
-    const notifs = await res.json();
-    const container = document.getElementById('notifications-list');
-    if (!container) return;
-    container.innerHTML = '';
-    notifs.forEach(n => {
-      const li = document.createElement('li');
-      li.textContent = n.message;
-      container.appendChild(li);
-    });
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-// ====== تهيئة الخريطة (المندوب) ======
-function initMap() {
-  const container = document.getElementById('map-container');
-  if (container) {
-    container.innerHTML = translations[document.documentElement.lang || 'ar'].map_placeholder || 'خريطة افتراضية (يمكن ربط Google Maps API)';
-  }
-}
-
-// ====== تحديث الموقع (المندوب) ======
-async function updateLocation() {
-  try {
-    // محاكاة تحديث الموقع
-    const location = { lat: 0, lng: 0 }; // استبدل ببيانات الموقع الفعلية
-    const res = await fetch('/api/location', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ delegate: 'delegate1', location })
-    });
-    const data = await res.json();
-    if (data.success) {
-      alert(translations[document.documentElement.lang || 'ar'].location_updated || 'تم تحديث الموقع ✅');
-      // إرسال إشعار إلى المشرف والمدير
-      await notifySupervisorAndManager({
-        delegate: 'delegate1',
-        location,
-        message: `تم تحديث الموقع بواسطة delegate1`
-      });
-    }
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-// ====== إظهار الأقسام ======
-function showSection(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('active'));
-  const section = document.getElementById(id);
-  const button = document.getElementById('btn-' + id);
-  if (section) section.classList.add('active');
-  if (button) button.classList.add('active');
-}
-
-// ====== تحديث الوقت (المدير) ======
-function updateTime() {
-  const managerInfo = document.getElementById('manager-info');
-  if (managerInfo) {
-    const now = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Africa/Cairo' });
-    managerInfo.innerText = `${translations[document.documentElement.lang || 'ar'].manager_label || '👤 المدير: محمد علي'} | 🕒 ${now}`;
-  }
-}
-
-// ====== تهيئة الصفحة بناءً على الدور ======
-function initDelegate() {
-  const tasksSection = document.getElementById('tasks');
-  if (tasksSection) {
-    showSection('tasks');
-    loadTasks();
-    loadNotifications();
-    initMap();
-    applyTranslations();
-  }
-}
-
-function initSupervisor() {
-  const supervisorList = document.getElementById('supervisor-list');
-  if (supervisorList) {
-    showSection('supervisor-list');
-    loadSupervisorList();
-    loadSupervisorReports();
-    loadNotifications();
-    applyTranslations();
-  }
-}
-
-function initManager() {
-  const reportsSection = document.getElementById('reports');
-  if (reportsSection) {
-    showSection('reports');
-    loadReports();
-    loadAttendance();
-    updateTime();
-    setInterval(updateTime, 60000);
-    applyTranslations();
-  }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
+function toggleLanguage(){
+  const current = localStorage.getItem('lang') || 'ar';
+  localStorage.setItem('lang', current==='ar'?'en':'ar');
   applyTranslations();
-  if (document.getElementById('login-user')) login();
-  else if (document.getElementById('tasks')) initDelegate();
-  else if (document.getElementById('supervisor-list')) initSupervisor();
-  else if (document.getElementById('reports')) initManager();
+  if(document.documentElement) {
+    document.documentElement.dir = (current==='ar')?'ltr':'rtl';
+    document.documentElement.lang = (current==='ar')?'en':'ar';
+  }
+}
+
+// =======================
+// تسجيل الدخول
+// =======================
+async function login() {
+  const user = document.getElementById('login-user').value;
+  const password = document.getElementById('login-pass').value;
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .or(`email.eq.${user},phone.eq.${user}`)
+    .eq('password', password)
+    .single();
+  
+  if(error || !data) return alert('بيانات غير صحيحة!');
+  
+  localStorage.setItem('currentUser', JSON.stringify(data));
+  
+  if(data.role === 'delegate') window.location='delegate.html';
+  else if(data.role === 'supervisor') window.location='supervisor.html';
+  else window.location='manager.html';
+}
+
+// =======================
+// المندوب
+// =======================
+async function loadTasks() {
+  const user = JSON.parse(localStorage.getItem('currentUser'));
+  if(!user) return;
+  
+  const { data: tasks } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('delegate', user.user);
+  
+  const container = document.getElementById('tasks-list');
+  container.innerHTML = '';
+  
+  tasks.forEach((t, idx)=>{
+    const div = document.createElement('div');
+    div.className = 'task-card';
+    div.innerHTML = `
+      <strong>${t.client}</strong><br>
+      ${t.address}<br>
+      ${t.time}<br>
+      <label>الحالة: 
+        <select onchange="updateTaskStatus(${t.id}, this.value)">
+          <option ${t.status==="قيد التنفيذ"?"selected":""}>قيد التنفيذ</option>
+          <option ${t.status==="مكتملة"?"selected":""}>مكتملة</option>
+          <option ${t.status==="مؤجلة"?"selected":""}>مؤجلة</option>
+        </select>
+      </label>
+    `;
+    container.appendChild(div);
+  });
+}
+
+async function updateTaskStatus(taskId, newStatus) {
+  await supabase
+    .from('tasks')
+    .update({ status: newStatus })
+    .eq('id', taskId);
+  loadTasks();
+}
+
+async function submitDelegateReport() {
+  const user = JSON.parse(localStorage.getItem('currentUser'));
+  const notes = document.getElementById('report-notes').value;
+  const imagesInput = document.getElementById('report-images');
+  const signatureInput = document.getElementById('report-signature');
+  
+  const formData = new FormData();
+  formData.append('notes', notes);
+  formData.append('delegate', user.user);
+  
+  for(let i=0;i<imagesInput.files.length;i++) formData.append('images', imagesInput.files[i]);
+  if(signatureInput.files[0]) formData.append('signature', signatureInput.files[0]);
+  
+  // حفظ التقرير في جدول reports في Supabase (يمكن تعديل لرفع الصور في Storage)
+  await supabase.from('reports').insert([{ delegate: user.user, notes }]);
+  alert('تم إرسال التقرير ✅');
+  document.getElementById('report-notes').value = '';
+}
+
+// =======================
+// إشعارات المندوب
+// =======================
+async function loadNotifications() {
+  const user = JSON.parse(localStorage.getItem('currentUser'));
+  const { data: tasks } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('delegate', user.user);
+  
+  const ul = document.getElementById('notifications-list');
+  ul.innerHTML = '';
+  
+  tasks.forEach(t=>{
+    const now = new Date();
+    const taskTime = new Date();
+    const [hour, minute] = t.time.split(':');
+    taskTime.setHours(parseInt(hour), parseInt(minute));
+    if(taskTime < now && t.status !== 'مكتملة') {
+      const li = document.createElement('li');
+      li.textContent = `تنبيه: المهمة مع ${t.client} متأخرة`;
+      ul.appendChild(li);
+    }
+  });
+}
+
+// =======================
+// المشرف
+// =======================
+async function loadSupervisorList() {
+  const { data: delegates } = await supabase
+    .from('users')
+    .select('*')
+    .eq('role', 'delegate');
+  
+  const container = document.getElementById('supervisor-list');
+  container.innerHTML = '';
+  
+  delegates.forEach(d=>{
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.innerHTML = `
+      <strong>${d.user}</strong> | <button onclick="showOnMap('${d.user}')">عرض الموقع</button>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// =======================
+// المدير
+// =======================
+async function loadReportsAdmin() {
+  const { data: reports } = await supabase.from('reports').select('*');
+  const container = document.getElementById('reports-list');
+  container.innerHTML = '';
+  
+  reports.forEach(r=>{
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.innerHTML = `
+      <b>مندوب:</b> ${r.delegate} | <b>ملاحظات:</b> ${r.notes}
+      <button onclick="alert('إضافة تعليمات')">إضافة تعليمات</button>
+    `;
+    container.appendChild(div);
+  });
+}
+
+async function loadAttendance() {
+  const { data: users } = await supabase.from('users').select('*').eq('role','delegate');
+  const container = document.getElementById('attendance-list');
+  container.innerHTML = '';
+  users.forEach(u=>{
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.innerHTML = `<b>${u.user}</b> - تسجيل الدخول: 09:00 - الخروج: 17:00`;
+    container.appendChild(div);
+  });
+}
+
+// =======================
+// وظائف مشتركة
+// =======================
+function showSection(id) {
+  document.querySelectorAll(".screen, .page").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll(".bottom-nav button").forEach(b => b.classList.remove("active"));
+  const el = document.getElementById(id);
+  if(el) el.classList.add("active");
+  const btn = document.getElementById("btn-" + id);
+  if(btn) btn.classList.add("active");
+}
+
+// =======================
+// المندوب – الخريطة
+// =======================
+function initMap() {
+  const mapContainer = document.getElementById('map-container');
+  if(mapContainer) mapContainer.innerText = "خريطة افتراضية (يمكن ربط Google Maps API)";
+}
+function updateLocation() {
+  alert("تم تحديث الموقع ✅");
+}
+
+// =======================
+// المندوب – التنقل بين الشاشات
+// =======================
+document.addEventListener('DOMContentLoaded', ()=>{
+  applyTranslations();
 });
