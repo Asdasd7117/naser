@@ -1,87 +1,146 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const fs = require('fs');
-const path = require('path');
-const cors = require('cors');
-const multer = require('multer');
-const { v4: uuidv4 } = require('uuid');
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة المشرف</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/lang.js" defer></script>
+  <script src="js/app.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body onload="showSection('delegates'); loadDelegates(); loadReports(); loadNotifications();">
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+  <header>
+    <h1 data-translate="supervisor_title">📊 لوحة المشرف / مدير المبيعات</h1>
+    <nav class="bottom-nav">
+      <button id="btn-delegates" onclick="showSection('delegates')" data-translate="delegates_tab">المندوبين</button>
+      <button id="btn-map" onclick="showSection('map')" data-translate="map_tab">الخريطة</button>
+      <button id="btn-reports" onclick="showSection('reports')" data-translate="reports_tab">التقارير</button>
+      <button id="btn-notifications" onclick="showSection('notifications')" data-translate="notifications_tab">الإشعارات</button>
+    </nav>
+  </header>
 
-// Middleware
-app.use(cors());
-app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'public')));
+  <!-- قسم المندوبين -->
+  <section id="delegates" class="screen">
+    <h2 data-translate="delegates_title">متابعة المندوبين</h2>
+    <div id="delegateList" class="card-container"></div>
+  </section>
 
-// مجلدات البيانات والرفع
-const DATA_DIR = path.join(__dirname,'data');
-const UPLOADS_DIR = path.join(__dirname,'uploads');
-if(!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
-if(!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR);
+  <!-- قسم الخريطة -->
+  <section id="map" class="screen">
+    <h2 data-translate="map_title">الخريطة</h2>
+    <select id="delegateSelect" onchange="filterMap()">
+      <option value="all" data-translate="all_delegates">عرض الجميع</option>
+    </select>
+    <div id="mapView" style="width:100%;height:400px;background:#eee;text-align:center;line-height:400px;">
+      🗺️ خريطة المندوبين
+    </div>
+  </section>
 
-// Multer للملفات
-const storage = multer.diskStorage({
-  destination: (req,file,cb)=>cb(null, UPLOADS_DIR),
-  filename: (req,file,cb)=>cb(null, Date.now()+'-'+file.originalname)
-});
-const upload = multer({ storage });
+  <!-- قسم التقارير -->
+  <section id="reports" class="screen">
+    <h2 data-translate="reports_title">التقارير</h2>
+    <div id="reportList" class="card-container"></div>
+  </section>
 
-// ملفات البيانات
-const USERS_FILE = path.join(DATA_DIR,'users.json');
-const TASKS_FILE = path.join(DATA_DIR,'tasks.json');
-const REPORTS_FILE = path.join(DATA_DIR,'reports.json');
+  <!-- قسم الإشعارات -->
+  <section id="notifications" class="screen">
+    <h2 data-translate="notifications_title">الإشعارات</h2>
+    <ul id="notificationsList"></ul>
+  </section>
 
-function readJSON(file){ 
-  if(!fs.existsSync(file)) fs.writeFileSync(file,JSON.stringify([])); 
-  return JSON.parse(fs.readFileSync(file)); 
-}
-function writeJSON(file,data){ 
-  fs.writeFileSync(file,JSON.stringify(data,null,2)); 
-}
+  <!-- زر اللغة -->
+  <button class="lang-btn" onclick="toggleLanguage()" data-translate="toggle_lang">عربي/English</button>
 
-// تسجيل الدخول المرن (اسم مستخدم أو بريد أو هاتف)
-app.post('/api/login',(req,res)=>{
-  const { user, password, role } = req.body;
-  const users = readJSON(USERS_FILE);
+  <script>
+    function showSection(id) {
+      document.querySelectorAll('.screen').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      document.getElementById('btn-' + id).classList.add('active');
+    }
 
-  const found = users.find(u =>
-    (u.user === user || u.email === user || String(u.phone) === String(user)) &&
-    u.password === password &&
-    u.role === role
-  );
+    async function loadDelegates() {
+      try {
+        const res = await axios.get('/api/users');
+        const delegates = res.data.filter(u => u.role === 'delegate');
+        const container = document.getElementById('delegateList');
+        const select = document.getElementById('delegateSelect');
+        container.innerHTML = '';
+        select.innerHTML = '<option value="all" data-translate="all_delegates">عرض الجميع</option>';
 
-  if(found) res.json({ success: true, role, user: found.user });
-  else res.json({ success: false, message: "بيانات الدخول خاطئة" });
-});
+        delegates.forEach(d => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <h3>${d.user}</h3>
+            <p>📱 ${d.phone}</p>
+            <p>الحالة: <span class="status active">نشط</span></p>
+            <button onclick="showOnMap('${d.user}')">📍 عرض الموقع</button>
+          `;
+          container.appendChild(card);
 
-// المهام
-app.get('/api/tasks',(req,res)=>res.json(readJSON(TASKS_FILE)));
-app.post('/api/tasks',(req,res)=>{
-  let tasks = readJSON(TASKS_FILE);
-  const task = req.body;
-  if(!task.id) task.id=uuidv4();
-  const idx = tasks.findIndex(t=>t.id===task.id);
-  if(idx!==-1) tasks[idx]=task; else tasks.push(task);
-  writeJSON(TASKS_FILE,tasks);
-  res.json({success:true});
-});
+          const opt = document.createElement('option');
+          opt.value = d.user;
+          opt.textContent = d.user;
+          select.appendChild(opt);
+        });
 
-// التقارير
-app.get('/api/reports',(req,res)=>res.json(readJSON(REPORTS_FILE)));
-app.post('/api/reports',upload.fields([{name:'images'},{name:'signature'}]),(req,res)=>{
-  const {notes,delegate}=req.body;
-  const images=req.files['images']?req.files['images'].map(f=>'/uploads/'+f.filename):[];
-  const signature=req.files['signature']?'/uploads/'+req.files['signature'][0].filename:'';
-  const reports=readJSON(REPORTS_FILE);
-  const report={id:uuidv4(),notes,delegate,images,signature,createdAt:new Date().toISOString()};
-  reports.push(report);
-  writeJSON(REPORTS_FILE,reports);
-  res.json({success:true,report});
-});
+        applyTranslations();
+      } catch (err) {
+        console.error(err);
+      }
+    }
 
-// المستخدمين
-app.get('/api/users',(req,res)=>res.json(readJSON(USERS_FILE)));
+    async function loadReports() {
+      try {
+        const res = await axios.get('/api/reports');
+        const reports = res.data;
+        const container = document.getElementById('reportList');
+        container.innerHTML = '';
+        reports.forEach(r => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <h3>📝 تقرير ${r.delegate}</h3>
+            <p><b>ملاحظات:</b> ${r.notes}</p>
+            ${r.images.map(img => `<img src="${img}" style="max-width:100px;">`).join('')}
+            ${r.signature ? `<p><b>توقيع:</b><img src="${r.signature}" style="max-width:100px;"></p>` : ''}
+            <textarea placeholder="أضف ملاحظات المشرف"></textarea>
+            <button>💾 حفظ</button>
+          `;
+          container.appendChild(card);
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
 
-// تشغيل السيرفر
-app.listen(PORT,()=>console.log(`Server running on port ${PORT}`));
+    function loadNotifications() {
+      const notifs = [
+        "🚨 المندوب أحمد تأخر عن المهمة 20 دقيقة",
+        "✅ المندوب سامي أكمل مهمة العميل X"
+      ];
+      const list = document.getElementById('notificationsList');
+      list.innerHTML = '';
+      notifs.forEach(n => {
+        const li = document.createElement('li');
+        li.textContent = n;
+        list.appendChild(li);
+      });
+    }
+
+    function showOnMap(user) {
+      document.getElementById('mapView').innerHTML = `📍 موقع ${user}`;
+      showSection('map');
+    }
+
+    function filterMap() {
+      const sel = document.getElementById('delegateSelect').value;
+      document.getElementById('mapView').innerHTML =
+        sel === 'all' ? "🗺️ عرض كل المندوبين" : `📍 عرض ${sel}`;
+    }
+  </script>
+</body>
+</html>
