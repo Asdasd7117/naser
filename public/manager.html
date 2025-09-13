@@ -1,1 +1,82 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة المدير</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/i18next@23.15.1/dist/umd/i18next.min.js"></script>
+</head>
+<body>
+  <div class="language-switcher">
+    <button onclick="changeLanguage('ar')">العربية</button>
+    <button onclick="changeLanguage('en')">English</button>
+  </div>
+  <div class="manager-dashboard">
+    <h2 data-i18n="analytics">التقارير والتحليلات</h2>
+    <div id="analytics"></div>
+    <h3 data-i18n="attendance">الحضور والانصراف</h3>
+    <div id="attendance-list"></div>
+    <h3 data-i18n="tasks">المهام</h3>
+    <div id="tasks-list"></div>
+    <button onclick="addTask()" data-i18n="add_task">إضافة مهمة</button>
+    <button onclick="logout()" data-i18n="logout">تسجيل الخروج</button>
+  </div>
+  <script src="main.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async function() {
+      const user = supabase.auth.getUser();
+      if (!user.data.user) {
+        window.location.href = 'index.html';
+        return;
+      }
 
+      // تحميل التحليلات
+      const { data: completedTasks } = await supabase.from('tasks').select('id').eq('status', 'completed');
+      const analytics = document.getElementById('analytics');
+      analytics.innerHTML = `<p>${i18next.t('completed_tasks')}: ${completedTasks.length}</p>`;
+
+      // تحميل الحضور
+      const { data: attendance } = await supabase.from('attendance').select('*');
+      const attendanceList = document.getElementById('attendance-list');
+      attendance.forEach(record => {
+        const p = document.createElement('p');
+        p.textContent = `${record.delegate_id} - ${new Date(record.start_time).toLocaleString()} to ${record.end_time ? new Date(record.end_time).toLocaleString() : 'جارٍ'}`;
+        attendanceList.appendChild(p);
+      });
+
+      // تحميل المهام
+      const { data: tasks } = await supabase.from('tasks').select('*');
+      const tasksList = document.getElementById('tasks-list');
+      tasks.forEach(task => {
+        const taskCard = document.createElement('div');
+        taskCard.className = 'task-card';
+        taskCard.innerHTML = `
+          <p>${i18next.t('client_name')}: ${task.client_name}</p>
+          <p>${i18next.t('address')}: ${task.address}</p>
+          <p>${i18next.t('status')}: ${i18next.t(task.status)}</p>
+        `;
+        tasksList.appendChild(taskCard);
+      });
+    });
+
+    async function addTask() {
+      const clientName = prompt(i18next.t('client_name'));
+      const address = prompt(i18next.t('address'));
+      const delegateId = prompt('أدخل معرف المندوب');
+      if (clientName && address && delegateId) {
+        await supabase.from('tasks').insert({
+          client_name: clientName,
+          address: address,
+          visit_time: new Date().toISOString(),
+          delegate_id: delegateId,
+          status: 'in_progress'
+        });
+        alert(i18next.t('task_added'));
+        window.location.reload();
+      }
+    }
+  </script>
+</body>
+</html>
