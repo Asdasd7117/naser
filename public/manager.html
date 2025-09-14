@@ -22,6 +22,7 @@ table th, table td { border:1px solid #ccc; padding:8px; text-align:center;}
 label { display:block; margin-top:10px;}
 input, select, textarea, button { width:100%; padding:8px; margin-top:5px; margin-bottom:10px; border-radius:6px; border:1px solid #ccc;}
 button.action-btn { width:auto; margin:2px; background:#dc3545; color:#fff; }
+.error-msg { color:red; font-weight:bold; margin:10px 0; }
 </style>
 </head>
 <body>
@@ -40,6 +41,7 @@ button.action-btn { width:auto; margin:2px; background:#dc3545; color:#fff; }
 </nav>
 
 <div class="container">
+<div id="error-msg" class="error-msg"></div>
 
 <!-- إدارة الحسابات -->
 <section id="users">
@@ -96,21 +98,32 @@ button.action-btn { width:auto; margin:2px; background:#dc3545; color:#fff; }
 <script type="module">
 import { fetchUsers, upsertUser, deleteUser, fetchTasks, upsertTask, fetchAttendance } from './supabase.js';
 
-// اللغة
+// ======================= التحقق من Supabase =======================
+async function testSupabaseConnection(){
+    try{
+        await fetchUsers();
+        document.getElementById('error-msg').innerText='';
+    }catch(err){
+        console.error(err);
+        document.getElementById('error-msg').innerText='خطأ في الاتصال بقاعدة البيانات. تحقق من Supabase!';
+    }
+}
+
+// ======================= اللغة =======================
 let currentLang = 'ar';
 window.switchLanguage = function(){
     currentLang = currentLang==='ar' ? 'en' : 'ar';
     document.body.style.direction = currentLang==='ar' ? 'rtl' : 'ltr';
 }
 
-// الساعة
+// ======================= الساعة =======================
 function updateTime(){
     const now = new Date(new Date().toLocaleString("en-US",{timeZone:"Africa/Cairo"}));
     document.getElementById("current-time").innerText = now.toLocaleTimeString();
 }
 setInterval(updateTime,1000); updateTime();
 
-// التنقل بين الأقسام
+// ======================= التنقل بين الأقسام =======================
 window.showSection = function(id){
     document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
@@ -119,39 +132,55 @@ window.showSection = function(id){
 }
 showSection('users');
 
-// إدارة المستخدمين
+// ======================= إدارة المستخدمين =======================
 async function loadUsers(){
-    const users = await fetchUsers();
-    const tbody = document.querySelector('#users-table tbody');
-    tbody.innerHTML='';
-    users.forEach(u=>{
-        const tr = document.createElement('tr');
-        tr.innerHTML=`<td>${u.role}</td><td>${u.phone}</td><td>${u.email||''}</td><td>${u.password}</td>
-        <td>
-            <button class="action-btn" onclick="editUser('${u.phone}')">✏️ تعديل</button>
-            <button class="action-btn" onclick="removeUser('${u.phone}')">🗑️ حذف</button>
-        </td>`;
-        tbody.appendChild(tr);
-    });
+    try{
+        const users = await fetchUsers();
+        const tbody = document.querySelector('#users-table tbody');
+        tbody.innerHTML='';
+        users.forEach(u=>{
+            const tr = document.createElement('tr');
+            tr.innerHTML=`<td>${u.role}</td><td>${u.phone}</td><td>${u.email||''}</td><td>${u.password}</td>
+            <td>
+                <button class="action-btn" onclick="editUser('${u.phone}')">✏️ تعديل</button>
+                <button class="action-btn" onclick="removeUser('${u.phone}')">🗑️ حذف</button>
+            </td>`;
+            tbody.appendChild(tr);
+        });
+        document.getElementById('error-msg').innerText='';
+    }catch(err){
+        console.error(err);
+        document.getElementById('error-msg').innerText='خطأ في جلب المستخدمين من Supabase!';
+    }
 }
 
-// دوال المستخدمين على window
 window.addUser = async function(){
-    const role=document.getElementById('user-role').value;
-    const phone=document.getElementById('user-phone').value.trim();
-    const email=document.getElementById('user-email').value.trim();
-    const pass=document.getElementById('user-pass').value.trim();
-    if(!phone||!pass) return alert('أدخل الهاتف وكلمة المرور / Enter phone & password');
-    await upsertUser({role, phone, email, password:pass});
-    document.getElementById('user-phone').value='';
-    document.getElementById('user-email').value='';
-    document.getElementById('user-pass').value='';
-    loadUsers();
+    try{
+        const role=document.getElementById('user-role').value;
+        const phone=document.getElementById('user-phone').value.trim();
+        const email=document.getElementById('user-email').value.trim();
+        const pass=document.getElementById('user-pass').value.trim();
+        if(!phone||!pass) return alert('أدخل الهاتف وكلمة المرور / Enter phone & password');
+        await upsertUser({role, phone, email, password:pass});
+        document.getElementById('user-phone').value='';
+        document.getElementById('user-email').value='';
+        document.getElementById('user-pass').value='';
+        await loadUsers();
+    }catch(err){
+        console.error(err);
+        alert('حدث خطأ أثناء إضافة المستخدم!');
+    }
 }
 
 window.removeUser = async function(phone){
-    if(confirm('هل تريد الحذف؟ / Delete?')){
-        await deleteUser(phone); loadUsers();
+    try{
+        if(confirm('هل تريد الحذف؟ / Delete?')){
+            await deleteUser(phone);
+            await loadUsers();
+        }
+    }catch(err){
+        console.error(err);
+        alert('حدث خطأ أثناء حذف المستخدم!');
     }
 }
 
@@ -167,50 +196,78 @@ window.editUser = function(phone){
     });
 }
 
-// المهام
+// ======================= المهام =======================
 async function loadEmployees(){
-    const users = await fetchUsers();
-    const empSelect = document.getElementById('task-employee');
-    empSelect.innerHTML='';
-    users.filter(u=>u.role==='employee').forEach(u=>{
-        const opt=document.createElement('option');
-        opt.value=u.phone; opt.innerText=u.phone;
-        empSelect.appendChild(opt);
-    });
+    try{
+        const users = await fetchUsers();
+        const empSelect = document.getElementById('task-employee');
+        empSelect.innerHTML='';
+        users.filter(u=>u.role==='employee').forEach(u=>{
+            const opt=document.createElement('option');
+            opt.value=u.phone; opt.innerText=u.phone;
+            empSelect.appendChild(opt);
+        });
+    }catch(err){
+        console.error(err);
+        document.getElementById('error-msg').innerText='خطأ في جلب الموظفين!';
+    }
 }
 loadEmployees();
 
 window.saveTask = async function(){
-    const task={employee:document.getElementById('task-employee').value,title:document.getElementById('task-title').value,
-        description:document.getElementById('task-desc').value,datetime:document.getElementById('task-datetime').value};
-    await upsertTask(task);
-    alert('تم الحفظ / Saved');
+    try{
+        const task={
+            employee:document.getElementById('task-employee').value,
+            title:document.getElementById('task-title').value,
+            description:document.getElementById('task-desc').value,
+            datetime:document.getElementById('task-datetime').value
+        };
+        await upsertTask(task);
+        alert('تم الحفظ / Saved');
+    }catch(err){
+        console.error(err);
+        alert('حدث خطأ أثناء حفظ المهمة!');
+    }
 }
 
-// الحضور
+// ======================= الحضور =======================
 async function loadAttendance(){
-    const attend = await fetchAttendance();
-    const div=document.getElementById('attendance-cards'); div.innerHTML='';
-    attend.forEach(a=>{
-        const card = document.createElement('div'); card.className='card';
-        card.innerHTML=`<strong>${a.employee}</strong><br>دخول: ${a.checkin||'-'} - خروج: ${a.checkout||'-'}`;
-        div.appendChild(card);
-    });
+    try{
+        const attend = await fetchAttendance();
+        const div=document.getElementById('attendance-cards'); div.innerHTML='';
+        attend.forEach(a=>{
+            const card = document.createElement('div'); card.className='card';
+            card.innerHTML=`<strong>${a.employee}</strong><br>دخول: ${a.checkin||'-'} - خروج: ${a.checkout||'-'}`;
+            div.appendChild(card);
+        });
+    }catch(err){
+        console.error(err);
+        document.getElementById('error-msg').innerText='خطأ في جلب بيانات الحضور!';
+    }
 }
 loadAttendance();
 
-// الرسوم البيانية
+// ======================= الرسوم البيانية =======================
 async function loadReports(){
-    const tasks = await fetchTasks();
-    const ctx = document.getElementById('taskChart').getContext('2d');
-    const labels = [...new Set(tasks.map(t=>t.employee))];
-    const data = labels.map(l=>tasks.filter(t=>t.employee===l).length);
-    new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'عدد المهام',data,backgroundColor:'#28a745'}]}});
+    try{
+        const tasks = await fetchTasks();
+        const ctx = document.getElementById('taskChart').getContext('2d');
+        const labels = [...new Set(tasks.map(t=>t.employee))];
+        const data = labels.map(l=>tasks.filter(t=>t.employee===l).length);
+        new Chart(ctx,{
+            type:'bar',
+            data:{labels,datasets:[{label:'عدد المهام',data,backgroundColor:'#28a745'}]}
+        });
+    }catch(err){
+        console.error(err);
+        document.getElementById('error-msg').innerText='خطأ في جلب البيانات للتقارير!';
+    }
 }
 loadReports();
 
-// تحميل المستخدمين عند بدء التشغيل
+// ======================= تشغيل عند بدء التشغيل =======================
 loadUsers();
+testSupabaseConnection();
 
 </script>
 </body>
