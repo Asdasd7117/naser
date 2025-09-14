@@ -1,127 +1,155 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>صفحة المدير</title>
+<title>لوحة المدير</title>
+<script src="https://unpkg.com/@supabase/supabase-js"></script>
 <style>
-  body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f0f4f7; }
-  header { background:#6f42c1; color:#fff; padding:15px; text-align:center; }
-  nav { display:flex; justify-content:space-around; background:#fff; padding:10px 0; box-shadow:0 2px 4px rgba(0,0,0,0.1); }
-  nav button { padding:10px 15px; border:none; background:none; cursor:pointer; font-weight:bold; }
-  nav button.active { color:#6f42c1; border-bottom:2px solid #6f42c1; }
-  .section { padding:20px; display:none; }
-  .section.active { display:block; }
-  table { width:100%; border-collapse:collapse; margin-bottom:20px; background:#fff; border-radius:8px; overflow:hidden; }
-  th, td { padding:10px; border-bottom:1px solid #ddd; text-align:center; }
-  th { background:#f1f1f1; }
-  .map { width:100%; height:300px; background:#ccc; border-radius:8px; display:flex; justify-content:center; align-items:center; color:#555; font-weight:bold; }
-  button.submit { background:#6f42c1; color:#fff; border:none; padding:8px 12px; border-radius:5px; cursor:pointer; }
-  button.submit:hover { background:#563d7c; }
+body{font-family:Arial;background:#f4f6f9;margin:0;}
+header{background:#8e44ad;color:white;padding:15px;text-align:center;position:relative;}
+nav{background:#2c3e50;color:white;display:flex;justify-content:space-around;padding:10px;}
+nav button{background:none;border:none;color:white;font-size:16px;cursor:pointer;}
+nav button:hover{text-decoration:underline;}
+.container{padding:20px;}
+.card{background:white;border-radius:8px;padding:15px;margin-bottom:20px;box-shadow:0 3px 8px rgba(0,0,0,0.1);}
+h3{margin-top:0;color:#2c3e50;}
+table{width:100%;border-collapse:collapse;margin-top:10px;}
+table th,table td{border:1px solid #ddd;padding:8px;text-align:center;}
+table th{background:#ecf0f1;}
+.lang-btn{position:absolute;top:15px;left:15px;background:#2980b9;border:none;padding:8px 12px;border-radius:5px;cursor:pointer;color:white;}
+button.action{background:#3498db;color:white;border:none;padding:10px;border-radius:6px;cursor:pointer;margin-top:5px;}
+button.action:hover{background:#2980b9;}
 </style>
 </head>
 <body>
-
-<header id="header-title">المدير</header>
+<header>
+<h2 id="title">لوحة المدير</h2>
+<button class="lang-btn" onclick="toggleLang()">🇸🇦/🇬🇧</button>
+</header>
 
 <nav>
-  <button class="tab active" data-tab="reports">التقارير</button>
-  <button class="tab" data-tab="attendance">الحضور</button>
-  <button class="tab" data-tab="tasks">لوحة التحكم</button>
+<button onclick="showSection('analytics')">📊 <span id="navAnalytics">التقارير والتحليلات</span></button>
+<button onclick="showSection('attendance')">⏰ <span id="navAttendance">الحضور والانصراف</span></button>
+<button onclick="showSection('control')">⚙️ <span id="navControl">لوحة التحكم</span></button>
 </nav>
 
-<div class="section active" id="reports">
-  <h3>التقارير والتحليلات</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>المندوب</th>
-        <th>أداء فردي</th>
-        <th>إنجاز الأسبوع/الشهر</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>أحمد علي</td>
-        <td>80%</td>
-        <td>20/25 مهمة مكتملة</td>
-      </tr>
-      <tr>
-        <td>سارة محمد</td>
-        <td>75%</td>
-        <td>18/24 مهمة مكتملة</td>
-      </tr>
-    </tbody>
-  </table>
+<div class="container">
+<!-- التقارير والتحليلات -->
+<div class="card" id="analytics">
+<h3 id="analyticsTitle">التقارير والتحليلات</h3>
+<table>
+<thead><tr><th>المندوب</th><th>المهام المكتملة</th><th>المهام المؤجلة</th></tr></thead>
+<tbody id="analyticsList"></tbody>
+</table>
 </div>
 
-<div class="section" id="attendance">
-  <h3>الحضور والانصراف</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>المندوب</th>
-        <th>ساعات العمل الفعلية</th>
-        <th>المهام اليومية</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>أحمد علي</td>
-        <td>40 ساعة</td>
-        <td>20/25 مهمة مكتملة</td>
-      </tr>
-      <tr>
-        <td>سارة محمد</td>
-        <td>38 ساعة</td>
-        <td>18/24 مهمة مكتملة</td>
-      </tr>
-    </tbody>
-  </table>
+<!-- الحضور والانصراف -->
+<div class="card" id="attendance" style="display:none;">
+<h3 id="attendanceTitle">الحضور والانصراف</h3>
+<table>
+<thead><tr><th>المندوب</th><th>ساعات العمل</th></tr></thead>
+<tbody id="attendanceList"></tbody>
+</table>
 </div>
 
-<div class="section" id="tasks">
-  <h3>لوحة التحكم</h3>
-  <button class="submit">إضافة/تعديل مهام</button>
-  <button class="submit">تعديل بيانات المندوبين</button>
-  <button class="submit">إرسال إشعارات جماعية</button>
+<!-- لوحة التحكم -->
+<div class="card" id="control" style="display:none;">
+<h3 id="controlTitle">لوحة التحكم</h3>
+<button class="action" onclick="addTask()">إضافة مهمة</button>
+<button class="action" onclick="editAgent()">تعديل بيانات مندوب</button>
 </div>
-
-<div class="lang-switch" style="text-align:center; margin:15px; cursor:pointer; color:#6f42c1;">English</div>
+</div>
 
 <script>
-const tabs = document.querySelectorAll('.tab');
-const sections = document.querySelectorAll('.section');
-tabs.forEach(tab => {
-  tab.addEventListener('click', () => {
-    tabs.forEach(t => t.classList.remove('active'));
-    sections.forEach(s => s.classList.remove('active'));
-    tab.classList.add('active');
-    document.getElementById(tab.dataset.tab).classList.add('active');
-  });
-});
+const SUPABASE_URL="https://ncjxqfqwswwikedaffif.supabase.co";
+const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NDEwNzQsImV4cCI6MjA3MzQxNzA3NH0.4G54968qAHyePjq9_ufSCSA1fHzx5XHFzOAqGKmVW18";
+const supabase=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-let isArabic = true;
-const langSwitch = document.querySelector('.lang-switch');
-langSwitch.addEventListener('click', () => {
-  isArabic = !isArabic;
-  if(isArabic){
-    document.body.style.direction='rtl';
-    document.getElementById('header-title').innerText='المدير';
-    document.querySelectorAll('.tab')[0].innerText='التقارير';
-    document.querySelectorAll('.tab')[1].innerText='الحضور';
-    document.querySelectorAll('.tab')[2].innerText='لوحة التحكم';
-    langSwitch.innerText='English';
-  } else {
-    document.body.style.direction='ltr';
-    document.getElementById('header-title').innerText='Manager';
-    document.querySelectorAll('.tab')[0].innerText='Reports';
-    document.querySelectorAll('.tab')[1].innerText='Attendance';
-    document.querySelectorAll('.tab')[2].innerText='Control Panel';
-    langSwitch.innerText='عربي';
-  }
+let lang="ar";
+const texts={
+ar:{title:"لوحة المدير",nav:{analytics:"التقارير والتحليلات",attendance:"الحضور والانصراف",control:"لوحة التحكم"},analytics:"التقارير والتحليلات",attendance:"الحضور والانصراف",control:"لوحة التحكم"},
+en:{title:"Admin Dashboard",nav:{analytics:"Analytics",attendance:"Attendance",control:"Control Panel"},analytics:"Analytics",attendance:"Attendance",control:"Control Panel"}
+};
+
+function toggleLang(){
+lang=lang==="ar"?"en":"ar";
+document.documentElement.lang=lang;
+document.documentElement.dir=lang==="ar"?"rtl":"ltr";
+document.getElementById("title").innerText=texts[lang].title;
+document.getElementById("navAnalytics").innerText=texts[lang].nav.analytics;
+document.getElementById("navAttendance").innerText=texts[lang].nav.attendance;
+document.getElementById("navControl").innerText=texts[lang].nav.control;
+document.getElementById("analyticsTitle").innerText=texts[lang].analytics;
+document.getElementById("attendanceTitle").innerText=texts[lang].attendance;
+document.getElementById("controlTitle").innerText=texts[lang].control;
+}
+
+function showSection(section){
+document.querySelectorAll(".card").forEach(c=>c.style.display="none");
+document.getElementById(section).style.display="block";
+}
+
+// تحميل التقارير والتحليلات
+async function loadAnalytics(){
+const {data: tasks}=await supabase.from("tasks").select("*");
+const {data: users}=await supabase.from("users").select("*").eq("role","agent");
+const tbody=document.getElementById("analyticsList");
+tbody.innerHTML="";
+if(tasks && users){
+users.forEach(u=>{
+let completed=tasks.filter(t=>t.agent_id===u.id && t.status==="مكتملة").length;
+let delayed=tasks.filter(t=>t.agent_id===u.id && t.status==="مؤجلة").length;
+const tr=document.createElement("tr");
+tr.innerHTML=`<td>${u.name}</td><td>${completed}</td><td>${delayed}</td>`;
+tbody.appendChild(tr);
 });
+}
+}
+
+// تحميل الحضور والانصراف
+async function loadAttendance(){
+const {data: attendances}=await supabase.from("attendance").select("*");
+const {data: users}=await supabase.from("users").select("*").eq("role","agent");
+const tbody=document.getElementById("attendanceList");
+tbody.innerHTML="";
+if(attendances && users){
+users.forEach(u=>{
+let record=attendances.find(a=>a.agent_id===u.id);
+let hours=record?record.hours_worked:0;
+const tr=document.createElement("tr");
+tr.innerHTML=`<td>${u.name}</td><td>${hours} ساعة</td>`;
+tbody.appendChild(tr);
+});
+}
+}
+
+// لوحة التحكم: إضافة مهمة
+async function addTask(){
+let agentId=prompt("ادخل ID المندوب:");
+let client=prompt("ادخل اسم العميل:");
+let address=prompt("ادخل العنوان:");
+let visitTime=prompt("ادخل وقت الزيارة:");
+if(agentId && client && address && visitTime){
+await supabase.from("tasks").insert([{agent_id:parseInt(agentId),client_name:client,address:address,visit_time:visitTime,status:"قيد التنفيذ"}]);
+alert(lang==="ar"?"تم إضافة المهمة!":"Task added!");
+loadAnalytics();
+}
+}
+
+// لوحة التحكم: تعديل بيانات مندوب
+async function editAgent(){
+let agentId=prompt("ادخل ID المندوب لتعديله:");
+let name=prompt("الاسم الجديد:");
+let location=prompt("الموقع الجديد:");
+if(agentId){
+await supabase.from("users").update({name,location}).eq("id",parseInt(agentId));
+alert(lang==="ar"?"تم تعديل بيانات المندوب!":"Agent updated!");
+loadAnalytics(); loadAttendance();
+}
+}
+
+// تحميل البيانات عند فتح الصفحة
+loadAnalytics(); loadAttendance();
 </script>
-
 </body>
 </html>
