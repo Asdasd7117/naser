@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <title>لوحة المدير / Manager Dashboard</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-body { font-family: Arial, sans-serif; margin:0; padding:0; background: #f0f2f5; direction: rtl;}
+body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f0f2f5; direction: rtl;}
 header { background:#007bff; color:#fff; padding:15px; display:flex; justify-content:space-between; align-items:center;}
 header h1 { margin:0; font-size:18px;}
 header .time { font-size:14px;}
@@ -21,13 +21,13 @@ table { width:100%; border-collapse: collapse;}
 table th, table td { border:1px solid #ccc; padding:8px; text-align:center;}
 label { display:block; margin-top:10px;}
 input, select, textarea, button { width:100%; padding:8px; margin-top:5px; margin-bottom:10px; border-radius:6px; border:1px solid #ccc;}
-button.action-btn { width:auto; margin:2px; background:#dc3545;}
+button.action-btn { width:auto; margin:2px; background:#dc3545; color:#fff; }
 </style>
 </head>
 <body>
 
 <header>
-    <h1 id="header-name">المدير</h1>
+    <h1 id="header-name">لوحة المدير</h1>
     <div class="time" id="current-time">00:00:00</div>
 </header>
 <button class="lang-switch" onclick="switchLanguage()">تبديل اللغة / Switch Language</button>
@@ -56,7 +56,8 @@ button.action-btn { width:auto; margin:2px; background:#dc3545;}
     <input type="text" id="user-email">
     <label>كلمة المرور / Password</label>
     <input type="text" id="user-pass">
-    <button onclick="addUser()">إضافة / Add</button>
+    <button onclick="addUser()">➕ إضافة / Add</button>
+
     <h3>المستخدمون الحاليون / Current Users</h3>
     <table id="users-table">
         <thead><tr><th>الدور</th><th>الهاتف</th><th>البريد</th><th>كلمة المرور</th><th>إجراءات</th></tr></thead>
@@ -75,7 +76,7 @@ button.action-btn { width:auto; margin:2px; background:#dc3545;}
     <textarea id="task-desc"></textarea>
     <label>تاريخ ووقت / Date & Time</label>
     <input type="datetime-local" id="task-datetime">
-    <button onclick="saveTask()">حفظ المهمة / Save Task</button>
+    <button onclick="saveTask()">💾 حفظ المهمة / Save Task</button>
 </section>
 
 <!-- الحضور -->
@@ -97,8 +98,14 @@ import { fetchUsers, upsertUser, deleteUser, fetchTasks, upsertTask, fetchAttend
 
 // اللغة
 let currentLang = 'ar';
-function switchLanguage(){ currentLang=currentLang==='ar'?'en':'ar'; document.body.style.direction=currentLang==='ar'?'rtl':'ltr'; }
-function updateTime(){ const now=new Date(new Date().toLocaleString("en-US",{timeZone:"Africa/Cairo"})); document.getElementById("current-time").innerText=now.toLocaleTimeString();}
+function switchLanguage(){
+    currentLang = currentLang==='ar' ? 'en' : 'ar';
+    document.body.style.direction = currentLang==='ar' ? 'rtl' : 'ltr';
+}
+function updateTime(){
+    const now = new Date(new Date().toLocaleString("en-US",{timeZone:"Africa/Cairo"}));
+    document.getElementById("current-time").innerText = now.toLocaleTimeString();
+}
 setInterval(updateTime,1000); updateTime();
 
 // التنقل بين الأقسام
@@ -119,8 +126,8 @@ async function loadUsers(){
         const tr = document.createElement('tr');
         tr.innerHTML=`<td>${u.role}</td><td>${u.phone}</td><td>${u.email||''}</td><td>${u.password}</td>
         <td>
-            <button class="action-btn" onclick="editUser('${u.phone}')">تعديل</button>
-            <button class="action-btn" onclick="removeUser('${u.phone}')">حذف</button>
+            <button class="action-btn" onclick="editUser('${u.phone}')">✏️ تعديل</button>
+            <button class="action-btn" onclick="removeUser('${u.phone}')">🗑️ حذف</button>
         </td>`;
         tbody.appendChild(tr);
     });
@@ -137,10 +144,14 @@ async function addUser(){
     document.getElementById('user-pass').value='';
     loadUsers();
 }
-async function removeUser(phone){ if(confirm('هل تريد الحذف؟ / Delete?')){ await deleteUser(phone); loadUsers(); }}
-function editUser(phone){
-    const users = Array.from(document.querySelectorAll('#users-table tbody tr'));
-    users.forEach(tr=>{
+async function removeUser(phone){
+    if(confirm('هل تريد الحذف؟ / Delete?')){
+        await deleteUser(phone); loadUsers();
+    }
+}
+window.editUser = function(phone){
+    const rows = Array.from(document.querySelectorAll('#users-table tbody tr'));
+    rows.forEach(tr=>{
         if(tr.children[1].innerText===phone){
             document.getElementById('user-role').value=tr.children[0].innerText.includes('Supervisor')?'supervisor':'employee';
             document.getElementById('user-phone').value=tr.children[1].innerText;
@@ -156,7 +167,9 @@ async function loadEmployees(){
     const empSelect = document.getElementById('task-employee');
     empSelect.innerHTML='';
     users.filter(u=>u.role==='employee').forEach(u=>{
-        const opt = document.createElement('option'); opt.value=u.phone; opt.innerText=u.phone; empSelect.appendChild(opt);
+        const opt=document.createElement('option');
+        opt.value=u.phone; opt.innerText=u.phone;
+        empSelect.appendChild(opt);
     });
 }
 loadEmployees();
@@ -179,7 +192,7 @@ async function loadAttendance(){
 }
 loadAttendance();
 
-// الرسوم البيانية للتقارير
+// الرسوم البيانية
 async function loadReports(){
     const tasks = await fetchTasks();
     const ctx = document.getElementById('taskChart').getContext('2d');
