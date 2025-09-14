@@ -20,7 +20,7 @@
 
 <div class="login-container">
   <h2 id="title">تسجيل الدخول</h2>
-  
+
   <label id="label-role" for="role">اختر الدور</label>
   <select id="role">
     <option value="manager">المدير</option>
@@ -73,7 +73,7 @@ langSwitch.addEventListener('click', () => {
   }
 });
 
-// تسجيل الدخول مع Supabase
+// تسجيل الدخول باستخدام Supabase
 document.getElementById('loginBtn').addEventListener('click', async () => {
   const role = document.getElementById('role').value;
   const email = document.getElementById('email').value.trim();
@@ -84,12 +84,13 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
     return;
   }
 
-  // البحث في جدول users
-  const {data, error} = await supabase
+  // البحث في جدول المستخدمين حسب البريد/الهاتف وكلمة المرور
+  const {data,error} = await supabase
     .from('users')
     .select('*')
-    .or(`email.eq.${email},phone.eq.${email}`)
     .eq('role', role)
+    .eq('email', email)
+    .eq('password', password)
     .single();
 
   if(error || !data){
@@ -97,16 +98,12 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
     return;
   }
 
-  if(data.password !== password){ // بسيط للتحقق
-    alert(isArabic ? 'كلمة المرور غير صحيحة' : 'Incorrect password');
-    return;
-  }
-
-  // التحويل حسب الدور
-  if(role === 'manager') window.location.href = 'admin.html';
-  else if(role === 'supervisor') window.location.href = 'supervisor.html';
-  else if(role === 'employee') window.location.href = 'employee.html';
+  // توجيه حسب الدور
+  if(role==='manager') window.location.href = 'admin.html';
+  else if(role==='supervisor') window.location.href = 'supervisor.html';
+  else if(role==='employee') window.location.href = 'employee.html';
 });
 </script>
+
 </body>
 </html>
