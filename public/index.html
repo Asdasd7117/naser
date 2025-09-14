@@ -1,47 +1,37 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="manager_title">لوحة تحكم المدير</title>
+  <title data-translate="loginTitle">Login</title>
   <link rel="stylesheet" href="style.css">
-  <!-- Supabase CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script defer src="manager.js"></script>
+  <!-- استدعاء ملفات الترجمة والجافاسكربت -->
+  <script src="lang.js" defer></script>
+  <script src="main.js" type="module" defer></script>
 </head>
 <body>
-  <header>
-    <h1 data-i18n="manager_title">لوحة تحكم المدير</h1>
-    <select id="languageSwitcher">
-      <option value="ar" selected>العربية</option>
-      <option value="en">English</option>
+  <!-- زر تبديل اللغة -->
+  <button id="langToggle">🌐</button>
+
+  <h1 data-translate="loginTitle">Login</h1>
+
+  <!-- نموذج تسجيل الدخول -->
+  <form id="loginForm">
+    <label for="emailOrPhone" data-translate="emailPhone">Email or Phone</label>
+    <input type="text" id="emailOrPhone" required>
+
+    <label for="password" data-translate="password">Password</label>
+    <input type="password" id="password" required>
+
+    <label for="role" data-translate="role">Role</label>
+    <select id="role">
+      <option value="manager" data-translate="manager">Manager</option>
+      <option value="supervisor" data-translate="supervisor">Supervisor</option>
+      <option value="delegate" data-translate="delegate">Delegate</option>
     </select>
-    <button id="logout" data-i18n="logout">تسجيل الخروج</button>
-  </header>
 
-  <main>
-    <form id="createUserForm">
-      <h2 data-i18n="create_user">إنشاء مستخدم جديد</h2>
-      <label data-i18n="role">الدور:</label>
-      <select name="role" required>
-        <option value="supervisor" data-i18n="supervisor">مشرف</option>
-        <option value="delegate" data-i18n="delegate">مندوب</option>
-      </select><br>
+    <button type="submit" id="loginBtn" data-translate="loginBtn">Login</button>
+  </form>
 
-      <label data-i18n="name">الاسم:</label>
-      <input type="text" name="name" required><br>
-
-      <label data-i18n="email">البريد الإلكتروني:</label>
-      <input type="email" name="email" required><br>
-
-      <label data-i18n="phone">رقم الهاتف:</label>
-      <input type="text" name="phone" required><br>
-
-      <label data-i18n="password">كلمة المرور:</label>
-      <input type="password" name="password" required><br>
-
-      <button type="submit" data-i18n="create">إنشاء</button>
-    </form>
-  </main>
+  <a href="#" id="forgotPassword" data-translate="forgotPassword">Forgot password?</a>
 </body>
 </html>
