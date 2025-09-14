@@ -1,20 +1,20 @@
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تسجيل الدخول / Login</title>
-<style>
-body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f0f2f5; display:flex; justify-content:center; align-items:center; height:100vh; transition:all 0.3s;}
-.container { background:#fff; padding:30px; border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,0.2); width:320px;}
-h2 { text-align:center; margin-bottom:20px;}
-label { display:block; margin:10px 0 5px;}
-input, select, button { width:100%; padding:10px; margin-bottom:15px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box;}
-button { background:#007bff; color:#fff; border:none; font-weight:bold; cursor:pointer; transition:0.2s;}
-button:hover { background:#0056b3;}
-.lang-switch { background:#ffc107; color:#000; border:none; cursor:pointer; margin-bottom:10px; border-radius:6px; padding:8px;}
-.message { text-align:center; margin-top:10px; color:red; min-height:20px;}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول / Login</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f0f2f5; display:flex; justify-content:center; align-items:center; height:100vh; transition:all 0.3s;}
+        .container { background:#fff; padding:30px; border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,0.2); width:320px;}
+        h2 { text-align:center; margin-bottom:20px;}
+        label { display:block; margin:10px 0 5px;}
+        input, select, button { width:100%; padding:10px; margin-bottom:15px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box;}
+        button { background:#007bff; color:#fff; border:none; font-weight:bold; cursor:pointer; transition:0.2s;}
+        button:hover { background:#0056b3;}
+        .lang-switch { background:#ffc107; color:#000; border:none; cursor:pointer; margin-bottom:10px; border-radius:6px; padding:8px;}
+        .message { text-align:center; margin-top:10px; color:red; min-height:20px;}
+    </style>
 </head>
 <body>
 
@@ -45,59 +45,68 @@ import { loginUser } from './supabase.js';
 let lang = 'ar';
 
 const texts = {
-  ar: {
-    title: "تسجيل الدخول",
-    role: "اختر الدور",
-    user: "رقم الهاتف / البريد الإلكتروني",
-    pass: "كلمة المرور",
-    login: "تسجيل الدخول",
-    phonePlaceholder: "أدخل رقم الهاتف",
-    phoneEmailPlaceholder: "أدخل رقم الهاتف أو البريد الإلكتروني",
-    passwordPlaceholder: "أدخل كلمة المرور",
-    fillAll: "يرجى ملء جميع الحقول",
-    invalid: "بيانات تسجيل الدخول غير صحيحة"
-  },
-  en: {
-    title: "Login",
-    role: "Select Role",
-    user: "Phone / Email",
-    pass: "Password",
-    login: "Login",
-    phonePlaceholder: "Enter Phone",
-    phoneEmailPlaceholder: "Enter Phone or Email",
-    passwordPlaceholder: "Enter Password",
-    fillAll: "Please fill all fields",
-    invalid: "Invalid credentials"
-  }
+    ar: {
+        title: "تسجيل الدخول",
+        role: "اختر الدور",
+        user: "رقم الهاتف / البريد الإلكتروني",
+        pass: "كلمة المرور",
+        login: "تسجيل الدخول",
+        langSwitch: "تبديل اللغة / Switch Language",
+        phonePlaceholder: "أدخل رقم الهاتف",
+        phoneEmailPlaceholder: "أدخل رقم الهاتف أو البريد الإلكتروني",
+        passwordPlaceholder: "أدخل كلمة المرور",
+        fillAll: "يرجى ملء جميع الحقول",
+        invalid: "بيانات تسجيل الدخول غير صحيحة"
+    },
+    en: {
+        title: "Login",
+        role: "Select Role",
+        user: "Phone / Email",
+        pass: "Password",
+        login: "Login",
+        langSwitch: "Switch Language / تبديل اللغة",
+        phonePlaceholder: "Enter Phone",
+        phoneEmailPlaceholder: "Enter Phone or Email",
+        passwordPlaceholder: "Enter Password",
+        fillAll: "Please fill all fields",
+        invalid: "Invalid credentials"
+    }
 };
 
-function updateLanguage(){
-    document.body.style.direction = lang==='ar'?'rtl':'ltr';
+function updateLanguage() {
+    // تحديث اتجاه الصفحة
+    document.body.style.direction = lang === 'ar' ? 'rtl' : 'ltr';
+    
+    // تحديث النصوص
     document.getElementById('title').innerText = texts[lang].title;
     document.getElementById('role-label').innerText = texts[lang].role;
+    document.getElementById('user-label').innerText = texts[lang].user; // إضافة تحديث تسمية حقل المستخدم
     document.getElementById('pass-label').innerText = texts[lang].pass;
     document.getElementById('loginBtn').innerText = texts[lang].login;
+    document.querySelector('.lang-switch').innerText = texts[lang].langSwitch; // تحديث نص زر تبديل اللغة
 
+    // تحديث placeholders
     const role = document.getElementById('role').value;
     const usernameInput = document.getElementById('username');
     const passwordInput = document.getElementById('password');
 
-    if(role==='manager'){
+    if (role === 'manager') {
         usernameInput.placeholder = texts[lang].phonePlaceholder;
     } else {
         usernameInput.placeholder = texts[lang].phoneEmailPlaceholder;
     }
     passwordInput.placeholder = texts[lang].passwordPlaceholder;
 
+    // تحديث رسالة الخطأ إذا وجدت
     const msgDiv = document.getElementById('msg');
-    if(msgDiv.dataset.lastMessage){
+    if (msgDiv.dataset.lastMessage) {
         msgDiv.innerText = texts[lang][msgDiv.dataset.lastMessage] || '';
     }
 }
 
 // زر تبديل اللغة
-document.querySelector('.lang-switch').addEventListener('click', ()=>{
-    lang = lang==='ar'?'en':'ar';
+document.querySelector('.lang-switch').addEventListener('click', () => {
+    lang = lang === 'ar' ? 'en' : 'ar';
     updateLanguage();
 });
 
@@ -105,13 +114,13 @@ document.querySelector('.lang-switch').addEventListener('click', ()=>{
 document.getElementById('role').addEventListener('change', updateLanguage);
 
 // تسجيل الدخول
-document.getElementById('loginBtn').addEventListener('click', async ()=>{
+document.getElementById('loginBtn').addEventListener('click', async () => {
     const role = document.getElementById('role').value;
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value.trim();
     const msgDiv = document.getElementById('msg');
 
-    if(!username || !password){
+    if (!username || !password) {
         msgDiv.dataset.lastMessage = 'fillAll';
         msgDiv.innerText = texts[lang].fillAll;
         return;
@@ -120,23 +129,23 @@ document.getElementById('loginBtn').addEventListener('click', async ()=>{
     const user = await loginUser(role, username, password);
 
     // المدير الافتراضي
-    if(role==='manager' && username==='7123456789' && password==='123456'){
-        window.location.href='manager.html';
+    if (role === 'manager' && username === '7123456789' && password === '123456') {
+        window.location.href = 'manager.html';
         return;
     }
 
-    if(!user){
+    if (!user) {
         msgDiv.dataset.lastMessage = 'invalid';
         msgDiv.innerText = texts[lang].invalid;
         return;
     }
 
-    if(user.role==='manager') window.location.href='manager.html';
-    else if(user.role==='supervisor') window.location.href='supervisor.html';
-    else if(user.role==='employee') window.location.href='employee.html';
+    if (user.role === 'manager') window.location.href = 'manager.html';
+    else if (user.role === 'supervisor') window.location.href = 'supervisor.html';
+    else if (user.role === 'employee') window.location.href = 'employee.html';
 });
 
-// استدعاء أولي لتحديث placeholders والنصوص عند التحميل
+// استدعاء أولي لتحديث النصوص و placeholders عند التحميل
 updateLanguage();
 </script>
 
