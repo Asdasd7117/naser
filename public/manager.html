@@ -2,228 +2,177 @@
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>لوحة المدير</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f0f2f5; direction: rtl;}
-header { background:#007bff; color:#fff; padding:15px; display:flex; justify-content:space-between; align-items:center;}
-header h1 { margin:0; font-size:18px;}
-header .time { font-size:14px;}
-.lang-switch { position:absolute; top:15px; right:15px; background:#ffc107; color:#000; border:none; padding:8px; border-radius:6px; cursor:pointer;}
-.container { padding:20px; max-width:1200px; margin:auto;}
-nav { display:flex; justify-content:space-around; margin-bottom:20px; flex-wrap:wrap;}
-nav button { padding:10px 20px; border:none; border-radius:8px; cursor:pointer; background:#28a745; color:#fff; font-weight:bold; margin:5px;}
-nav button.active { background:#218838;}
-section { display:none; }
-section.active { display:block; }
-.card { background:#fff; padding:15px; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.1); margin-bottom:15px;}
-table { width:100%; border-collapse: collapse;}
-table th, table td { border:1px solid #ccc; padding:8px; text-align:center;}
-label { display:block; margin-top:10px;}
-input, select, textarea, button { width:100%; padding:8px; margin-top:5px; margin-bottom:10px; border-radius:6px; border:1px solid #ccc;}
-button.action-btn { width:auto; margin:2px; background:#dc3545; color:#fff; }
-.error-msg { color:red; font-weight:bold; margin:10px 0; }
+body{font-family:Arial,sans-serif;margin:0;padding:0;background:#f0f2f5;}
+header{background:#007bff;color:#fff;padding:15px;display:flex;justify-content:space-between;align-items:center;}
+header h1{margin:0;font-size:18px;}
+.container{padding:20px;max-width:1200px;margin:auto;}
+nav{display:flex;flex-wrap:wrap;justify-content:space-around;margin-bottom:20px;}
+nav button{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;background:#28a745;color:#fff;font-weight:bold;margin:5px;}
+nav button.active{background:#218838;}
+section{display:none;}
+section.active{display:block;}
+.card{background:#fff;padding:15px;border-radius:12px;box-shadow:0 5px 15px rgba(0,0,0,0.1);margin-bottom:15px;}
+table{width:100%;border-collapse:collapse;}
+table th,table td{border:1px solid #ccc;padding:8px;text-align:center;}
+input, select, textarea, button{width:100%;padding:8px;margin-top:5px;margin-bottom:10px;border-radius:6px;border:1px solid #ccc;}
+button.action-btn{width:auto;margin:2px;background:#dc3545;color:#fff;border:none;padding:5px;}
 </style>
 </head>
 <body>
 
 <header>
-    <h1 id="header-name">لوحة المدير</h1>
-    <div class="time" id="current-time">00:00:00</div>
+<h1>المدير</h1>
+<div id="current-time">00:00:00</div>
 </header>
-<button class="lang-switch" id="lang-switch">Switch Language</button>
 
 <nav>
-    <button id="btn-users">حسابات المستخدمين</button>
-    <button id="btn-tasks">المهام</button>
-    <button id="btn-attendance">الحضور</button>
-    <button id="btn-reports">التقارير</button>
+<button onclick="showSection('users')" id="btn-users">المستخدمون</button>
+<button onclick="showSection('tasks')" id="btn-tasks">المهام</button>
+<button onclick="showSection('attendance')" id="btn-attendance">الحضور</button>
+<button onclick="showSection('reports')" id="btn-reports">التقارير</button>
 </nav>
 
 <div class="container">
-<div id="error-msg" class="error-msg"></div>
-
 <section id="users">
-    <h2 id="users-title">حسابات المستخدمين</h2>
-    <h3 id="add-user-title">إضافة مستخدم جديد</h3>
-    <label id="role-label">الدور</label>
-    <select id="user-role">
-        <option value="supervisor">مشرف</option>
-        <option value="employee">مندوب</option>
-    </select>
-    <label id="phone-label">الهاتف</label>
-    <input type="text" id="user-phone">
-    <label id="email-label">البريد الإلكتروني</label>
-    <input type="text" id="user-email">
-    <label id="pass-label">كلمة المرور</label>
-    <input type="text" id="user-pass">
-    <button id="add-btn">➕ إضافة</button>
+<h2>حسابات المستخدمين</h2>
+<h3>إضافة مستخدم جديد</h3>
+<label>الدور</label>
+<select id="user-role">
+<option value="supervisor">مشرف</option>
+<option value="employee">مندوب</option>
+</select>
+<label>الهاتف</label><input type="text" id="user-phone">
+<label>البريد الإلكتروني</label><input type="text" id="user-email">
+<label>كلمة المرور</label><input type="text" id="user-pass">
+<button onclick="addUser()">إضافة</button>
 
-    <h3 id="current-users-title">المستخدمون الحاليون</h3>
-    <table id="users-table">
-        <thead>
-            <tr>
-                <th id="th-role">الدور</th>
-                <th id="th-phone">الهاتف</th>
-                <th id="th-email">البريد</th>
-                <th id="th-pass">كلمة المرور</th>
-                <th id="th-actions">إجراءات</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
+<h3>المستخدمون الحاليون</h3>
+<table id="users-table">
+<thead><tr><th>الدور</th><th>الهاتف</th><th>البريد</th><th>كلمة المرور</th><th>إجراءات</th></tr></thead>
+<tbody></tbody>
+</table>
 </section>
 
 <section id="tasks">
-    <h2 id="tasks-title">المهام</h2>
-    <label id="task-emp-label">المندوب</label>
-    <select id="task-employee"></select>
-    <label id="task-title-label">عنوان المهمة</label>
-    <input type="text" id="task-title">
-    <label id="task-desc-label">الوصف</label>
-    <textarea id="task-desc"></textarea>
-    <label id="task-datetime-label">تاريخ ووقت</label>
-    <input type="datetime-local" id="task-datetime">
-    <button id="task-save-btn">💾 حفظ المهمة</button>
+<h2>المهام</h2>
+<label>المندوب</label><select id="task-employee"></select>
+<label>عنوان المهمة</label><input type="text" id="task-title">
+<label>الوصف</label><textarea id="task-desc"></textarea>
+<label>تاريخ ووقت</label><input type="datetime-local" id="task-datetime">
+<button onclick="saveTask()">حفظ المهمة</button>
 </section>
 
 <section id="attendance">
-    <h2 id="attendance-title">الحضور</h2>
-    <div id="attendance-cards"></div>
+<h2>الحضور</h2>
+<div id="attendance-cards"></div>
 </section>
 
 <section id="reports">
-    <h2 id="reports-title">التقارير</h2>
-    <canvas id="taskChart" style="max-height:300px;"></canvas>
+<h2>التقارير</h2>
+<div id="reports-list"></div>
 </section>
 
 </div>
 
 <script type="module">
-import { fetchUsers, upsertUser, deleteUser, fetchTasks, upsertTask, fetchAttendance } from './supabase.js';
+import { fetchUsers, upsertUser, deleteUser, fetchTasks, upsertTask, fetchAttendance, fetchEmployees, fetchReports, addReportNote } from './supabase.js';
 
-let currentLang='ar';
-const texts = {
-    ar:{header:'لوحة المدير',switch:'Switch Language',nav:{users:'حسابات المستخدمين',tasks:'المهام',attendance:'الحضور',reports:'التقارير'}},
-    en:{header:'Manager Dashboard',switch:'التبديل إلى العربية',nav:{users:'Users',tasks:'Tasks',attendance:'Attendance',reports:'Reports'}}
-};
+// الوقت
+function updateTime(){const now=new Date();document.getElementById("current-time").innerText=now.toLocaleTimeString();}
+setInterval(updateTime,1000);updateTime();
 
-// ======= التبديل بين الصفحات =======
-const sections=['users','tasks','attendance','reports'];
-sections.forEach(id=>{
-    document.getElementById('btn-'+id).addEventListener('click',()=>{showSection(id);});
-});
+// التنقل بين الأقسام
 function showSection(id){
-    sections.forEach(s=>document.getElementById(s).classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    sections.forEach(s=>document.getElementById('btn-'+s).classList.remove('active'));
-    document.getElementById('btn-'+id).classList.add('active');
+document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
+document.getElementById(id).classList.add('active');
+document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+document.getElementById('btn-'+id).classList.add('active');
 }
 showSection('users');
 
-// ======= الساعة =======
-function updateTime(){ document.getElementById("current-time").innerText = new Date().toLocaleTimeString(); }
-setInterval(updateTime,1000); updateTime();
-
-// ======= التبديل بين اللغة =======
-document.getElementById('lang-switch').addEventListener('click',()=>{
-    currentLang=currentLang==='ar'?'en':'ar';
-    const t=texts[currentLang];
-    document.body.style.direction=currentLang==='ar'?'rtl':'ltr';
-    document.getElementById('header-name').innerText=t.header;
-    document.getElementById('lang-switch').innerText=t.switch;
-    document.getElementById('btn-users').innerText=t.nav.users;
-    document.getElementById('btn-tasks').innerText=t.nav.tasks;
-    document.getElementById('btn-attendance').innerText=t.nav.attendance;
-    document.getElementById('btn-reports').innerText=t.nav.reports;
-});
-
-// ======= المستخدمون =======
+// إدارة المستخدمين
 async function loadUsers(){
-    try{
-        const users=await fetchUsers();
-        const tbody=document.querySelector('#users-table tbody'); tbody.innerHTML='';
-        users.forEach(u=>{
-            const tr=document.createElement('tr');
-            const editBtn=document.createElement('button');
-            editBtn.className='action-btn'; editBtn.innerText='✏️';
-            editBtn.addEventListener('click',()=>editUser(u.phone));
-            const delBtn=document.createElement('button');
-            delBtn.className='action-btn'; delBtn.innerText='🗑️';
-            delBtn.addEventListener('click',()=>removeUser(u.phone));
-            tr.innerHTML=`<td>${u.role}</td><td>${u.phone}</td><td>${u.email||''}</td><td>${u.password}</td><td></td>`;
-            tr.children[4].appendChild(editBtn); tr.children[4].appendChild(delBtn);
-            tbody.appendChild(tr);
-        });
-    }catch(e){ console.error(e); }
+const users=await fetchUsers();
+const tbody=document.querySelector('#users-table tbody');
+tbody.innerHTML='';
+users.forEach(u=>{
+const tr=document.createElement('tr');
+tr.innerHTML=`<td>${u.role}</td><td>${u.phone}</td><td>${u.email||''}</td><td>${u.password}</td>
+<td><button class="action-btn" onclick="editUser('${u.phone}')">تعديل</button>
+<button class="action-btn" onclick="removeUser('${u.phone}')">حذف</button></td>`;
+tbody.appendChild(tr);
+});
 }
 async function addUser(){
-    const role=document.getElementById('user-role').value;
-    const phone=document.getElementById('user-phone').value.trim();
-    const email=document.getElementById('user-email').value.trim();
-    const pass=document.getElementById('user-pass').value.trim();
-    if(!phone||!pass) return alert('أدخل الهاتف وكلمة المرور');
-    await upsertUser({role,phone,email,password:pass});
-    document.getElementById('user-phone').value='';
-    document.getElementById('user-email').value='';
-    document.getElementById('user-pass').value='';
-    await loadUsers();
+const role=document.getElementById('user-role').value;
+const phone=document.getElementById('user-phone').value.trim();
+const email=document.getElementById('user-email').value.trim();
+const pass=document.getElementById('user-pass').value.trim();
+if(!phone||!pass) return alert('أدخل الهاتف وكلمة المرور');
+await upsertUser({role,phone,email,password:pass});
+document.getElementById('user-phone').value='';
+document.getElementById('user-email').value='';
+document.getElementById('user-pass').value='';
+loadUsers();loadEmployees();
 }
-async function removeUser(phone){ if(confirm('هل تريد الحذف؟')){ await deleteUser(phone); await loadUsers(); } }
+async function removeUser(phone){if(confirm('هل تريد الحذف؟')){await deleteUser(phone);loadUsers();loadEmployees();}}
 function editUser(phone){
-    const rows=Array.from(document.querySelectorAll('#users-table tbody tr'));
-    rows.forEach(tr=>{
-        if(tr.children[1].innerText===phone){
-            document.getElementById('user-role').value=tr.children[0].innerText.includes('Supervisor')?'supervisor':'employee';
-            document.getElementById('user-phone').value=tr.children[1].innerText;
-            document.getElementById('user-email').value=tr.children[2].innerText;
-            document.getElementById('user-pass').value=tr.children[3].innerText;
-        }
-    });
+const users=Array.from(document.querySelectorAll('#users-table tbody tr'));
+users.forEach(tr=>{
+if(tr.children[1].innerText===phone){
+document.getElementById('user-role').value=tr.children[0].innerText==='مشرف'?'supervisor':'employee';
+document.getElementById('user-phone').value=tr.children[1].innerText;
+document.getElementById('user-email').value=tr.children[2].innerText;
+document.getElementById('user-pass').value=tr.children[3].innerText;
 }
-document.getElementById('add-btn').addEventListener('click',addUser);
-loadUsers();
+});
+}
 
-// ======= المهام =======
+// المهام
 async function loadEmployees(){
-    const users=await fetchUsers();
-    const empSelect=document.getElementById('task-employee'); empSelect.innerHTML='';
-    users.filter(u=>u.role==='employee').forEach(u=>{
-        const opt=document.createElement('option'); opt.value=u.phone; opt.innerText=u.phone;
-        empSelect.appendChild(opt);
-    });
+const users=await fetchUsers();
+const empSelect=document.getElementById('task-employee');
+empSelect.innerHTML='';
+users.filter(u=>u.role==='employee').forEach(u=>{
+const opt=document.createElement('option'); opt.value=u.phone; opt.innerText=u.phone; empSelect.appendChild(opt);
+});
 }
 loadEmployees();
 async function saveTask(){
-    const task={employee:document.getElementById('task-employee').value,
-        title:document.getElementById('task-title').value,
-        description:document.getElementById('task-desc').value,
-        datetime:document.getElementById('task-datetime').value};
-    await upsertTask(task); alert('تم الحفظ');
-}
-document.getElementById('task-save-btn').addEventListener('click',saveTask);
+const task={employee:document.getElementById('task-employee').value,title:document.getElementById('task-title').value,
+description:document.getElementById('task-desc').value,datetime:document.getElementById('task-datetime').value};
+await upsertTask(task); alert('تم الحفظ');}
 
-// ======= الحضور =======
+// الحضور
 async function loadAttendance(){
-    const attend=await fetchAttendance();
-    const div=document.getElementById('attendance-cards'); div.innerHTML='';
-    attend.forEach(a=>{
-        const card=document.createElement('div'); card.className='card';
-        card.innerHTML=`<strong>${a.employee}</strong><br>دخول: ${a.checkin||'-'} - خروج: ${a.checkout||'-'}`;
-        div.appendChild(card);
-    });
+const attend=await fetchAttendance();
+const div=document.getElementById('attendance-cards'); div.innerHTML='';
+attend.forEach(a=>{
+const card=document.createElement('div'); card.className='card';
+card.innerHTML=`<strong>${a.employee}</strong><br>دخول: ${a.checkin||'-'} - خروج: ${a.checkout||'-'}`;
+div.appendChild(card);
+});
 }
 loadAttendance();
 
-// ======= التقارير =======
+// التقارير
 async function loadReports(){
-    const tasks=await fetchTasks();
-    const ctx=document.getElementById('taskChart').getContext('2d');
-    const labels=[...new Set(tasks.map(t=>t.employee))];
-    const data=labels.map(l=>tasks.filter(t=>t.employee===l).length);
-    new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'عدد المهام',data,backgroundColor:'#28a745'}]}});
+const reports=await fetchReports();
+const div=document.getElementById('reports-list'); div.innerHTML='';
+reports.forEach(r=>{
+const card=document.createElement('div'); card.className='card';
+card.innerHTML=`<strong>${r.employee}</strong><br>${r.title||''}<br>${r.description||''}
+<label>ملاحظة المشرف</label>
+<input type="text" value="${r.supervisor_note||''}" onchange="addNote(${r.id},this.value)">`;
+div.appendChild(card);
+});
 }
-loadReports();
-
+async function addNote(id,note){await addReportNote(id,note);}
+loadUsers();loadReports();loadAttendance();
 </script>
-</body
+
+</body>
+</html>
