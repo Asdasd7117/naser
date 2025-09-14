@@ -19,7 +19,7 @@
 <body>
 
 <div class="container">
-    <button class="lang-switch">تبديل اللغة / Switch Language</button>
+    <button class="lang-switch" id="lang-switch">تبديل اللغة / Switch Language</button>
     <h2 id="title">تسجيل الدخول</h2>
     
     <label id="role-label">اختر الدور</label>
@@ -74,46 +74,70 @@ const texts = {
 };
 
 function updateLanguage() {
-    console.log("Updating language to:", lang); // للتحقق من تشغيل الدالة
-    // تحديث اتجاه الصفحة
-    document.body.style.direction = lang === 'ar' ? 'rtl' : 'ltr';
-    // تحديث النصوص
-    document.getElementById('title').innerText = texts[lang].title;
-    document.getElementById('role-label').innerText = texts[lang].role;
-    document.getElementById('user-label').innerText = texts[lang].user;
-    document.getElementById('pass-label').innerText = texts[lang].pass;
-    document.getElementById('loginBtn').innerText = texts[lang].login;
-    document.querySelector('.lang-switch').innerText = texts[lang].langSwitch;
+    console.log("Updating language to:", lang); // لتتبع تشغيل الدالة
+    try {
+        // تحديث اتجاه الصفحة
+        document.body.style.direction = lang === 'ar' ? 'rtl' : 'ltr';
+        
+        // تحديث النصوص
+        const title = document.getElementById('title');
+        const roleLabel = document.getElementById('role-label');
+        const userLabel = document.getElementById('user-label');
+        const passLabel = document.getElementById('pass-label');
+        const loginBtn = document.getElementById('loginBtn');
+        const langSwitch = document.getElementById('lang-switch');
+        const msgDiv = document.getElementById('msg');
 
-    // تحديث placeholders
-    const role = document.getElementById('role').value;
-    const usernameInput = document.getElementById('username');
-    const passwordInput = document.getElementById('password');
-    usernameInput.placeholder = role === 'manager' ? texts[lang].phonePlaceholder : texts[lang].phoneEmailPlaceholder;
-    passwordInput.placeholder = texts[lang].passwordPlaceholder;
+        if (!title || !roleLabel || !userLabel || !passLabel || !loginBtn || !langSwitch || !msgDiv) {
+            console.error("One or more DOM elements are missing!");
+            return;
+        }
 
-    // تحديث رسالة الخطأ إذا وجدت
-    const msgDiv = document.getElementById('msg');
-    if (msgDiv.dataset.lastMessage) {
-        msgDiv.innerText = texts[lang][msgDiv.dataset.lastMessage] || '';
+        title.innerText = texts[lang].title;
+        roleLabel.innerText = texts[lang].role;
+        userLabel.innerText = texts[lang].user;
+        passLabel.innerText = texts[lang].pass;
+        loginBtn.innerText = texts[lang].login;
+        langSwitch.innerText = texts[lang].langSwitch;
+
+        // تحديث placeholders
+        const role = document.getElementById('role').value;
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+
+        if (!usernameInput || !passwordInput) {
+            console.error("Username or password input is missing!");
+            return;
+        }
+
+        usernameInput.placeholder = role === 'manager' ? texts[lang].phonePlaceholder : texts[lang].phoneEmailPlaceholder;
+        passwordInput.placeholder = texts[lang].passwordPlaceholder;
+
+        // تحديث رسالة الخطأ
+        if (msgDiv.dataset.lastMessage) {
+            msgDiv.innerText = texts[lang][msgDiv.dataset.lastMessage] || '';
+        }
+    } catch (error) {
+        console.error("Error in updateLanguage:", error);
     }
 }
 
 // زر تبديل اللغة
-document.querySelector('.lang-switch').addEventListener('click', () => {
-    console.log("Language switch button clicked, current lang:", lang); // للتحقق من النقر
+document.getElementById('lang-switch').addEventListener('click', () => {
+    console.log("Language switch button clicked, current lang:", lang); // لتتبع النقر
     lang = lang === 'ar' ? 'en' : 'ar';
     updateLanguage();
 });
 
 // تغيير placeholders عند تغيير الدور
 document.getElementById('role').addEventListener('change', () => {
-    console.log("Role changed, updating language"); // للتحقق من تغيير الدور
+    console.log("Role changed, updating language"); // لتتبع تغيير الدور
     updateLanguage();
 });
 
 // تسجيل الدخول
 document.getElementById('loginBtn').addEventListener('click', async () => {
+    console.log("Login button clicked"); // لتتبع النقر
     const role = document.getElementById('role').value;
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value.trim();
@@ -130,6 +154,7 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
 
         // المدير الافتراضي
         if (role === 'manager' && username === '7123456789' && password === '123456') {
+            console.log("Default manager login successful, redirecting to manager.html");
             window.location.href = 'manager.html';
             return;
         }
@@ -140,17 +165,19 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
             return;
         }
 
+        console.log("Login successful, user role:", user.role);
         if (user.role === 'manager') window.location.href = 'manager.html';
         else if (user.role === 'supervisor') window.location.href = 'supervisor.html';
         else if (user.role === 'employee') window.location.href = 'employee.html';
     } catch (error) {
-        console.error("Login error:", error); // للتحقق من أخطاء تسجيل الدخول
+        console.error("Login error:", error);
         msgDiv.dataset.lastMessage = 'invalid';
         msgDiv.innerText = texts[lang].invalid;
     }
 });
 
 // استدعاء أولي لتحديث النصوص
+console.log("Initial page load, setting up language");
 updateLanguage();
 </script>
 
