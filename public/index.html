@@ -2,8 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-translate="loginTitle">Login</title>
   <link rel="stylesheet" href="style.css">
+
   <!-- استدعاء ملفات الترجمة والجافاسكربت -->
   <script src="lang.js" defer></script>
   <script src="main.js" type="module" defer></script>
@@ -17,10 +19,10 @@
   <!-- نموذج تسجيل الدخول -->
   <form id="loginForm">
     <label for="emailOrPhone" data-translate="emailPhone">Email or Phone</label>
-    <input type="text" id="emailOrPhone" required>
+    <input type="text" id="emailOrPhone" required placeholder="Email or Phone">
 
     <label for="password" data-translate="password">Password</label>
-    <input type="password" id="password" required>
+    <input type="password" id="password" required placeholder="Password">
 
     <label for="role" data-translate="role">Role</label>
     <select id="role">
