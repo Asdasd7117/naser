@@ -1,13 +1,16 @@
-document.addEventListener("DOMContentLoaded", initLanguage);
+document.addEventListener("DOMContentLoaded", () => {
+  initLanguage();
+});
 
 function initLanguage() {
   const savedLang = localStorage.getItem("lang") || "en";
   setLanguage(savedLang);
 
   const toggleBtn = document.getElementById("langToggle");
-  if(toggleBtn){
+  if (toggleBtn) {
     toggleBtn.addEventListener("click", () => {
-      const newLang = localStorage.getItem("lang") === "en" ? "ar" : "en";
+      const currentLang = localStorage.getItem("lang") || "en";
+      const newLang = currentLang === "en" ? "ar" : "en";
       setLanguage(newLang);
     });
   }
@@ -15,13 +18,20 @@ function initLanguage() {
 
 function setLanguage(lang) {
   localStorage.setItem("lang", lang);
+
+  // تحديث كل العناصر التي تحتوي على data-translate
   document.querySelectorAll("[data-translate]").forEach(el => {
     const key = el.getAttribute("data-translate");
-    if(translations[lang][key]) el.textContent = translations[lang][key];
+    if (translations[lang][key]) {
+      el.textContent = translations[lang][key];
+    }
   });
+
+  // تحديث اتجاه الصفحة
   document.body.dir = lang === "ar" ? "rtl" : "ltr";
 }
 
+// قاموس الترجمات
 const translations = {
   en: {
     loginTitle: "Login",
