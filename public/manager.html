@@ -1,114 +1,48 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title data-i18n="manager_title">شاشة المدير / الموارد البشرية</title>
+  <title data-translate="manager">Manager</title>
   <link rel="stylesheet" href="style.css">
-  <script defer src="main.js"></script>
+  <script src="lang.js" defer></script>
+  <script src="main.js" type="module" defer></script>
 </head>
 <body>
-  <header>
-    <h1 data-i18n="manager_title">شاشة المدير / الموارد البشرية</h1>
-    <select id="languageSwitcher">
-      <option value="ar">العربية</option>
-      <option value="en">English</option>
-    </select>
-  </header>
+  <button id="langToggle">🌐</button>
+  <button id="logoutBtn" data-translate="logout">Logout</button>
 
-  <main>
-    <!-- أ. التقارير والتحليلات -->
-    <section id="reports-analytics">
-      <h2 data-i18n="analytics">التقارير والتحليلات</h2>
-      <div class="filters">
-        <label data-i18n="filter">الفترة:</label>
-        <select>
-          <option data-i18n="daily">يومي</option>
-          <option data-i18n="weekly">أسبوعي</option>
-          <option data-i18n="monthly">شهري</option>
-        </select>
-      </div>
-      <div class="card">
-        <h3 data-i18n="delegate_performance">أداء المندوب: أحمد</h3>
-        <p data-i18n="completed">المكتملة: 20</p>
-        <p data-i18n="delayed">المؤجلة: 3</p>
-        <p data-i18n="progress">نسبة الإنجاز: 87%</p>
-      </div>
-      <canvas id="tasksChart"></canvas>
-    </section>
+  <h2 data-translate="dashboard">Control Panel</h2>
 
-    <!-- ب. الحضور والانصراف -->
-    <section id="attendance">
-      <h2 data-i18n="attendance">الحضور والانصراف</h2>
-      <div class="card">
-        <h3>المندوب: سارة</h3>
-        <p data-i18n="checkin">تسجيل دخول: 09:00 ص</p>
-        <p data-i18n="checkout">تسجيل خروج: 05:00 م</p>
-        <p data-i18n="work_hours">عدد الساعات: 8</p>
-        <p data-i18n="deviation">التأخير: لا يوجد</p>
-      </div>
-    </section>
+  <section>
+    <h3 data-translate="performanceReports">Reports & Analytics</h3>
+    <ul id="analyticsList"></ul>
+  </section>
 
-    <!-- ج. لوحة التحكم -->
-    <section id="control-panel">
-      <h2 data-i18n="control_panel">لوحة التحكم</h2>
+  <section>
+    <h3 data-translate="attendance">Attendance</h3>
+    <ul id="attendanceList"></ul>
+  </section>
 
-      <!-- إنشاء مستخدم جديد -->
-      <div class="card">
-        <h3 data-i18n="create_user">إنشاء مستخدم جديد</h3>
-        <form id="createUserForm">
-          <label data-i18n="role">الدور:</label>
-          <select name="role">
-            <option value="supervisor" data-i18n="supervisor">مشرف</option>
-            <option value="delegate" data-i18n="delegate">مندوب</option>
-          </select><br>
+  <section>
+    <h3 data-translate="addUser">Add New User</h3>
+    <form id="addUserForm">
+      <label data-translate="fullName">Full Name</label>
+      <input type="text" id="newFullName" required>
 
-          <label data-i18n="name">الاسم:</label>
-          <input type="text" name="name" required><br>
+      <label data-translate="emailPhone">Email or Phone</label>
+      <input type="text" id="newEmailOrPhone" required>
 
-          <label data-i18n="email">البريد الإلكتروني:</label>
-          <input type="email" name="email"><br>
+      <label data-translate="password">Password</label>
+      <input type="password" id="newPassword" required>
 
-          <label data-i18n="phone">رقم الهاتف:</label>
-          <input type="tel" name="phone"><br>
+      <label data-translate="role">Role</label>
+      <select id="newRole">
+        <option value="supervisor" data-translate="supervisor">Supervisor</option>
+        <option value="delegate" data-translate="delegate">Delegate</option>
+      </select>
 
-          <label data-i18n="password">كلمة المرور:</label>
-          <input type="password" name="password" required><br>
-
-          <button type="submit" data-i18n="create">إنشاء</button>
-        </form>
-      </div>
-
-      <!-- إضافة / تعديل مهام -->
-      <div class="card">
-        <h3 data-i18n="manage_tasks">إضافة / تعديل مهام</h3>
-        <form id="taskForm">
-          <label data-i18n="client">العميل:</label>
-          <input type="text" name="client" required><br>
-
-          <label data-i18n="address">العنوان:</label>
-          <input type="text" name="address" required><br>
-
-          <label data-i18n="time">الوقت:</label>
-          <input type="time" name="time" required><br>
-
-          <button type="submit" data-i18n="save_task">حفظ المهمة</button>
-        </form>
-      </div>
-
-      <!-- إرسال إشعارات جماعية -->
-      <div class="card">
-        <h3 data-i18n="send_notifications">إرسال إشعارات جماعية</h3>
-        <textarea placeholder="أدخل رسالتك هنا"></textarea><br>
-        <button data-i18n="send">إرسال</button>
-      </div>
-    </section>
-  </main>
-
-  <!-- Bottom Navigation -->
-  <nav class="bottom-nav">
-    <button onclick="showSection('reports-analytics')" data-i18n="analytics">تحليلات</button>
-    <button onclick="showSection('attendance')" data-i18n="attendance">الحضور</button>
-    <button onclick="showSection('control-panel')" data-i18n="control_panel">لوحة التحكم</button>
-  </nav>
+      <button type="submit" data-translate="submit">Submit</button>
+    </form>
+  </section>
 </body>
 </html>
