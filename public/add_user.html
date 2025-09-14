@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>إضافة مستخدم جديد</title>
+<script src="https://unpkg.com/@supabase/supabase-js"></script>
+<style>
+body { font-family: Arial, sans-serif; background-color: #f0f4f7; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+.container { background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); width: 350px; }
+h2 { text-align: center; margin-bottom: 20px; }
+label { display: block; margin-top: 10px; }
+input, select { width: 100%; padding: 8px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; }
+button { width: 100%; padding: 10px; margin-top: 20px; background-color: #28a745; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
+button:hover { background-color: #218838; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h2>إضافة مستخدم جديد</h2>
+
+  <label for="name">الاسم</label>
+  <input type="text" id="name" placeholder="أدخل الاسم">
+
+  <label for="email">البريد الإلكتروني / الهاتف</label>
+  <input type="text" id="email" placeholder="أدخل البريد الإلكتروني أو الهاتف">
+
+  <label for="password">كلمة المرور</label>
+  <input type="password" id="password" placeholder="أدخل كلمة المرور">
+
+  <label for="role">الدور</label>
+  <select id="role">
+    <option value="manager">المدير</option>
+    <option value="supervisor">المشرف</option>
+    <option value="employee">المندوب</option>
+  </select>
+
+  <button id="addUserBtn">إضافة المستخدم</button>
+</div>
+
+<script>
+const SUPABASE_URL = "https://ncjxqfqwswwikedaffif.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NDEwNzQsImV4cCI6MjA3MzQxNzA3NH0.4G54968qAHyePjq9_ufSCSA1fHzx5XHFzOAqGKmVW18";
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+document.getElementById('addUserBtn').addEventListener('click', async () => {
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value.trim();
+  const role = document.getElementById('role').value;
+
+  if(!name || !email || !password){
+    alert("يرجى إدخال جميع البيانات");
+    return;
+  }
+
+  // إضافة المستخدم إلى Supabase
+  const { data, error } = await supabase
+    .from('users')
+    .insert([{ name, email, password, role }]);
+
+  if(error){
+    console.error(error);
+    alert("حدث خطأ أثناء إضافة المستخدم");
+  } else {
+    alert("تمت إضافة المستخدم بنجاح!");
+    // تفريغ الحقول
+    document.getElementById('name').value = '';
+    document.getElementById('email').value = '';
+    document.getElementById('password').value = '';
+    document.getElementById('role').value = 'employee';
+  }
+});
+</script>
+
+</body>
+</html>
