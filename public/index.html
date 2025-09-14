@@ -3,102 +3,86 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title id="page-title">تسجيل الدخول</title>
+<title>تسجيل الدخول</title>
 <style>
-body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f0f2f5; display:flex; justify-content:center; align-items:center; height:100vh;}
-.container { background:#fff; padding:30px; border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,0.2); width:320px;}
-h2 { text-align:center; margin-bottom:20px;}
-label { display:block; margin:10px 0 5px;}
-input, select, button { width:100%; padding:10px; margin-bottom:15px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box;}
-button { background:#007bff; color:#fff; border:none; font-weight:bold; cursor:pointer; transition:0.2s;}
-button:hover { background:#0056b3;}
-.lang-switch { background:#ffc107; color:#000; border:none; cursor:pointer; margin-bottom:10px; border-radius:6px; padding:8px;}
-.message { text-align:center; margin-top:10px; color:red; min-height:20px;}
+  body { font-family: Arial, sans-serif; background-color: #f0f4f7; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+  .login-container { background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); width: 300px; }
+  h2 { text-align: center; margin-bottom: 20px; }
+  label { display: block; margin-top: 10px; }
+  input, select { width: 100%; padding: 8px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; }
+  button { width: 100%; padding: 10px; margin-top: 20px; background-color: #007BFF; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
+  button:hover { background-color: #0056b3; }
+  .lang-switch { margin-top: 10px; text-align: center; cursor: pointer; color: #007BFF; }
 </style>
 </head>
 <body>
 
-<div class="container">
-    <button class="lang-switch" onclick="switchLanguage()">تبديل اللغة</button>
-    <h2 id="title"></h2>
-    <label id="role-label"></label>
-    <select id="role"></select>
-    <label id="user-label"></label>
-    <input type="text" id="username" placeholder="">
-    <label id="pass-label"></label>
-    <input type="password" id="password" placeholder="">
-    <button id="loginBtn"></button>
-    <div class="message" id="msg"></div>
+<div class="login-container">
+  <h2 id="title">تسجيل الدخول</h2>
+  
+  <label id="label-role" for="role">اختر الدور</label>
+  <select id="role">
+    <option value="manager">المدير</option>
+    <option value="supervisor">المشرف</option>
+    <option value="employee">المندوب</option>
+  </select>
+
+  <label id="label-email" for="email">البريد الإلكتروني / رقم الهاتف</label>
+  <input type="text" id="email" placeholder="أدخل البريد الإلكتروني أو رقم الهاتف">
+
+  <label id="label-password" for="password">كلمة المرور</label>
+  <input type="password" id="password" placeholder="أدخل كلمة المرور">
+
+  <button id="loginBtn">تسجيل الدخول</button>
+
+  <div id="forgot" style="text-align:center; margin-top:10px; cursor:pointer; color:#007BFF;">نسيت كلمة المرور؟</div>
+  <div class="lang-switch" id="langSwitch">English</div>
 </div>
 
-<script type="module">
-import { loginUser } from './supabase.js';
+<script>
+const langSwitch = document.getElementById('langSwitch');
+let isArabic = true;
 
-const translations = {
-    ar: {
-        pageTitle:"تسجيل الدخول", title:"تسجيل الدخول", roleLabel:"اختر الدور", roles:["مدير","مشرف","مندوب"],
-        userLabel:"رقم الهاتف أو البريد الإلكتروني", userPlaceholder:"مثال: 7123456789 أو email@example.com",
-        passLabel:"كلمة المرور", passPlaceholder:"مثال: 123456",
-        loginBtn:"تسجيل الدخول", msgFill:"يرجى ملء جميع الحقول", msgInvalid:"بيانات تسجيل الدخول غير صحيحة",
-        langSwitch:"تبديل اللغة"
-    },
-    en: {
-        pageTitle:"Login", title:"Login", roleLabel:"Select Role", roles:["Manager","Supervisor","Employee"],
-        userLabel:"Phone or Email", userPlaceholder:"Example: 7123456789 or email@example.com",
-        passLabel:"Password", passPlaceholder:"Example: 123456",
-        loginBtn:"Login", msgFill:"Please fill all fields", msgInvalid:"Invalid credentials",
-        langSwitch:"Switch Language"
-    }
-};
+langSwitch.addEventListener('click', () => {
+  isArabic = !isArabic;
+  if(isArabic){
+    document.documentElement.lang = 'ar';
+    document.body.style.direction = 'rtl';
+    document.getElementById('title').innerText = 'تسجيل الدخول';
+    document.getElementById('label-role').innerText = 'اختر الدور';
+    document.getElementById('label-email').innerText = 'البريد الإلكتروني / رقم الهاتف';
+    document.getElementById('label-password').innerText = 'كلمة المرور';
+    document.getElementById('loginBtn').innerText = 'تسجيل الدخول';
+    document.getElementById('forgot').innerText = 'نسيت كلمة المرور؟';
+    langSwitch.innerText = 'English';
+  } else {
+    document.documentElement.lang = 'en';
+    document.body.style.direction = 'ltr';
+    document.getElementById('title').innerText = 'Login';
+    document.getElementById('label-role').innerText = 'Select Role';
+    document.getElementById('label-email').innerText = 'Email / Phone';
+    document.getElementById('label-password').innerText = 'Password';
+    document.getElementById('loginBtn').innerText = 'Login';
+    document.getElementById('forgot').innerText = 'Forgot Password?';
+    langSwitch.innerText = 'عربي';
+  }
+});
 
-let lang='ar';
+// محاكاة تسجيل الدخول والتحويل إلى الصفحة المناسبة
+document.getElementById('loginBtn').addEventListener('click', () => {
+  const role = document.getElementById('role').value;
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
 
-function switchLanguage(){
-    lang=lang==='ar'?'en':'ar';
-    document.body.style.direction=lang==='ar'?'rtl':'ltr';
-    const t=translations[lang];
-    document.getElementById('page-title').innerText=t.pageTitle;
-    document.getElementById('title').innerText=t.title;
-    document.getElementById('role-label').innerText=t.roleLabel;
+  if(!email || !password){
+    alert(isArabic ? 'يرجى إدخال جميع البيانات' : 'Please enter all fields');
+    return;
+  }
 
-    const roleSelect=document.getElementById('role');
-    roleSelect.innerHTML='';
-    t.roles.forEach((r,i)=>{
-        const opt=document.createElement('option');
-        opt.value=['manager','supervisor','employee'][i];
-        opt.text=r;
-        roleSelect.appendChild(opt);
-    });
-
-    document.getElementById('user-label').innerText=t.userLabel;
-    document.getElementById('username').placeholder=t.userPlaceholder;
-    document.getElementById('username').value='';
-    document.getElementById('pass-label').innerText=t.passLabel;
-    document.getElementById('password').placeholder=t.passPlaceholder;
-    document.getElementById('password').value='';
-
-    document.getElementById('loginBtn').innerText=t.loginBtn;
-    document.querySelector('.lang-switch').innerText=t.langSwitch;
-}
-
-window.onload=switchLanguage;
-
-document.getElementById('loginBtn').addEventListener('click', async ()=>{
-    const role=document.getElementById('role').value;
-    const username=document.getElementById('username').value.trim();
-    const password=document.getElementById('password').value.trim();
-    const msg=document.getElementById('msg');
-    const t=translations[lang];
-
-    if(!username||!password){ msg.innerText=t.msgFill; return; }
-
-    const user=await loginUser(role,username,password);
-    if(!user){ msg.innerText=t.msgInvalid; return; }
-
-    // إعادة التوجيه حسب الدور
-    if(user.role==='manager') window.location.href='manager.html';
-    else if(user.role==='supervisor') window.location.href='supervisor.html';
-    else if(user.role==='employee') window.location.href='employee.html';
+  // تحويل حسب الدور
+  if(role === 'manager') window.location.href = 'manager.html';
+  else if(role === 'supervisor') window.location.href = 'supervisor.html';
+  else if(role === 'employee') window.location.href = 'employee.html';
 });
 </script>
 
