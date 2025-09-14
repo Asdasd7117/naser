@@ -1,184 +1,113 @@
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تسجيل الدخول / Login</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f0f2f5; display:flex; justify-content:center; align-items:center; height:100vh; transition:all 0.3s;}
-        .container { background:#fff; padding:30px; border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,0.2); width:320px;}
-        h2 { text-align:center; margin-bottom:20px;}
-        label { display:block; margin:10px 0 5px;}
-        input, select, button { width:100%; padding:10px; margin-bottom:15px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box;}
-        button { background:#007bff; color:#fff; border:none; font-weight:bold; cursor:pointer; transition:0.2s;}
-        button:hover { background:#0056b3;}
-        .lang-switch { background:#ffc107; color:#000; border:none; cursor:pointer; margin-bottom:10px; border-radius:6px; padding:8px;}
-        .message { text-align:center; margin-top:10px; color:red; min-height:20px;}
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="page-title">تسجيل الدخول</title>
+<style>
+body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f0f2f5; display:flex; justify-content:center; align-items:center; height:100vh; transition:all 0.3s;}
+.container { background:#fff; padding:30px; border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,0.2); width:320px;}
+h2 { text-align:center; margin-bottom:20px;}
+label { display:block; margin:10px 0 5px;}
+input, select, button { width:100%; padding:10px; margin-bottom:15px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box;}
+button { background:#007bff; color:#fff; border:none; font-weight:bold; cursor:pointer; transition:0.2s;}
+button:hover { background:#0056b3;}
+.lang-switch { background:#ffc107; color:#000; border:none; cursor:pointer; margin-bottom:10px; border-radius:6px; padding:8px;}
+.message { text-align:center; margin-top:10px; color:red; min-height:20px;}
+</style>
 </head>
 <body>
 
 <div class="container">
-    <button class="lang-switch" id="lang-switch">تبديل اللغة / Switch Language</button>
+    <button class="lang-switch" onclick="switchLanguage()">تبديل اللغة</button>
     <h2 id="title">تسجيل الدخول</h2>
-    
     <label id="role-label">اختر الدور</label>
     <select id="role">
-        <option value="manager">مدير / Manager</option>
-        <option value="supervisor">مشرف / Supervisor</option>
-        <option value="employee">مندوب / Employee</option>
+        <option value="manager">مدير</option>
+        <option value="supervisor">مشرف</option>
+        <option value="employee">مندوب</option>
     </select>
-    
-    <label id="user-label">رقم الهاتف / البريد الإلكتروني</label>
+    <label id="user-label">رقم الهاتف أو البريد الإلكتروني</label>
     <input type="text" id="username" placeholder="">
-    
     <label id="pass-label">كلمة المرور</label>
     <input type="password" id="password" placeholder="">
-    
-    <button id="loginBtn">تسجيل الدخول / Login</button>
+    <button id="loginBtn">تسجيل الدخول</button>
     <div class="message" id="msg"></div>
 </div>
 
 <script type="module">
 import { loginUser } from './supabase.js';
 
-let lang = 'ar';
-
-const texts = {
+// المفاتيح الخاصة باللغتين
+const translations = {
     ar: {
+        pageTitle: "تسجيل الدخول",
         title: "تسجيل الدخول",
-        role: "اختر الدور",
-        user: "رقم الهاتف / البريد الإلكتروني",
-        pass: "كلمة المرور",
-        login: "تسجيل الدخول",
-        langSwitch: "تبديل اللغة",
-        phonePlaceholder: "أدخل رقم الهاتف",
-        phoneEmailPlaceholder: "أدخل رقم الهاتف أو البريد الإلكتروني",
-        passwordPlaceholder: "أدخل كلمة المرور",
-        fillAll: "يرجى ملء جميع الحقول",
-        invalid: "بيانات تسجيل الدخول غير صحيحة"
+        roleLabel: "اختر الدور",
+        roles: ["مدير", "مشرف", "مندوب"],
+        userLabel: "رقم الهاتف أو البريد الإلكتروني",
+        userPlaceholder: "",
+        passLabel: "كلمة المرور",
+        passPlaceholder: "",
+        loginBtn: "تسجيل الدخول",
+        msgFill: "يرجى ملء جميع الحقول",
+        msgInvalid: "بيانات تسجيل الدخول غير صحيحة",
+        langSwitch: "تبديل اللغة"
     },
     en: {
+        pageTitle: "Login",
         title: "Login",
-        role: "Select Role",
-        user: "Phone / Email",
-        pass: "Password",
-        login: "Login",
-        langSwitch: "Switch Language",
-        phonePlaceholder: "Enter Phone",
-        phoneEmailPlaceholder: "Enter Phone or Email",
-        passwordPlaceholder: "Enter Password",
-        fillAll: "Please fill all fields",
-        invalid: "Invalid credentials"
+        roleLabel: "Select Role",
+        roles: ["Manager", "Supervisor", "Employee"],
+        userLabel: "Phone or Email",
+        userPlaceholder: "",
+        passLabel: "Password",
+        passPlaceholder: "",
+        loginBtn: "Login",
+        msgFill: "Please fill all fields",
+        msgInvalid: "Invalid credentials",
+        langSwitch: "Switch Language"
     }
 };
 
-function updateLanguage() {
-    console.log("Updating language to:", lang); // لتتبع تشغيل الدالة
-    try {
-        // تحديث اتجاه الصفحة
-        document.body.style.direction = lang === 'ar' ? 'rtl' : 'ltr';
-        
-        // تحديث النصوص
-        const title = document.getElementById('title');
-        const roleLabel = document.getElementById('role-label');
-        const userLabel = document.getElementById('user-label');
-        const passLabel = document.getElementById('pass-label');
-        const loginBtn = document.getElementById('loginBtn');
-        const langSwitch = document.getElementById('lang-switch');
-        const msgDiv = document.getElementById('msg');
+let lang = 'ar';
 
-        if (!title || !roleLabel || !userLabel || !passLabel || !loginBtn || !langSwitch || !msgDiv) {
-            console.error("One or more DOM elements are missing!");
-            return;
-        }
+function switchLanguage() {
+    lang = lang === 'ar' ? 'en' : 'ar';
+    document.body.style.direction = lang === 'ar' ? 'rtl' : 'ltr';
+    const t = translations[lang];
 
-        title.innerText = texts[lang].title;
-        roleLabel.innerText = texts[lang].role;
-        userLabel.innerText = texts[lang].user;
-        passLabel.innerText = texts[lang].pass;
-        loginBtn.innerText = texts[lang].login;
-        langSwitch.innerText = texts[lang].langSwitch;
-
-        // تحديث placeholders
-        const role = document.getElementById('role').value;
-        const usernameInput = document.getElementById('username');
-        const passwordInput = document.getElementById('password');
-
-        if (!usernameInput || !passwordInput) {
-            console.error("Username or password input is missing!");
-            return;
-        }
-
-        usernameInput.placeholder = role === 'manager' ? texts[lang].phonePlaceholder : texts[lang].phoneEmailPlaceholder;
-        passwordInput.placeholder = texts[lang].passwordPlaceholder;
-
-        // تحديث رسالة الخطأ
-        if (msgDiv.dataset.lastMessage) {
-            msgDiv.innerText = texts[lang][msgDiv.dataset.lastMessage] || '';
-        }
-    } catch (error) {
-        console.error("Error in updateLanguage:", error);
-    }
+    document.getElementById('page-title').innerText = t.pageTitle;
+    document.getElementById('title').innerText = t.title;
+    document.getElementById('role-label').innerText = t.roleLabel;
+    const roleSelect = document.getElementById('role');
+    t.roles.forEach((r, i) => roleSelect.options[i].text = r);
+    document.getElementById('user-label').innerText = t.userLabel;
+    document.getElementById('username').placeholder = t.userPlaceholder;
+    document.getElementById('pass-label').innerText = t.passLabel;
+    document.getElementById('password').placeholder = t.passPlaceholder;
+    document.getElementById('loginBtn').innerText = t.loginBtn;
+    document.querySelector('.lang-switch').innerText = t.langSwitch;
 }
 
-// زر تبديل اللغة
-document.getElementById('lang-switch').addEventListener('click', () => {
-    console.log("Language switch button clicked, current lang:", lang); // لتتبع النقر
-    lang = lang === 'ar' ? 'en' : 'ar';
-    updateLanguage();
-});
-
-// تغيير placeholders عند تغيير الدور
-document.getElementById('role').addEventListener('change', () => {
-    console.log("Role changed, updating language"); // لتتبع تغيير الدور
-    updateLanguage();
-});
-
-// تسجيل الدخول
 document.getElementById('loginBtn').addEventListener('click', async () => {
-    console.log("Login button clicked"); // لتتبع النقر
     const role = document.getElementById('role').value;
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value.trim();
-    const msgDiv = document.getElementById('msg');
+    const msg = document.getElementById('msg');
 
-    if (!username || !password) {
-        msgDiv.dataset.lastMessage = 'fillAll';
-        msgDiv.innerText = texts[lang].fillAll;
-        return;
-    }
+    const t = translations[lang];
 
-    try {
-        const user = await loginUser(role, username, password);
+    if (!username || !password) { msg.innerText = t.msgFill; return; }
 
-        // المدير الافتراضي
-        if (role === 'manager' && username === '7123456789' && password === '123456') {
-            console.log("Default manager login successful, redirecting to manager.html");
-            window.location.href = 'manager.html';
-            return;
-        }
+    const user = await loginUser(role, username, password);
+    if (!user) { msg.innerText = t.msgInvalid; return; }
 
-        if (!user) {
-            msgDiv.dataset.lastMessage = 'invalid';
-            msgDiv.innerText = texts[lang].invalid;
-            return;
-        }
-
-        console.log("Login successful, user role:", user.role);
-        if (user.role === 'manager') window.location.href = 'manager.html';
-        else if (user.role === 'supervisor') window.location.href = 'supervisor.html';
-        else if (user.role === 'employee') window.location.href = 'employee.html';
-    } catch (error) {
-        console.error("Login error:", error);
-        msgDiv.dataset.lastMessage = 'invalid';
-        msgDiv.innerText = texts[lang].invalid;
-    }
+    // إعادة التوجيه حسب الدور
+    if (user.role === 'manager') window.location.href = 'manager.html';
+    else if (user.role === 'supervisor') window.location.href = 'supervisor.html';
+    else if (user.role === 'employee') window.location.href = 'employee.html';
 });
-
-// استدعاء أولي لتحديث النصوص
-console.log("Initial page load, setting up language");
-updateLanguage();
 </script>
 
 </body>
