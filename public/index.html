@@ -41,12 +41,16 @@ button:hover { background-color: #0056b3; }
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-    // Supabase setup (يمكن تفعيله لاحقاً)
+    // ---------------------------
+    // إعداد Supabase بدون تعارض
+    // ---------------------------
     const SUPABASE_URL = "https://ncjxqfqwswwikedaffif.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NDEwNzQsImV4cCI6MjA3MzQxNzA3NH0.4G54968qAHyePjq9_ufSCSA1fHzx5XHFzOAqGKmVW18";
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const SUPABASE_KEY = "YOUR_KEY_HERE";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // اللغة
+    // ---------------------------
+    // إعداد اللغة
+    // ---------------------------
     let isArabic = true;
     const langSwitch = document.getElementById('langSwitch');
 
@@ -78,7 +82,7 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     function updateLanguage(){
-      console.log("تغيير اللغة"); // تأكد أن الدالة تعمل
+      console.log("تغيير اللغة"); // للتأكد من عمل الحدث
       const lang = isArabic ? 'ar' : 'en';
       document.documentElement.lang = lang;
       document.body.style.direction = isArabic ? 'rtl' : 'ltr';
@@ -101,11 +105,10 @@ document.addEventListener("DOMContentLoaded", () => {
     updateLanguage(); // عند تحميل الصفحة
 
     // ---------------------------
-    // تسجيل الدخول
+    // تسجيل الدخول التجريبي
     // ---------------------------
     const loginBtn = document.getElementById('loginBtn');
 
-    // نسخة وهمية للمستخدمين للاختبار
     const dummyUsers = [
       { role: 'manager', email: 'admin@domain.com', password: '1234', page: 'manager.html' },
       { role: 'supervisor', email: 'super@domain.com', password: '1234', page: 'supervisor.html' },
@@ -128,7 +131,7 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log("User found:", user);
 
       if(user){
-        window.location.href = user.page;
+        window.location.href = user.page; // التوجيه
       } else {
         alert(isArabic ? texts.ar.invalid : texts.en.invalid);
       }
