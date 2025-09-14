@@ -42,10 +42,10 @@ button:hover { background-color: #0056b3; }
 <script>
 document.addEventListener("DOMContentLoaded", () => {
     // ---------------------------
-    // إعداد Supabase بدون تعارض
+    // إعداد Supabase الحقيقي
     // ---------------------------
     const SUPABASE_URL = "https://ncjxqfqwswwikedaffif.supabase.co";
-    const SUPABASE_KEY = "YOUR_KEY_HERE";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NDEwNzQsImV4cCI6MjA3MzQxNzA3NH0.4G54968qAHyePjq9_ufSCSA1fHzx5XHFzOAqGKmVW18";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     // ---------------------------
@@ -82,7 +82,6 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     function updateLanguage(){
-      console.log("تغيير اللغة"); // للتأكد من عمل الحدث
       const lang = isArabic ? 'ar' : 'en';
       document.documentElement.lang = lang;
       document.body.style.direction = isArabic ? 'rtl' : 'ltr';
@@ -105,35 +104,46 @@ document.addEventListener("DOMContentLoaded", () => {
     updateLanguage(); // عند تحميل الصفحة
 
     // ---------------------------
-    // تسجيل الدخول التجريبي
+    // تسجيل الدخول عبر Supabase
     // ---------------------------
     const loginBtn = document.getElementById('loginBtn');
 
-    const dummyUsers = [
-      { role: 'manager', email: 'admin@domain.com', password: '1234', page: 'manager.html' },
-      { role: 'supervisor', email: 'super@domain.com', password: '1234', page: 'supervisor.html' },
-      { role: 'employee', email: 'agent@domain.com', password: '1234', page: 'employee.html' }
-    ];
-
-    loginBtn.addEventListener('click', () => {
+    loginBtn.addEventListener('click', async () => {
       const role = document.getElementById('role').value;
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value.trim();
-
-      console.log("Role:", role, "Email:", email, "Password:", password);
 
       if(!email || !password){
         alert(isArabic ? texts.ar.enterAll : texts.en.enterAll);
         return;
       }
 
-      const user = dummyUsers.find(u => u.role===role && u.email===email && u.password===password);
-      console.log("User found:", user);
+      try {
+        // استعلام المستخدم حسب البريد/الهاتف وكلمة المرور والدور
+        const { data: users, error } = await supabaseClient
+          .from('users')
+          .select('*')
+          .eq('role', role)
+          .eq('email', email)
+          .eq('password', password);
 
-      if(user){
-        window.location.href = user.page; // التوجيه
-      } else {
-        alert(isArabic ? texts.ar.invalid : texts.en.invalid);
+        if(error) throw error;
+
+        console.log("Users found:", users);
+
+        if(users.length === 0){
+          alert(isArabic ? texts.ar.invalid : texts.en.invalid);
+          return;
+        }
+
+        // توجيه حسب الدور
+        if(role === 'manager') window.location.href = 'manager.html';
+        else if(role === 'supervisor') window.location.href = 'supervisor.html';
+        else if(role === 'employee') window.location.href = 'employee.html';
+
+      } catch(err) {
+        console.error(err);
+        alert(isArabic ? texts.ar.error : texts.en.error);
       }
     });
 
