@@ -5,116 +5,86 @@ body {
   padding: 0;
   background-color: #f4f6f8;
   color: #333;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
 }
 
-h1, h2, h3 {
-  margin: 10px 0;
-  color: #1e3a8a; /* أزرق داكن */
-}
-
-button, input, select, textarea {
-  font-family: inherit;
-  font-size: 14px;
-  padding: 8px 10px;
-  margin: 5px 0;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  outline: none;
-}
-
-button {
-  cursor: pointer;
-  background-color: #10b981; /* أخضر هادئ */
-  color: #fff;
-  border: none;
-  transition: background 0.3s;
-}
-
-button:hover {
-  background-color: #059669;
-}
-
-/* ===== أزرار اللغة والخروج ===== */
-#langToggle {
-  position: fixed;
-  top: 10px;
-  right: 10px;
-  background-color: #3b82f6;
-}
-
-#logoutBtn {
-  position: fixed;
-  top: 10px;
-  left: 10px;
-  background-color: #ef4444; /* أحمر */
-}
-
-/* ===== النماذج ===== */
+/* ===== النموذج ===== */
 form {
+  width: 100%;
   max-width: 400px;
-  margin: 30px auto;
   background-color: #fff;
-  padding: 20px;
+  padding: 25px;
   border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
 }
 
-label {
-  display: block;
-  margin-top: 10px;
+form label {
+  margin-top: 15px;
   font-weight: bold;
 }
 
-input, select, textarea {
+form input, form select {
+  margin-top: 5px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
   width: 100%;
   box-sizing: border-box;
 }
 
-/* ===== القوائم ===== */
-ul {
-  list-style: none;
-  padding: 0;
-  margin: 10px 0;
-}
-
-ul li {
-  background-color: #e0f2fe; /* أزرق فاتح */
-  margin-bottom: 8px;
-  padding: 10px;
+form button {
+  margin-top: 20px;
+  padding: 12px;
+  background-color: #10b981;
+  color: #fff;
+  border: none;
   border-radius: 8px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s;
 }
 
-/* ===== textarea ===== */
-textarea {
-  resize: vertical;
-  min-height: 60px;
+form button:hover {
+  background-color: #059669;
 }
 
-/* ===== الخريطة ===== */
-div[style*="Map"] {
-  margin: 20px 0;
-  border: 2px dashed #ccc;
-  border-radius: 8px;
+/* ===== زر اللغة ===== */
+#langToggle {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: none;
+  background-color: #3b82f6;
+  color: #fff;
+  cursor: pointer;
 }
 
-/* ===== الروابط ===== */
-a {
+/* ===== رابط نسيت كلمة المرور ===== */
+#forgotPassword {
+  margin-top: 10px;
+  text-align: center;
+  display: block;
   color: #3b82f6;
   text-decoration: none;
 }
 
-a:hover {
+#forgotPassword:hover {
   text-decoration: underline;
 }
 
-/* ===== دعم RTL ===== */
+/* ===== RTL support ===== */
 body[dir="rtl"] {
+  direction: rtl;
   text-align: right;
 }
 
-body[dir="rtl"] ul li {
-  flex-direction: row-reverse;
+body[dir="rtl"] form {
+  text-align: right;
 }
