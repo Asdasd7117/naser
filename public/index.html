@@ -21,16 +21,20 @@ button:hover { background:#0056b3;}
 <div class="container">
     <button class="lang-switch" onclick="switchLanguage()">تبديل اللغة / Switch Language</button>
     <h2 id="title">تسجيل الدخول</h2>
+    
     <label id="role-label">اختر الدور</label>
     <select id="role">
         <option value="manager">مدير / Manager</option>
         <option value="supervisor">مشرف / Supervisor</option>
         <option value="employee">مندوب / Employee</option>
     </select>
+    
     <label id="user-label">رقم الهاتف / البريد الإلكتروني</label>
-    <input type="text" id="username" placeholder="7123456789 أو email@example.com">
-    <label id="pass-label">كلمة المرور / Password</label>
-    <input type="password" id="password" placeholder="123456">
+    <input type="text" id="username" placeholder="">
+    
+    <label id="pass-label">كلمة المرور</label>
+    <input type="password" id="password" placeholder="">
+    
     <button id="loginBtn">تسجيل الدخول / Login</button>
     <div class="message" id="msg"></div>
 </div>
@@ -39,32 +43,58 @@ button:hover { background:#0056b3;}
 import { loginUser } from './supabase.js';
 
 let lang='ar';
+
 function switchLanguage(){
     lang = lang==='ar'?'en':'ar';
     document.body.style.direction = lang==='ar'?'rtl':'ltr';
     document.getElementById('title').innerText = lang==='ar'?'تسجيل الدخول':'Login';
     document.getElementById('role-label').innerText = lang==='ar'?'اختر الدور':'Select Role';
-    document.getElementById('user-label').innerText = lang==='ar'?'رقم الهاتف / البريد الإلكتروني':'Phone / Email';
-    document.getElementById('pass-label').innerText = lang==='ar'?'كلمة المرور / Password':'Password';
-    document.getElementById('loginBtn').innerText = lang==='ar'?'تسجيل الدخول / Login':'Login';
+    document.getElementById('pass-label').innerText = lang==='ar'?'كلمة المرور':'Password';
+    document.getElementById('loginBtn').innerText = lang==='ar'?'تسجيل الدخول':'Login';
+
+    // placeholder حسب الدور
+    const role = document.getElementById('role').value;
+    const usernameInput = document.getElementById('username');
+    const passInput = document.getElementById('password');
+    
+    if(role === 'manager'){
+        usernameInput.placeholder = lang==='ar'?'أدخل رقم الهاتف':'Enter Phone';
+        passInput.placeholder = lang==='ar'?'أدخل كلمة المرور':'Enter Password';
+    } else {
+        usernameInput.placeholder = lang==='ar'?'أدخل رقم الهاتف أو البريد الإلكتروني':'Enter Phone or Email';
+        passInput.placeholder = lang==='ar'?'أدخل كلمة المرور':'Enter Password';
+    }
 }
 
+// عند تغيير الدور يتم تحديث placeholder
+document.getElementById('role').addEventListener('change', switchLanguage);
+
+// تنفيذ login
 document.getElementById('loginBtn').addEventListener('click', async ()=>{
     const role = document.getElementById('role').value;
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value.trim();
     const msg = document.getElementById('msg');
 
-    if(!username || !password){ msg.innerText = lang==='ar'?'يرجى ملء جميع الحقول':'Please fill all fields'; return; }
+    if(!username || !password){
+        msg.innerText = lang==='ar'?'يرجى ملء جميع الحقول':'Please fill all fields';
+        return;
+    }
 
     const user = await loginUser(role, username, password);
-    if(!user){ msg.innerText = lang==='ar'?'بيانات تسجيل الدخول غير صحيحة':'Invalid credentials'; return; }
+    if(!user){
+        msg.innerText = lang==='ar'?'بيانات تسجيل الدخول غير صحيحة':'Invalid credentials';
+        return;
+    }
 
     // إعادة التوجيه حسب الدور
     if(user.role==='manager') window.location.href='manager.html';
     else if(user.role==='supervisor') window.location.href='supervisor.html';
     else if(user.role==='employee') window.location.href='employee.html';
 });
+
+// تحديث placeholders عند تحميل الصفحة
+switchLanguage();
 </script>
 
 </body>
