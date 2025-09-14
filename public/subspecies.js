@@ -1,8 +1,8 @@
 // supabase.js
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js';
 
-const SUPABASE_URL = 'https://your-project-ref.supabase.co';
-const SUPABASE_KEY = 'your-public-anon-key';
+const SUPABASE_URL = 'https://https://ncjxqfqwswwikedaffif.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NDEwNzQsImV4cCI6MjA3MzQxNzA3NH0.4G54968qAHyePjq9_ufSCSA1fHzx5XHFzOAqGKmVW18';
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // التحقق من تسجيل الدخول
