@@ -20,25 +20,20 @@ button:hover { background:#0056b3;}
 
 <div class="container">
     <button class="lang-switch" onclick="switchLanguage()">تبديل اللغة</button>
-    <h2 id="title">تسجيل الدخول</h2>
-    <label id="role-label">اختر الدور</label>
-    <select id="role">
-        <option value="manager">مدير</option>
-        <option value="supervisor">مشرف</option>
-        <option value="employee">مندوب</option>
-    </select>
-    <label id="user-label">رقم الهاتف أو البريد الإلكتروني</label>
-    <input type="text" id="username" placeholder="مثال: 7123456789 أو email@example.com">
-    <label id="pass-label">كلمة المرور</label>
-    <input type="password" id="password" placeholder="مثال: 123456">
-    <button id="loginBtn">تسجيل الدخول</button>
+    <h2 id="title"></h2>
+    <label id="role-label"></label>
+    <select id="role"></select>
+    <label id="user-label"></label>
+    <input type="text" id="username" placeholder="">
+    <label id="pass-label"></label>
+    <input type="password" id="password" placeholder="">
+    <button id="loginBtn"></button>
     <div class="message" id="msg"></div>
 </div>
 
 <script type="module">
 import { loginUser } from './supabase.js';
 
-// المفاتيح الخاصة باللغتين
 const translations = {
     ar: {
         pageTitle: "تسجيل الدخول",
@@ -46,9 +41,9 @@ const translations = {
         roleLabel: "اختر الدور",
         roles: ["مدير", "مشرف", "مندوب"],
         userLabel: "رقم الهاتف أو البريد الإلكتروني",
-        userPlaceholder: "مثال: 7123456789 أو email@example.com",
+        userPlaceholder: "",
         passLabel: "كلمة المرور",
-        passPlaceholder: "مثال: 123456",
+        passPlaceholder: "",
         loginBtn: "تسجيل الدخول",
         msgFill: "يرجى ملء جميع الحقول",
         msgInvalid: "بيانات تسجيل الدخول غير صحيحة",
@@ -60,9 +55,9 @@ const translations = {
         roleLabel: "Select Role",
         roles: ["Manager", "Supervisor", "Employee"],
         userLabel: "Phone or Email",
-        userPlaceholder: "Example: 7123456789 or email@example.com",
+        userPlaceholder: "",
         passLabel: "Password",
-        passPlaceholder: "Example: 123456",
+        passPlaceholder: "",
         loginBtn: "Login",
         msgFill: "Please fill all fields",
         msgInvalid: "Invalid credentials",
@@ -72,9 +67,9 @@ const translations = {
 
 let lang = 'ar';
 
-function switchLanguage() {
+function switchLanguage(){
     lang = lang === 'ar' ? 'en' : 'ar';
-    document.body.style.direction = lang === 'ar' ? 'rtl' : 'ltr';
+    document.body.style.direction = lang==='ar' ? 'rtl' : 'ltr';
     const t = translations[lang];
 
     document.getElementById('page-title').innerText = t.pageTitle;
@@ -82,38 +77,42 @@ function switchLanguage() {
     document.getElementById('role-label').innerText = t.roleLabel;
 
     const roleSelect = document.getElementById('role');
-    for (let i = 0; i < roleSelect.options.length; i++) {
-        roleSelect.options[i].text = t.roles[i];
-    }
+    roleSelect.innerHTML = '';
+    t.roles.forEach((r, i)=>{
+        const opt = document.createElement('option');
+        opt.value = ['manager','supervisor','employee'][i];
+        opt.text = r;
+        roleSelect.appendChild(opt);
+    });
 
     document.getElementById('user-label').innerText = t.userLabel;
     document.getElementById('username').placeholder = t.userPlaceholder;
+    document.getElementById('username').value = ''; // لا تظهر أي بيانات مسبقة
     document.getElementById('pass-label').innerText = t.passLabel;
     document.getElementById('password').placeholder = t.passPlaceholder;
+    document.getElementById('password').value = ''; // لا تظهر أي بيانات مسبقة
+
     document.getElementById('loginBtn').innerText = t.loginBtn;
     document.querySelector('.lang-switch').innerText = t.langSwitch;
-
-    console.log("Language switched to:", lang);
 }
 
-// زر تسجيل الدخول
-document.getElementById('loginBtn').addEventListener('click', async () => {
+// تحميل اللغة الافتراضية عند فتح الصفحة
+window.onload = switchLanguage;
+
+document.getElementById('loginBtn').addEventListener('click', async ()=>{
     const role = document.getElementById('role').value;
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value.trim();
     const msg = document.getElementById('msg');
-
     const t = translations[lang];
 
-    if (!username || !password) { msg.innerText = t.msgFill; return; }
-
+    if(!username || !password){ msg.innerText = t.msgFill; return; }
     const user = await loginUser(role, username, password);
-    if (!user) { msg.innerText = t.msgInvalid; return; }
+    if(!user){ msg.innerText = t.msgInvalid; return; }
 
-    // إعادة التوجيه حسب الدور
-    if (user.role === 'manager') window.location.href = 'manager.html';
-    else if (user.role === 'supervisor') window.location.href = 'supervisor.html';
-    else if (user.role === 'employee') window.location.href = 'employee.html';
+    if(user.role==='manager') window.location.href='manager.html';
+    else if(user.role==='supervisor') window.location.href='supervisor.html';
+    else if(user.role==='employee') window.location.href='employee.html';
 });
 </script>
 
