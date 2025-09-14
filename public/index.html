@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title id="page-title">تسجيل الدخول</title>
 <style>
-body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f0f2f5; display:flex; justify-content:center; align-items:center; height:100vh; transition:all 0.3s;}
+body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f0f2f5; display:flex; justify-content:center; align-items:center; height:100vh;}
 .container { background:#fff; padding:30px; border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,0.2); width:320px;}
 h2 { text-align:center; margin-bottom:20px;}
 label { display:block; margin:10px 0 5px;}
@@ -19,7 +19,7 @@ button:hover { background:#0056b3;}
 <body>
 
 <div class="container">
-    <button class="lang-switch" onclick="switchLanguage()"></button>
+    <button class="lang-switch" onclick="switchLanguage()">تبديل اللغة</button>
     <h2 id="title"></h2>
     <label id="role-label"></label>
     <select id="role"></select>
@@ -31,49 +31,37 @@ button:hover { background:#0056b3;}
     <div class="message" id="msg"></div>
 </div>
 
-<script>
-// ترجمة النصوص
+<script type="module">
+import { loginUser } from './supabase.js';
+
 const translations = {
     ar: {
-        pageTitle: "تسجيل الدخول",
-        title: "تسجيل الدخول",
-        roleLabel: "اختر الدور",
-        roles: ["مدير","مشرف","مندوب"],
-        userLabel: "رقم الهاتف أو البريد الإلكتروني",
-        userPlaceholder: "مثال: 7123456789 أو email@example.com",
-        passLabel: "كلمة المرور",
-        passPlaceholder: "مثال: 123456",
-        loginBtn: "تسجيل الدخول",
-        msgFill: "يرجى ملء جميع الحقول",
-        msgInvalid: "بيانات تسجيل الدخول غير صحيحة",
-        langSwitch: "تبديل اللغة"
+        pageTitle:"تسجيل الدخول", title:"تسجيل الدخول", roleLabel:"اختر الدور", roles:["مدير","مشرف","مندوب"],
+        userLabel:"رقم الهاتف أو البريد الإلكتروني", userPlaceholder:"مثال: 7123456789 أو email@example.com",
+        passLabel:"كلمة المرور", passPlaceholder:"مثال: 123456",
+        loginBtn:"تسجيل الدخول", msgFill:"يرجى ملء جميع الحقول", msgInvalid:"بيانات تسجيل الدخول غير صحيحة",
+        langSwitch:"تبديل اللغة"
     },
     en: {
-        pageTitle: "Login",
-        title: "Login",
-        roleLabel: "Select Role",
-        roles: ["Manager","Supervisor","Employee"],
-        userLabel: "Phone or Email",
-        userPlaceholder: "Example: 7123456789 or email@example.com",
-        passLabel: "Password",
-        passPlaceholder: "Example: 123456",
-        loginBtn: "Login",
-        msgFill: "Please fill all fields",
-        msgInvalid: "Invalid credentials",
-        langSwitch: "Switch Language"
+        pageTitle:"Login", title:"Login", roleLabel:"Select Role", roles:["Manager","Supervisor","Employee"],
+        userLabel:"Phone or Email", userPlaceholder:"Example: 7123456789 or email@example.com",
+        passLabel:"Password", passPlaceholder:"Example: 123456",
+        loginBtn:"Login", msgFill:"Please fill all fields", msgInvalid:"Invalid credentials",
+        langSwitch:"Switch Language"
     }
 };
 
-let lang = 'ar';
+let lang='ar';
 
-function renderTexts(){
-    const t = translations[lang];
-    document.body.style.direction = lang==='ar' ? 'rtl' : 'ltr';
-    document.getElementById('page-title').innerText = t.pageTitle;
-    document.getElementById('title').innerText = t.title;
-    document.getElementById('role-label').innerText = t.roleLabel;
+function switchLanguage(){
+    lang=lang==='ar'?'en':'ar';
+    document.body.style.direction=lang==='ar'?'rtl':'ltr';
+    const t=translations[lang];
+    document.getElementById('page-title').innerText=t.pageTitle;
+    document.getElementById('title').innerText=t.title;
+    document.getElementById('role-label').innerText=t.roleLabel;
 
-    const roleSelect = document.getElementById('role');
+    const roleSelect=document.getElementById('role');
     roleSelect.innerHTML='';
     t.roles.forEach((r,i)=>{
         const opt=document.createElement('option');
@@ -82,48 +70,35 @@ function renderTexts(){
         roleSelect.appendChild(opt);
     });
 
-    document.getElementById('user-label').innerText = t.userLabel;
-    document.getElementById('username').placeholder = t.userPlaceholder;
-    document.getElementById('pass-label').innerText = t.passLabel;
-    document.getElementById('password').placeholder = t.passPlaceholder;
+    document.getElementById('user-label').innerText=t.userLabel;
+    document.getElementById('username').placeholder=t.userPlaceholder;
+    document.getElementById('username').value='';
+    document.getElementById('pass-label').innerText=t.passLabel;
+    document.getElementById('password').placeholder=t.passPlaceholder;
+    document.getElementById('password').value='';
 
-    document.getElementById('loginBtn').innerText = t.loginBtn;
-    document.querySelector('.lang-switch').innerText = t.langSwitch;
+    document.getElementById('loginBtn').innerText=t.loginBtn;
+    document.querySelector('.lang-switch').innerText=t.langSwitch;
 }
 
-function switchLanguage(){
-    lang = (lang==='ar') ? 'en' : 'ar';
-    renderTexts();
-}
+window.onload=switchLanguage;
 
-// تحميل اللغة الافتراضية عند فتح الصفحة
-window.onload = renderTexts;
+document.getElementById('loginBtn').addEventListener('click', async ()=>{
+    const role=document.getElementById('role').value;
+    const username=document.getElementById('username').value.trim();
+    const password=document.getElementById('password').value.trim();
+    const msg=document.getElementById('msg');
+    const t=translations[lang];
 
-// التحقق من تسجيل الدخول وإعادة التوجيه حسب الدور
-document.getElementById('loginBtn').addEventListener('click', ()=>{
-    const role = document.getElementById('role').value;
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value.trim();
-    const msg = document.getElementById('msg');
-    const t = translations[lang];
+    if(!username||!password){ msg.innerText=t.msgFill; return; }
 
-    if(!username || !password){ msg.innerText = t.msgFill; return; }
+    const user=await loginUser(role,username,password);
+    if(!user){ msg.innerText=t.msgInvalid; return; }
 
-    let redirect = '';
-
-    if(role==='manager' && username==='7123456789' && password==='123456'){
-        redirect = 'manager.html';
-    } else if(role==='supervisor' && username==='super1' && password==='123456'){
-        redirect = 'supervisor.html';
-    } else if(role==='employee' && username==='emp1' && password==='123456'){
-        redirect = 'employee.html';
-    } else {
-        msg.innerText = t.msgInvalid;
-        return;
-    }
-
-    // إعادة التوجيه مباشرة
-    window.location.href = redirect;
+    // إعادة التوجيه حسب الدور
+    if(user.role==='manager') window.location.href='manager.html';
+    else if(user.role==='supervisor') window.location.href='supervisor.html';
+    else if(user.role==='employee') window.location.href='employee.html';
 });
 </script>
 
