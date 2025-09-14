@@ -19,7 +19,7 @@ button:hover { background:#0056b3;}
 <body>
 
 <div class="container">
-    <button class="lang-switch" onclick="switchLanguage()">تبديل اللغة / Switch Language</button>
+    <button class="lang-switch">تبديل اللغة / Switch Language</button>
     <h2 id="title">تسجيل الدخول</h2>
     
     <label id="role-label">اختر الدور</label>
@@ -42,7 +42,8 @@ button:hover { background:#0056b3;}
 <script type="module">
 import { loginUser } from './supabase.js';
 
-// نصوص اللغات
+let lang = 'ar';
+
 const texts = {
   ar: {
     title: "تسجيل الدخول",
@@ -70,13 +71,8 @@ const texts = {
   }
 };
 
-let lang = 'ar';
-
-// تبديل اللغة
-function switchLanguage(){
-    lang = lang==='ar'?'en':'ar';
+function updateLanguage(){
     document.body.style.direction = lang==='ar'?'rtl':'ltr';
-
     document.getElementById('title').innerText = texts[lang].title;
     document.getElementById('role-label').innerText = texts[lang].role;
     document.getElementById('pass-label').innerText = texts[lang].pass;
@@ -92,44 +88,56 @@ function switchLanguage(){
         usernameInput.placeholder = texts[lang].phoneEmailPlaceholder;
     }
     passwordInput.placeholder = texts[lang].passwordPlaceholder;
+
+    const msgDiv = document.getElementById('msg');
+    if(msgDiv.dataset.lastMessage){
+        msgDiv.innerText = texts[lang][msgDiv.dataset.lastMessage] || '';
+    }
 }
 
-// تحديث placeholder عند تغيير الدور
-document.getElementById('role').addEventListener('change', switchLanguage);
+// زر تبديل اللغة
+document.querySelector('.lang-switch').addEventListener('click', ()=>{
+    lang = lang==='ar'?'en':'ar';
+    updateLanguage();
+});
 
-// زر تسجيل الدخول
+// تغيير placeholders عند تغيير الدور
+document.getElementById('role').addEventListener('change', updateLanguage);
+
+// تسجيل الدخول
 document.getElementById('loginBtn').addEventListener('click', async ()=>{
     const role = document.getElementById('role').value;
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value.trim();
-    const msg = document.getElementById('msg');
+    const msgDiv = document.getElementById('msg');
 
     if(!username || !password){
-        msg.innerText = texts[lang].fillAll;
+        msgDiv.dataset.lastMessage = 'fillAll';
+        msgDiv.innerText = texts[lang].fillAll;
         return;
     }
 
     const user = await loginUser(role, username, password);
 
-    // تحقق من المدير الافتراضي
+    // المدير الافتراضي
     if(role==='manager' && username==='7123456789' && password==='123456'){
         window.location.href='manager.html';
         return;
     }
 
     if(!user){
-        msg.innerText = texts[lang].invalid;
+        msgDiv.dataset.lastMessage = 'invalid';
+        msgDiv.innerText = texts[lang].invalid;
         return;
     }
 
-    // إعادة التوجيه حسب الدور
     if(user.role==='manager') window.location.href='manager.html';
     else if(user.role==='supervisor') window.location.href='supervisor.html';
     else if(user.role==='employee') window.location.href='employee.html';
 });
 
-// تحديث placeholders عند تحميل الصفحة
-switchLanguage();
+// استدعاء أولي لتحديث placeholders والنصوص عند التحميل
+updateLanguage();
 </script>
 
 </body>
