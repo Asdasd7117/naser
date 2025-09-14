@@ -1,140 +1,116 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>صفحة المشرف</title>
+<title>لوحة المشرف</title>
+<script src="https://unpkg.com/@supabase/supabase-js"></script>
 <style>
-  body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f0f4f7; }
-  header { background:#28a745; color:#fff; padding:15px; text-align:center; }
-  nav { display:flex; justify-content:space-around; background:#fff; padding:10px 0; box-shadow:0 2px 4px rgba(0,0,0,0.1); }
-  nav button { padding:10px 15px; border:none; background:none; cursor:pointer; font-weight:bold; }
-  nav button.active { color:#28a745; border-bottom:2px solid #28a745; }
-  .section { padding:20px; display:none; }
-  .section.active { display:block; }
-  table { width:100%; border-collapse:collapse; margin-bottom:20px; background:#fff; border-radius:8px; overflow:hidden; }
-  th, td { padding:10px; border-bottom:1px solid #ddd; text-align:center; }
-  th { background:#f1f1f1; }
-  .map { width:100%; height:300px; background:#ccc; border-radius:8px; display:flex; justify-content:center; align-items:center; color:#555; font-weight:bold; }
-  button.submit { background:#28a745; color:#fff; border:none; padding:8px 12px; border-radius:5px; cursor:pointer; }
-  button.submit:hover { background:#1e7e34; }
+body{font-family:Arial;background:#f4f6f9;margin:0;}
+header{background:#27ae60;color:white;padding:15px;text-align:center;position:relative;}
+nav{background:#2c3e50;color:white;display:flex;justify-content:space-around;padding:10px;}
+nav button{background:none;border:none;color:white;font-size:16px;cursor:pointer;}
+nav button:hover{text-decoration:underline;}
+.container{padding:20px;}
+.card{background:white;border-radius:8px;padding:15px;margin-bottom:20px;box-shadow:0 3px 8px rgba(0,0,0,0.1);}
+h3{margin-top:0;color:#2c3e50;}
+table{width:100%;border-collapse:collapse;margin-top:10px;}
+table th,table td{border:1px solid #ddd;padding:8px;text-align:center;}
+table th{background:#ecf0f1;}
+.lang-btn{position:absolute;top:15px;left:15px;background:#2980b9;border:none;padding:8px 12px;border-radius:5px;cursor:pointer;color:white;}
 </style>
 </head>
 <body>
-
-<header id="header-title">المشرف</header>
+<header>
+<h2 id="title">لوحة المشرف</h2>
+<button class="lang-btn" onclick="toggleLang()">🇸🇦/🇬🇧</button>
+</header>
 
 <nav>
-  <button class="tab active" data-tab="team">المندوبين</button>
-  <button class="tab" data-tab="map">الخريطة</button>
-  <button class="tab" data-tab="reports">التقارير</button>
-  <button class="tab" data-tab="notifications">الإشعارات</button>
+<button onclick="showSection('agents')">👥 <span id="navAgents">المندوبين</span></button>
+<button onclick="showSection('map')">🗺 <span id="navMap">الخريطة</span></button>
+<button onclick="showSection('reports')">📄 <span id="navReports">التقارير</span></button>
+<button onclick="showSection('noti')">🔔 <span id="navNoti">الإشعارات</span></button>
 </nav>
 
-<div class="section active" id="team">
-  <h3>متابعة المندوبين</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>اسم المندوب</th>
-        <th>الحالة</th>
-        <th>عرض الموقع</th>
-        <th>حالة المهام</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>أحمد علي</td>
-        <td>نشط</td>
-        <td><button class="submit">عرض</button></td>
-        <td>3/5 مكتملة</td>
-      </tr>
-      <tr>
-        <td>سارة محمد</td>
-        <td>نشط</td>
-        <td><button class="submit">عرض</button></td>
-        <td>2/4 مكتملة</td>
-      </tr>
-    </tbody>
-  </table>
+<div class="container">
+<div class="card" id="agents">
+<h3 id="agentsTitle">لوحة متابعة المندوبين</h3>
+<table>
+<thead><tr><th>الاسم</th><th>الموقع</th><th>عدد المهام</th><th>الحالة</th></tr></thead>
+<tbody id="agentsList"></tbody>
+</table>
 </div>
 
-<div class="section" id="map">
-  <h3>الخريطة</h3>
-  <div class="map">الخريطة ستظهر هنا</div>
+<div class="card" id="map" style="display:none;">
+<h3 id="mapTitle">خريطة المندوبين</h3>
+<p>📍 سيتم عرض مواقع المندوبين هنا (Google Maps API لاحقًا)</p>
 </div>
 
-<div class="section" id="reports">
-  <h3>مراجعة التقارير</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>المندوب</th>
-        <th>التقرير</th>
-        <th>ملاحظات</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>أحمد علي</td>
-        <td>زيارة العميل أ</td>
-        <td><input type="text" placeholder="أدخل ملاحظات"></td>
-      </tr>
-      <tr>
-        <td>سارة محمد</td>
-        <td>زيارة العميل ب</td>
-        <td><input type="text" placeholder="أدخل ملاحظات"></td>
-      </tr>
-    </tbody>
-  </table>
-  <button class="submit">حفظ الملاحظات</button>
+<div class="card" id="reports" style="display:none;">
+<h3 id="reportsTitle">مراجعة التقارير</h3>
+<table>
+<thead><tr><th>المندوب</th><th>التقرير</th><th>التاريخ</th></tr></thead>
+<tbody id="reportsList"></tbody>
+</table>
 </div>
 
-<div class="section" id="notifications">
-  <h3>الإشعارات</h3>
-  <ul>
-    <li>تأخر المندوب أحمد علي في بدء المهمة</li>
-    <li>المهمة الخاصة بسارة محمد غير مكتملة</li>
-  </ul>
+<div class="card" id="noti" style="display:none;">
+<h3 id="notiTitle">الإشعارات</h3>
+<ul id="notiList"></ul>
 </div>
-
-<div class="lang-switch" style="text-align:center; margin:15px; cursor:pointer; color:#28a745;">English</div>
+</div>
 
 <script>
-const tabs = document.querySelectorAll('.tab');
-const sections = document.querySelectorAll('.section');
-tabs.forEach(tab => {
-  tab.addEventListener('click', () => {
-    tabs.forEach(t => t.classList.remove('active'));
-    sections.forEach(s => s.classList.remove('active'));
-    tab.classList.add('active');
-    document.getElementById(tab.dataset.tab).classList.add('active');
-  });
-});
+const SUPABASE_URL="https://ncjxqfqwswwikedaffif.supabase.co";
+const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NDEwNzQsImV4cCI6MjA3MzQxNzA3NH0.4G54968qAHyePjq9_ufSCSA1fHzx5XHFzOAqGKmVW18";
+const supabase=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-let isArabic = true;
-const langSwitch = document.querySelector('.lang-switch');
-langSwitch.addEventListener('click', () => {
-  isArabic = !isArabic;
-  if(isArabic){
-    document.body.style.direction='rtl';
-    document.getElementById('header-title').innerText='المشرف';
-    document.querySelectorAll('.tab')[0].innerText='المندوبين';
-    document.querySelectorAll('.tab')[1].innerText='الخريطة';
-    document.querySelectorAll('.tab')[2].innerText='التقارير';
-    document.querySelectorAll('.tab')[3].innerText='الإشعارات';
-    langSwitch.innerText='English';
-  } else {
-    document.body.style.direction='ltr';
-    document.getElementById('header-title').innerText='Supervisor';
-    document.querySelectorAll('.tab')[0].innerText='Team';
-    document.querySelectorAll('.tab')[1].innerText='Map';
-    document.querySelectorAll('.tab')[2].innerText='Reports';
-    document.querySelectorAll('.tab')[3].innerText='Notifications';
-    langSwitch.innerText='عربي';
-  }
-});
+let lang="ar";
+const texts={
+ar:{title:"لوحة المشرف",nav:{agents:"المندوبين",map:"الخريطة",reports:"التقارير",noti:"الإشعارات"},agents:"لوحة متابعة المندوبين",map:"خريطة المندوبين",reports:"مراجعة التقارير",noti:"الإشعارات"},
+en:{title:"Supervisor Dashboard",nav:{agents:"Agents",map:"Map",reports:"Reports",noti:"Notifications"},agents:"Agents Monitoring",map:"Agents Map",reports:"Review Reports",noti:"Notifications"}
+};
+
+function toggleLang(){
+lang=lang==="ar"?"en":"ar";
+document.documentElement.lang=lang;
+document.documentElement.dir=lang==="ar"?"rtl":"ltr";
+document.getElementById("title").innerText=texts[lang].title;
+document.getElementById("navAgents").innerText=texts[lang].nav.agents;
+document.getElementById("navMap").innerText=texts[lang].nav.map;
+document.getElementById("navReports").innerText=texts[lang].nav.reports;
+document.getElementById("navNoti").innerText=texts[lang].nav.noti;
+document.getElementById("agentsTitle").innerText=texts[lang].agents;
+document.getElementById("mapTitle").innerText=texts[lang].map;
+document.getElementById("reportsTitle").innerText=texts[lang].reports;
+document.getElementById("notiTitle").innerText=texts[lang].noti;
+}
+
+function showSection(section){
+document.querySelectorAll(".card").forEach(c=>c.style.display="none");
+document.getElementById(section).style.display="block";
+}
+
+async function loadAgents(){
+const {data,error}=await supabase.from("users").select("*").eq("role","agent");
+const tbody=document.getElementById("agentsList"); tbody.innerHTML="";
+if(data){data.forEach(u=>{const tr=document.createElement("tr"); tr.innerHTML=`<td>${u.name}</td><td>${u.location}</td><td>${u.task_count||0}</td><td>${u.status||"نشط"}</td>`; tbody.appendChild(tr);});}
+}
+
+async function loadReports(){
+const {data}=await supabase.from("reports").select("*");
+const tbody=document.getElementById("reportsList"); tbody.innerHTML="";
+if(data) data.forEach(r=>{const tr=document.createElement("tr"); tr.innerHTML=`<td>${r.agent_name}</td><td>${r.notes}</td><td>${new Date(r.date).toLocaleDateString()}</td>`; tbody.appendChild(tr);});
+}
+
+async function loadNotifications(){
+const {data}=await supabase.from("notifications").select("*");
+const ul=document.getElementById("notiList"); ul.innerHTML="";
+if(data) data.forEach(n=>{const li=document.createElement("li"); li.innerText=n.message; ul.appendChild(li);});
+}
+
+// تحميل البيانات عند فتح الصفحة
+loadAgents(); loadReports(); loadNotifications();
 </script>
-
 </body>
 </html>
