@@ -19,7 +19,7 @@ button:hover { background:#0056b3;}
 <body>
 
 <div class="container">
-    <button class="lang-switch" onclick="switchLanguage()">تبديل اللغة</button>
+    <button class="lang-switch" onclick="switchLanguage()"></button>
     <h2 id="title"></h2>
     <label id="role-label"></label>
     <select id="role"></select>
@@ -66,11 +66,9 @@ const translations = {
 
 let lang = 'ar';
 
-function switchLanguage(){
-    lang = lang==='ar' ? 'en' : 'ar';
-    document.body.style.direction = lang==='ar' ? 'rtl' : 'ltr';
+function renderTexts(){
     const t = translations[lang];
-
+    document.body.style.direction = lang==='ar' ? 'rtl' : 'ltr';
     document.getElementById('page-title').innerText = t.pageTitle;
     document.getElementById('title').innerText = t.title;
     document.getElementById('role-label').innerText = t.roleLabel;
@@ -86,17 +84,20 @@ function switchLanguage(){
 
     document.getElementById('user-label').innerText = t.userLabel;
     document.getElementById('username').placeholder = t.userPlaceholder;
-    document.getElementById('username').value='';
     document.getElementById('pass-label').innerText = t.passLabel;
     document.getElementById('password').placeholder = t.passPlaceholder;
-    document.getElementById('password').value='';
 
     document.getElementById('loginBtn').innerText = t.loginBtn;
     document.querySelector('.lang-switch').innerText = t.langSwitch;
 }
 
+function switchLanguage(){
+    lang = (lang==='ar') ? 'en' : 'ar';
+    renderTexts();
+}
+
 // تحميل اللغة الافتراضية عند فتح الصفحة
-window.onload = switchLanguage;
+window.onload = renderTexts;
 
 // التحقق من تسجيل الدخول وإعادة التوجيه حسب الدور
 document.getElementById('loginBtn').addEventListener('click', ()=>{
@@ -108,13 +109,13 @@ document.getElementById('loginBtn').addEventListener('click', ()=>{
 
     if(!username || !password){ msg.innerText = t.msgFill; return; }
 
-    // التحقق الفعلي (يمكن ربط Supabase لاحقًا)
     let redirect = '';
+
     if(role==='manager' && username==='7123456789' && password==='123456'){
         redirect = 'manager.html';
-    } else if(role==='supervisor'){
+    } else if(role==='supervisor' && username==='super1' && password==='123456'){
         redirect = 'supervisor.html';
-    } else if(role==='employee'){
+    } else if(role==='employee' && username==='emp1' && password==='123456'){
         redirect = 'employee.html';
     } else {
         msg.innerText = t.msgInvalid;
