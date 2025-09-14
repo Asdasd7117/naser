@@ -51,7 +51,7 @@ const texts = {
         user: "رقم الهاتف / البريد الإلكتروني",
         pass: "كلمة المرور",
         login: "تسجيل الدخول",
-        langSwitch: "تبديل اللغة / Switch Language",
+        langSwitch: "تبديل اللغة",
         phonePlaceholder: "أدخل رقم الهاتف",
         phoneEmailPlaceholder: "أدخل رقم الهاتف أو البريد الإلكتروني",
         passwordPlaceholder: "أدخل كلمة المرور",
@@ -64,7 +64,7 @@ const texts = {
         user: "Phone / Email",
         pass: "Password",
         login: "Login",
-        langSwitch: "Switch Language / تبديل اللغة",
+        langSwitch: "Switch Language",
         phonePlaceholder: "Enter Phone",
         phoneEmailPlaceholder: "Enter Phone or Email",
         passwordPlaceholder: "Enter Password",
@@ -74,27 +74,22 @@ const texts = {
 };
 
 function updateLanguage() {
+    console.log("Updating language to:", lang); // للتحقق من تشغيل الدالة
     // تحديث اتجاه الصفحة
     document.body.style.direction = lang === 'ar' ? 'rtl' : 'ltr';
-    
     // تحديث النصوص
     document.getElementById('title').innerText = texts[lang].title;
     document.getElementById('role-label').innerText = texts[lang].role;
-    document.getElementById('user-label').innerText = texts[lang].user; // إضافة تحديث تسمية حقل المستخدم
+    document.getElementById('user-label').innerText = texts[lang].user;
     document.getElementById('pass-label').innerText = texts[lang].pass;
     document.getElementById('loginBtn').innerText = texts[lang].login;
-    document.querySelector('.lang-switch').innerText = texts[lang].langSwitch; // تحديث نص زر تبديل اللغة
+    document.querySelector('.lang-switch').innerText = texts[lang].langSwitch;
 
     // تحديث placeholders
     const role = document.getElementById('role').value;
     const usernameInput = document.getElementById('username');
     const passwordInput = document.getElementById('password');
-
-    if (role === 'manager') {
-        usernameInput.placeholder = texts[lang].phonePlaceholder;
-    } else {
-        usernameInput.placeholder = texts[lang].phoneEmailPlaceholder;
-    }
+    usernameInput.placeholder = role === 'manager' ? texts[lang].phonePlaceholder : texts[lang].phoneEmailPlaceholder;
     passwordInput.placeholder = texts[lang].passwordPlaceholder;
 
     // تحديث رسالة الخطأ إذا وجدت
@@ -106,12 +101,16 @@ function updateLanguage() {
 
 // زر تبديل اللغة
 document.querySelector('.lang-switch').addEventListener('click', () => {
+    console.log("Language switch button clicked, current lang:", lang); // للتحقق من النقر
     lang = lang === 'ar' ? 'en' : 'ar';
     updateLanguage();
 });
 
 // تغيير placeholders عند تغيير الدور
-document.getElementById('role').addEventListener('change', updateLanguage);
+document.getElementById('role').addEventListener('change', () => {
+    console.log("Role changed, updating language"); // للتحقق من تغيير الدور
+    updateLanguage();
+});
 
 // تسجيل الدخول
 document.getElementById('loginBtn').addEventListener('click', async () => {
@@ -126,26 +125,32 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
         return;
     }
 
-    const user = await loginUser(role, username, password);
+    try {
+        const user = await loginUser(role, username, password);
 
-    // المدير الافتراضي
-    if (role === 'manager' && username === '7123456789' && password === '123456') {
-        window.location.href = 'manager.html';
-        return;
-    }
+        // المدير الافتراضي
+        if (role === 'manager' && username === '7123456789' && password === '123456') {
+            window.location.href = 'manager.html';
+            return;
+        }
 
-    if (!user) {
+        if (!user) {
+            msgDiv.dataset.lastMessage = 'invalid';
+            msgDiv.innerText = texts[lang].invalid;
+            return;
+        }
+
+        if (user.role === 'manager') window.location.href = 'manager.html';
+        else if (user.role === 'supervisor') window.location.href = 'supervisor.html';
+        else if (user.role === 'employee') window.location.href = 'employee.html';
+    } catch (error) {
+        console.error("Login error:", error); // للتحقق من أخطاء تسجيل الدخول
         msgDiv.dataset.lastMessage = 'invalid';
         msgDiv.innerText = texts[lang].invalid;
-        return;
     }
-
-    if (user.role === 'manager') window.location.href = 'manager.html';
-    else if (user.role === 'supervisor') window.location.href = 'supervisor.html';
-    else if (user.role === 'employee') window.location.href = 'employee.html';
 });
 
-// استدعاء أولي لتحديث النصوص و placeholders عند التحميل
+// استدعاء أولي لتحديث النصوص
 updateLanguage();
 </script>
 
