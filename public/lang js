@@ -1,0 +1,81 @@
+const translations = {
+  en: {
+    loginTitle: "Login",
+    emailPhone: "Email or Phone",
+    password: "Password",
+    role: "Role",
+    manager: "Manager",
+    supervisor: "Supervisor",
+    delegate: "Delegate",
+    loginBtn: "Login",
+    forgotPassword: "Forgot password?",
+    logout: "Logout",
+    tasks: "Daily Tasks",
+    clientName: "Client Name",
+    address: "Address",
+    visitTime: "Visit Time",
+    status: "Status",
+    inProgress: "In Progress",
+    completed: "Completed",
+    delayed: "Delayed",
+    updateStatus: "Update Status",
+    report: "Report",
+    notes: "Notes",
+    uploadImages: "Upload Images",
+    clientSignature: "Client Signature",
+    sendReport: "Send Report",
+    map: "Map",
+    notifications: "Notifications",
+  },
+  ar: {
+    loginTitle: "تسجيل الدخول",
+    emailPhone: "البريد الإلكتروني أو رقم الهاتف",
+    password: "كلمة المرور",
+    role: "الدور",
+    manager: "مدير",
+    supervisor: "مشرف",
+    delegate: "مندوب",
+    loginBtn: "دخول",
+    forgotPassword: "نسيت كلمة المرور؟",
+    logout: "تسجيل الخروج",
+    tasks: "المهام اليومية",
+    clientName: "اسم العميل",
+    address: "العنوان",
+    visitTime: "وقت الزيارة",
+    status: "الحالة",
+    inProgress: "قيد التنفيذ",
+    completed: "مكتملة",
+    delayed: "مؤجلة",
+    updateStatus: "تحديث الحالة",
+    report: "التقرير",
+    notes: "ملاحظات",
+    uploadImages: "رفع الصور",
+    clientSignature: "توقيع العميل",
+    sendReport: "إرسال التقرير",
+    map: "الخريطة",
+    notifications: "الإشعارات",
+  }
+};
+
+function setLanguage(lang) {
+  localStorage.setItem("lang", lang);
+  document.querySelectorAll("[data-translate]").forEach(el => {
+    const key = el.getAttribute("data-translate");
+    el.textContent = translations[lang][key];
+  });
+
+  // تغيير اتجاه الصفحة عند اختيار العربية
+  document.body.dir = lang === "ar" ? "rtl" : "ltr";
+}
+
+function initLanguage() {
+  const savedLang = localStorage.getItem("lang") || "en";
+  setLanguage(savedLang);
+
+  document.getElementById("langToggle").addEventListener("click", () => {
+    const newLang = localStorage.getItem("lang") === "en" ? "ar" : "en";
+    setLanguage(newLang);
+  });
+}
+
+document.addEventListener("DOMContentLoaded", initLanguage);
