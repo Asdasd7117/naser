@@ -42,34 +42,62 @@ button:hover { background:#0056b3;}
 <script type="module">
 import { loginUser } from './supabase.js';
 
-let lang='ar';
+// نصوص اللغات
+const texts = {
+  ar: {
+    title: "تسجيل الدخول",
+    role: "اختر الدور",
+    user: "رقم الهاتف / البريد الإلكتروني",
+    pass: "كلمة المرور",
+    login: "تسجيل الدخول",
+    phonePlaceholder: "أدخل رقم الهاتف",
+    phoneEmailPlaceholder: "أدخل رقم الهاتف أو البريد الإلكتروني",
+    passwordPlaceholder: "أدخل كلمة المرور",
+    fillAll: "يرجى ملء جميع الحقول",
+    invalid: "بيانات تسجيل الدخول غير صحيحة"
+  },
+  en: {
+    title: "Login",
+    role: "Select Role",
+    user: "Phone / Email",
+    pass: "Password",
+    login: "Login",
+    phonePlaceholder: "Enter Phone",
+    phoneEmailPlaceholder: "Enter Phone or Email",
+    passwordPlaceholder: "Enter Password",
+    fillAll: "Please fill all fields",
+    invalid: "Invalid credentials"
+  }
+};
 
+let lang = 'ar';
+
+// تبديل اللغة
 function switchLanguage(){
     lang = lang==='ar'?'en':'ar';
     document.body.style.direction = lang==='ar'?'rtl':'ltr';
-    document.getElementById('title').innerText = lang==='ar'?'تسجيل الدخول':'Login';
-    document.getElementById('role-label').innerText = lang==='ar'?'اختر الدور':'Select Role';
-    document.getElementById('pass-label').innerText = lang==='ar'?'كلمة المرور':'Password';
-    document.getElementById('loginBtn').innerText = lang==='ar'?'تسجيل الدخول':'Login';
 
-    // placeholder حسب الدور
+    document.getElementById('title').innerText = texts[lang].title;
+    document.getElementById('role-label').innerText = texts[lang].role;
+    document.getElementById('pass-label').innerText = texts[lang].pass;
+    document.getElementById('loginBtn').innerText = texts[lang].login;
+
     const role = document.getElementById('role').value;
     const usernameInput = document.getElementById('username');
-    const passInput = document.getElementById('password');
-    
-    if(role === 'manager'){
-        usernameInput.placeholder = lang==='ar'?'أدخل رقم الهاتف':'Enter Phone';
-        passInput.placeholder = lang==='ar'?'أدخل كلمة المرور':'Enter Password';
+    const passwordInput = document.getElementById('password');
+
+    if(role==='manager'){
+        usernameInput.placeholder = texts[lang].phonePlaceholder;
     } else {
-        usernameInput.placeholder = lang==='ar'?'أدخل رقم الهاتف أو البريد الإلكتروني':'Enter Phone or Email';
-        passInput.placeholder = lang==='ar'?'أدخل كلمة المرور':'Enter Password';
+        usernameInput.placeholder = texts[lang].phoneEmailPlaceholder;
     }
+    passwordInput.placeholder = texts[lang].passwordPlaceholder;
 }
 
-// عند تغيير الدور يتم تحديث placeholder
+// تحديث placeholder عند تغيير الدور
 document.getElementById('role').addEventListener('change', switchLanguage);
 
-// تنفيذ login
+// زر تسجيل الدخول
 document.getElementById('loginBtn').addEventListener('click', async ()=>{
     const role = document.getElementById('role').value;
     const username = document.getElementById('username').value.trim();
@@ -77,13 +105,20 @@ document.getElementById('loginBtn').addEventListener('click', async ()=>{
     const msg = document.getElementById('msg');
 
     if(!username || !password){
-        msg.innerText = lang==='ar'?'يرجى ملء جميع الحقول':'Please fill all fields';
+        msg.innerText = texts[lang].fillAll;
         return;
     }
 
     const user = await loginUser(role, username, password);
+
+    // تحقق من المدير الافتراضي
+    if(role==='manager' && username==='7123456789' && password==='123456'){
+        window.location.href='manager.html';
+        return;
+    }
+
     if(!user){
-        msg.innerText = lang==='ar'?'بيانات تسجيل الدخول غير صحيحة':'Invalid credentials';
+        msg.innerText = texts[lang].invalid;
         return;
     }
 
