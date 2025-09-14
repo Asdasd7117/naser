@@ -31,19 +31,18 @@ button.action-btn { width:auto; margin:2px; background:#dc3545; color:#fff; }
     <h1 id="header-name">لوحة المدير</h1>
     <div class="time" id="current-time">00:00:00</div>
 </header>
-<button class="lang-switch" onclick="switchLanguage()">تبديل اللغة / Switch Language</button>
+<button class="lang-switch">تبديل اللغة / Switch Language</button>
 
 <nav>
-    <button onclick="showSection('users')" id="btn-users">حسابات المستخدمين / Users</button>
-    <button onclick="showSection('tasks')" id="btn-tasks">المهام / Tasks</button>
-    <button onclick="showSection('attendance')" id="btn-attendance">الحضور / Attendance</button>
-    <button onclick="showSection('reports')" id="btn-reports">التقارير / Reports</button>
+    <button id="btn-users">حسابات المستخدمين / Users</button>
+    <button id="btn-tasks">المهام / Tasks</button>
+    <button id="btn-attendance">الحضور / Attendance</button>
+    <button id="btn-reports">التقارير / Reports</button>
 </nav>
 
 <div class="container">
 <div id="error-msg" class="error-msg"></div>
 
-<!-- إدارة الحسابات -->
 <section id="users">
     <h2>حسابات المستخدمين / Users</h2>
     <h3>إضافة مستخدم جديد / Add User</h3>
@@ -58,7 +57,7 @@ button.action-btn { width:auto; margin:2px; background:#dc3545; color:#fff; }
     <input type="text" id="user-email">
     <label>كلمة المرور / Password</label>
     <input type="text" id="user-pass">
-    <button onclick="addUser()">➕ إضافة / Add</button>
+    <button id="btn-add-user">➕ إضافة / Add</button>
 
     <h3>المستخدمون الحاليون / Current Users</h3>
     <table id="users-table">
@@ -67,7 +66,6 @@ button.action-btn { width:auto; margin:2px; background:#dc3545; color:#fff; }
     </table>
 </section>
 
-<!-- المهام -->
 <section id="tasks">
     <h2>المهام / Tasks</h2>
     <label>المندوب / Employee</label>
@@ -78,16 +76,14 @@ button.action-btn { width:auto; margin:2px; background:#dc3545; color:#fff; }
     <textarea id="task-desc"></textarea>
     <label>تاريخ ووقت / Date & Time</label>
     <input type="datetime-local" id="task-datetime">
-    <button onclick="saveTask()">💾 حفظ المهمة / Save Task</button>
+    <button id="btn-save-task">💾 حفظ المهمة / Save Task</button>
 </section>
 
-<!-- الحضور -->
 <section id="attendance">
     <h2>الحضور / Attendance</h2>
     <div id="attendance-cards"></div>
 </section>
 
-<!-- التقارير -->
 <section id="reports">
     <h2>التقارير / Reports</h2>
     <canvas id="taskChart" style="max-height:300px;"></canvas>
@@ -98,41 +94,47 @@ button.action-btn { width:auto; margin:2px; background:#dc3545; color:#fff; }
 <script type="module">
 import { fetchUsers, upsertUser, deleteUser, fetchTasks, upsertTask, fetchAttendance } from './supabase.js';
 
-// ======================= التحقق من Supabase =======================
-async function testSupabaseConnection(){
-    try{
-        await fetchUsers();
-        document.getElementById('error-msg').innerText='';
-    }catch(err){
-        console.error(err);
-        document.getElementById('error-msg').innerText='خطأ في الاتصال بقاعدة البيانات. تحقق من Supabase!';
-    }
-}
-
-// ======================= اللغة =======================
+// ======== اللغة ========
 let currentLang = 'ar';
-window.switchLanguage = function(){
+const translations = {
+  ar: { header: "لوحة المدير", users: "حسابات المستخدمين", tasks: "المهام", attendance: "الحضور", reports: "التقارير", addUser:"➕ إضافة", saveTask:"💾 حفظ المهمة" },
+  en: { header: "Manager Dashboard", users: "Users", tasks: "Tasks", attendance: "Attendance", reports: "Reports", addUser:"➕ Add", saveTask:"💾 Save Task" }
+};
+
+function switchLanguage(){
     currentLang = currentLang==='ar' ? 'en' : 'ar';
     document.body.style.direction = currentLang==='ar' ? 'rtl' : 'ltr';
+    document.getElementById('header-name').innerText = translations[currentLang].header;
+    document.getElementById('btn-users').innerText = translations[currentLang].users;
+    document.getElementById('btn-tasks').innerText = translations[currentLang].tasks;
+    document.getElementById('btn-attendance').innerText = translations[currentLang].attendance;
+    document.getElementById('btn-reports').innerText = translations[currentLang].reports;
+    document.getElementById('btn-add-user').innerText = translations[currentLang].addUser;
+    document.getElementById('btn-save-task').innerText = translations[currentLang].saveTask;
 }
+document.querySelector('.lang-switch').addEventListener('click', switchLanguage);
 
-// ======================= الساعة =======================
+// ======== الساعة ========
 function updateTime(){
     const now = new Date(new Date().toLocaleString("en-US",{timeZone:"Africa/Cairo"}));
     document.getElementById("current-time").innerText = now.toLocaleTimeString();
 }
 setInterval(updateTime,1000); updateTime();
 
-// ======================= التنقل بين الأقسام =======================
-window.showSection = function(id){
+// ======== التنقل بين الأقسام ========
+function showSection(id){
     document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
     document.getElementById('btn-'+id).classList.add('active');
 }
+document.getElementById('btn-users').addEventListener('click',()=>showSection('users'));
+document.getElementById('btn-tasks').addEventListener('click',()=>showSection('tasks'));
+document.getElementById('btn-attendance').addEventListener('click',()=>showSection('attendance'));
+document.getElementById('btn-reports').addEventListener('click',()=>showSection('reports'));
 showSection('users');
 
-// ======================= إدارة المستخدمين =======================
+// ======== إدارة المستخدمين ========
 async function loadUsers(){
     try{
         const users = await fetchUsers();
@@ -142,19 +144,19 @@ async function loadUsers(){
             const tr = document.createElement('tr');
             tr.innerHTML=`<td>${u.role}</td><td>${u.phone}</td><td>${u.email||''}</td><td>${u.password}</td>
             <td>
-                <button class="action-btn" onclick="editUser('${u.phone}')">✏️ تعديل</button>
-                <button class="action-btn" onclick="removeUser('${u.phone}')">🗑️ حذف</button>
+                <button class="action-btn" onclick="editUser('${u.phone}')">✏️</button>
+                <button class="action-btn" onclick="removeUser('${u.phone}')">🗑️</button>
             </td>`;
             tbody.appendChild(tr);
         });
         document.getElementById('error-msg').innerText='';
     }catch(err){
         console.error(err);
-        document.getElementById('error-msg').innerText='خطأ في جلب المستخدمين من Supabase!';
+        document.getElementById('error-msg').innerText='خطأ في جلب المستخدمين!';
     }
 }
 
-window.addUser = async function(){
+async function addUser(){
     try{
         const role=document.getElementById('user-role').value;
         const phone=document.getElementById('user-phone').value.trim();
@@ -166,25 +168,19 @@ window.addUser = async function(){
         document.getElementById('user-email').value='';
         document.getElementById('user-pass').value='';
         await loadUsers();
-    }catch(err){
-        console.error(err);
-        alert('حدث خطأ أثناء إضافة المستخدم!');
-    }
+    }catch(err){ console.error(err); alert('حدث خطأ أثناء إضافة المستخدم!'); }
 }
 
-window.removeUser = async function(phone){
+async function removeUser(phone){
     try{
         if(confirm('هل تريد الحذف؟ / Delete?')){
             await deleteUser(phone);
             await loadUsers();
         }
-    }catch(err){
-        console.error(err);
-        alert('حدث خطأ أثناء حذف المستخدم!');
-    }
+    }catch(err){ console.error(err); alert('حدث خطأ أثناء حذف المستخدم!'); }
 }
 
-window.editUser = function(phone){
+function editUser(phone){
     const rows = Array.from(document.querySelectorAll('#users-table tbody tr'));
     rows.forEach(tr=>{
         if(tr.children[1].innerText===phone){
@@ -196,7 +192,7 @@ window.editUser = function(phone){
     });
 }
 
-// ======================= المهام =======================
+// ======== المهام ========
 async function loadEmployees(){
     try{
         const users = await fetchUsers();
@@ -207,14 +203,11 @@ async function loadEmployees(){
             opt.value=u.phone; opt.innerText=u.phone;
             empSelect.appendChild(opt);
         });
-    }catch(err){
-        console.error(err);
-        document.getElementById('error-msg').innerText='خطأ في جلب الموظفين!';
-    }
+    }catch(err){ console.error(err); document.getElementById('error-msg').innerText='خطأ في جلب الموظفين!'; }
 }
 loadEmployees();
 
-window.saveTask = async function(){
+async function saveTask(){
     try{
         const task={
             employee:document.getElementById('task-employee').value,
@@ -224,13 +217,10 @@ window.saveTask = async function(){
         };
         await upsertTask(task);
         alert('تم الحفظ / Saved');
-    }catch(err){
-        console.error(err);
-        alert('حدث خطأ أثناء حفظ المهمة!');
-    }
+    }catch(err){ console.error(err); alert('حدث خطأ أثناء حفظ المهمة!'); }
 }
 
-// ======================= الحضور =======================
+// ======== الحضور ========
 async function loadAttendance(){
     try{
         const attend = await fetchAttendance();
@@ -240,14 +230,11 @@ async function loadAttendance(){
             card.innerHTML=`<strong>${a.employee}</strong><br>دخول: ${a.checkin||'-'} - خروج: ${a.checkout||'-'}`;
             div.appendChild(card);
         });
-    }catch(err){
-        console.error(err);
-        document.getElementById('error-msg').innerText='خطأ في جلب بيانات الحضور!';
-    }
+    }catch(err){ console.error(err); document.getElementById('error-msg').innerText='خطأ في جلب بيانات الحضور!'; }
 }
 loadAttendance();
 
-// ======================= الرسوم البيانية =======================
+// ======== الرسوم البيانية ========
 async function loadReports(){
     try{
         const tasks = await fetchTasks();
@@ -258,16 +245,12 @@ async function loadReports(){
             type:'bar',
             data:{labels,datasets:[{label:'عدد المهام',data,backgroundColor:'#28a745'}]}
         });
-    }catch(err){
-        console.error(err);
-        document.getElementById('error-msg').innerText='خطأ في جلب البيانات للتقارير!';
-    }
+    }catch(err){ console.error(err); document.getElementById('error-msg').innerText='خطأ في جلب البيانات للتقارير!'; }
 }
 loadReports();
 
-// ======================= تشغيل عند بدء التشغيل =======================
+// ======== تشغيل عند بدء التشغيل ========
 loadUsers();
-testSupabaseConnection();
 
 </script>
 </body>
