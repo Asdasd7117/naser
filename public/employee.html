@@ -2,175 +2,114 @@
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
-<title>لوحة المندوب / Employee Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>صفحة المندوب</title>
 <style>
-body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f0f2f5; direction:rtl;}
-header { background:#007bff; color:#fff; padding:15px; display:flex; justify-content:space-between; align-items:center;}
-header h1 { margin:0; font-size:18px;}
-header .time { font-size:14px;}
-.lang-switch { position:absolute; top:15px; right:15px; background:#ffc107; color:#000; border:none; padding:8px; border-radius:6px; cursor:pointer;}
-nav { display:flex; justify-content:space-around; margin-bottom:20px; flex-wrap:wrap;}
-nav button { padding:10px 20px; border:none; border-radius:8px; cursor:pointer; background:#28a745; color:#fff; font-weight:bold; margin:5px;}
-nav button.active { background:#218838;}
-section { display:none; }
-section.active { display:block; }
-.card { background:#fff; padding:15px; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.1); margin-bottom:15px;}
-label { display:block; margin-top:10px;}
-input, select, textarea, button { width:100%; padding:8px; margin-top:5px; margin-bottom:10px; border-radius:6px; border:1px solid #ccc;}
-.status { font-weight:bold; padding:3px 8px; border-radius:6px; color:#fff;}
-.status.pending { background:#ffc107;}
-.status.completed { background:#28a745;}
-.status.delayed { background:#dc3545;}
-img.preview { max-width:80px; max-height:80px; margin:3px;}
-canvas { border:1px solid #ccc; }
-#map { width:100%; height:300px; margin-top:10px; }
-.notifications { max-height:300px; overflow-y:auto;}
-.notifications .notif { padding:10px; margin-bottom:5px; border-radius:8px; background:#fff; box-shadow:0 2px 5px rgba(0,0,0,0.1);}
-.notifications .unread { background:#f8d7da; }
+  body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f0f4f7; }
+  header { background:#007BFF; color:#fff; padding:15px; text-align:center; }
+  nav { display:flex; justify-content:space-around; background:#fff; padding:10px 0; box-shadow:0 2px 4px rgba(0,0,0,0.1); }
+  nav button { padding:10px 15px; border:none; background:none; cursor:pointer; font-weight:bold; }
+  nav button.active { color:#007BFF; border-bottom:2px solid #007BFF; }
+  .section { padding:20px; display:none; }
+  .section.active { display:block; }
+  input, textarea { width:100%; padding:8px; margin-top:5px; border-radius:5px; border:1px solid #ccc; }
+  button.submit { background:#007BFF; color:#fff; border:none; padding:10px; margin-top:10px; width:100%; border-radius:5px; cursor:pointer; }
+  button.submit:hover { background:#0056b3; }
+  .task { background:#fff; padding:10px; margin-bottom:10px; border-radius:5px; box-shadow:0 1px 2px rgba(0,0,0,0.1); }
+  .task h4 { margin:0; }
+  .map { width:100%; height:300px; background:#ccc; border-radius:8px; display:flex; justify-content:center; align-items:center; color:#555; font-weight:bold; }
 </style>
 </head>
 <body>
 
-<header>
-    <h1 id="employee-name">المندوب</h1>
-    <div class="time" id="current-time">00:00:00</div>
-</header>
-<button class="lang-switch" onclick="switchLanguage()">تبديل اللغة / Switch Language</button>
+<header id="header-title">المندوب</header>
 
 <nav>
-    <button onclick="showSection('tasks')" id="btn-tasks">المهام / Tasks</button>
-    <button onclick="showSection('report')" id="btn-report">رفع التقرير / Report</button>
-    <button onclick="showSection('map')" id="btn-map">الخريطة / Map</button>
-    <button onclick="showSection('notifications')" id="btn-notif">الإشعارات / Notifications</button>
+  <button class="tab active" data-tab="tasks">المهام</button>
+  <button class="tab" data-tab="report">رفع التقرير</button>
+  <button class="tab" data-tab="map">الخريطة</button>
+  <button class="tab" data-tab="notifications">الإشعارات</button>
 </nav>
 
-<div class="container">
-<!-- المهام -->
-<section id="tasks">
-    <h2>المهام اليومية / Daily Tasks</h2>
-    <div id="tasks-cards"></div>
-</section>
+<div class="section active" id="tasks">
+  <h3>المهام اليومية</h3>
+  <div class="task">
+    <h4>عميل: أحمد علي</h4>
+    <p>العنوان: شارع الملك فيصل</p>
+    <p>وقت الزيارة: 10:00 صباحًا</p>
+    <p>الحالة: <select><option>قيد التنفيذ</option><option>مكتملة</option><option>مؤجلة</option></select></p>
+    <button class="submit">تحديث الحالة</button>
+  </div>
+  <div class="task">
+    <h4>عميل: سارة محمد</h4>
+    <p>العنوان: شارع الجامعة</p>
+    <p>وقت الزيارة: 12:00 ظهرًا</p>
+    <p>الحالة: <select><option>قيد التنفيذ</option><option>مكتملة</option><option>مؤجلة</option></select></p>
+    <button class="submit">تحديث الحالة</button>
+  </div>
+</div>
 
-<!-- رفع التقرير -->
-<section id="report">
-    <h2>رفع التقرير / Submit Report</h2>
-    <label>ملاحظات / Notes</label>
-    <textarea id="report-notes"></textarea>
-    <label>صور / Images</label>
-    <input type="file" id="report-images" multiple>
-    <div id="images-preview"></div>
-    <label>توقيع العميل / Client Signature</label>
-    <canvas id="signature" width="300" height="100" style="border:1px solid #ccc;"></canvas>
-    <button onclick="submitReport()">إرسال / Submit</button>
-</section>
+<div class="section" id="report">
+  <h3>رفع التقرير</h3>
+  <label>الملاحظات:</label>
+  <textarea placeholder="أدخل الملاحظات هنا"></textarea>
+  <label>رفع صورة/صور:</label>
+  <input type="file" multiple>
+  <label>توقيع العميل:</label>
+  <input type="text" placeholder="اسم العميل/التوقيع">
+  <button class="submit">إرسال التقرير</button>
+</div>
 
-<!-- الخريطة -->
-<section id="map">
-    <h2>الموقع / Map</h2>
-    <div id="map"></div>
-    <button onclick="updateLocation()">تحديث الموقع / Update Location</button>
-</section>
+<div class="section" id="map">
+  <h3>الخريطة</h3>
+  <div class="map">الخريطة ستظهر هنا</div>
+</div>
 
-<!-- الإشعارات -->
-<section id="notifications">
-    <h2>الإشعارات / Notifications</h2>
-    <div class="notifications" id="notif-list"></div>
-</section>
+<div class="section" id="notifications">
+  <h3>الإشعارات</h3>
+  <ul>
+    <li>تذكير: زيارة عميل أحمد علي الساعة 10:00</li>
+    <li>تأخر بدء مهمة العميل سارة محمد</li>
+  </ul>
+</div>
 
-<script type="module">
-import { fetchTasksByEmployee, updateTaskStatus, submitReport, fetchNotifications } from './supabase.js';
+<div class="lang-switch" style="text-align:center; margin:15px; cursor:pointer; color:#007BFF;">English</div>
 
-const employeePhone = prompt("أدخل رقم هاتفك / Enter your phone"); // تسجيل دخول مؤقت
-document.getElementById('employee-name').innerText = "المندوب: " + employeePhone;
-
-// اللغة والوقت
-let currentLang='ar';
-function switchLanguage(){ currentLang=currentLang==='ar'?'en':'ar'; document.body.style.direction=currentLang==='ar'?'rtl':'ltr'; }
-function updateTime(){ const now=new Date(new Date().toLocaleString("en-US",{timeZone:"Africa/Cairo"})); document.getElementById("current-time").innerText=now.toLocaleTimeString();}
-setInterval(updateTime,1000); updateTime();
-
-// التنقل بين الأقسام
-function showSection(id){
-    document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
-    document.getElementById('btn-'+id).classList.add('active');
-}
-showSection('tasks');
-
-// المهام اليومية
-async function loadTasks(){
-    const tasks = await fetchTasksByEmployee(employeePhone);
-    const container = document.getElementById('tasks-cards');
-    container.innerHTML='';
-    tasks.forEach(t=>{
-        const card = document.createElement('div'); card.className='card';
-        card.innerHTML=`<strong>العميل / Client:</strong> ${t.client||'-'}<br>
-                        <strong>العنوان / Address:</strong> ${t.address||'-'}<br>
-                        <strong>وقت الزيارة / Visit Time:</strong> ${t.datetime||'-'}<br>
-                        <strong>الحالة / Status:</strong> 
-                        <span class="status ${t.status}">${t.status}</span>
-                        <br><button onclick="changeStatus('${t.id}')">تغيير الحالة / Change Status</button>`;
-        container.appendChild(card);
-    });
-}
-async function changeStatus(taskId){
-    const status = prompt("أدخل الحالة: pending, completed, delayed");
-    if(status) await updateTaskStatus(taskId, status);
-    loadTasks();
-}
-loadTasks();
-
-// رفع التقرير
-const signatureCanvas = document.getElementById('signature');
-const ctx = signatureCanvas.getContext('2d'); let drawing=false;
-signatureCanvas.addEventListener('mousedown',()=>drawing=true);
-signatureCanvas.addEventListener('mouseup',()=>drawing=false);
-signatureCanvas.addEventListener('mousemove',(e)=>{ if(drawing){ ctx.lineTo(e.offsetX,e.offsetY); ctx.stroke(); ctx.beginPath(); ctx.moveTo(e.offsetX,e.offsetY); }});
-document.getElementById('report-images').addEventListener('change',(e)=>{
-    const preview = document.getElementById('images-preview'); preview.innerHTML='';
-    Array.from(e.target.files).forEach(file=>{
-        const img = document.createElement('img'); img.className='preview';
-        img.src = URL.createObjectURL(file);
-        preview.appendChild(img);
-    });
+<script>
+const tabs = document.querySelectorAll('.tab');
+const sections = document.querySelectorAll('.section');
+tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    tabs.forEach(t => t.classList.remove('active'));
+    sections.forEach(s => s.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.tab).classList.add('active');
+  });
 });
-async function submitReport(){
-    const notes = document.getElementById('report-notes').value;
-    const imgFiles = document.getElementById('report-images').files;
-    const dataURL = signatureCanvas.toDataURL();
-    await submitReport({employee:employeePhone, notes, images: Array.from(imgFiles).map(f=>f.name), signature:dataURL, datetime:new Date()});
-    alert('تم الإرسال / Submitted'); document.getElementById('report-notes').value=''; signatureCanvas.getContext('2d').clearRect(0,0,signatureCanvas.width,signatureCanvas.height);
-}
 
-// الإشعارات
-async function loadNotifications(){
-    const notifs = await fetchNotifications(employeePhone);
-    const container = document.getElementById('notif-list');
-    container.innerHTML='';
-    notifs.forEach(n=>{
-        const div = document.createElement('div'); div.className='notif';
-        if(!n.read) div.classList.add('unread');
-        div.innerText = n.message;
-        container.appendChild(div);
-    });
-}
-loadNotifications();
-
-// الخريطة
-let map, marker;
-function initMap(lat=24.7136, lng=46.6753){ // default الرياض
-    map = new google.maps.Map(document.getElementById('map'), {center:{lat,lng}, zoom:12});
-    marker = new google.maps.Marker({position:{lat,lng}, map});
-}
-function updateLocation(){
-    navigator.geolocation.getCurrentPosition(pos=>{
-        const {latitude, longitude} = pos.coords;
-        map.setCenter({lat:latitude, lng:longitude});
-        marker.setPosition({lat:latitude, lng:longitude});
-    });
-}
+let isArabic = true;
+const langSwitch = document.querySelector('.lang-switch');
+langSwitch.addEventListener('click', () => {
+  isArabic = !isArabic;
+  if(isArabic){
+    document.body.style.direction='rtl';
+    document.getElementById('header-title').innerText='المندوب';
+    document.querySelectorAll('.tab')[0].innerText='المهام';
+    document.querySelectorAll('.tab')[1].innerText='رفع التقرير';
+    document.querySelectorAll('.tab')[2].innerText='الخريطة';
+    document.querySelectorAll('.tab')[3].innerText='الإشعارات';
+    langSwitch.innerText='English';
+  } else {
+    document.body.style.direction='ltr';
+    document.getElementById('header-title').innerText='Employee';
+    document.querySelectorAll('.tab')[0].innerText='Tasks';
+    document.querySelectorAll('.tab')[1].innerText='Report';
+    document.querySelectorAll('.tab')[2].innerText='Map';
+    document.querySelectorAll('.tab')[3].innerText='Notifications';
+    langSwitch.innerText='عربي';
+  }
+});
 </script>
-<script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap"></script>
+
 </body>
 </html>
