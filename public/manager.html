@@ -34,10 +34,10 @@ button.action-btn { width:auto; margin:2px; background:#dc3545; color:#fff; }
 <button class="lang-switch" id="lang-switch">Switch Language</button>
 
 <nav>
-    <button onclick="showSection('users')" id="btn-users">حسابات المستخدمين</button>
-    <button onclick="showSection('tasks')" id="btn-tasks">المهام</button>
-    <button onclick="showSection('attendance')" id="btn-attendance">الحضور</button>
-    <button onclick="showSection('reports')" id="btn-reports">التقارير</button>
+    <button id="btn-users">حسابات المستخدمين</button>
+    <button id="btn-tasks">المهام</button>
+    <button id="btn-attendance">الحضور</button>
+    <button id="btn-reports">التقارير</button>
 </nav>
 
 <div class="container">
@@ -57,7 +57,7 @@ button.action-btn { width:auto; margin:2px; background:#dc3545; color:#fff; }
     <input type="text" id="user-email">
     <label id="pass-label">كلمة المرور</label>
     <input type="text" id="user-pass">
-    <button onclick="addUser()" id="add-btn">➕ إضافة</button>
+    <button id="add-btn">➕ إضافة</button>
 
     <h3 id="current-users-title">المستخدمون الحاليون</h3>
     <table id="users-table">
@@ -84,7 +84,7 @@ button.action-btn { width:auto; margin:2px; background:#dc3545; color:#fff; }
     <textarea id="task-desc"></textarea>
     <label id="task-datetime-label">تاريخ ووقت</label>
     <input type="datetime-local" id="task-datetime">
-    <button onclick="saveTask()" id="task-save-btn">💾 حفظ المهمة</button>
+    <button id="task-save-btn">💾 حفظ المهمة</button>
 </section>
 
 <section id="attendance">
@@ -102,29 +102,31 @@ button.action-btn { width:auto; margin:2px; background:#dc3545; color:#fff; }
 <script type="module">
 import { fetchUsers, upsertUser, deleteUser, fetchTasks, upsertTask, fetchAttendance } from './supabase.js';
 
-// ======================= اللغات =======================
 let currentLang='ar';
 const texts = {
-    ar:{
-        header:'لوحة المدير',
-        switch:'Switch to English',
-        nav:{users:'حسابات المستخدمين', tasks:'المهام', attendance:'الحضور', reports:'التقارير'},
-        users:{title:'حسابات المستخدمين', add:'إضافة مستخدم جديد', role:'الدور', phone:'الهاتف', email:'البريد الإلكتروني', pass:'كلمة المرور', addBtn:'➕ إضافة', current:'المستخدمون الحاليون', th:{role:'الدور', phone:'الهاتف', email:'البريد', pass:'كلمة المرور', actions:'إجراءات'}},
-        tasks:{title:'المهام', emp:'المندوب', titleLabel:'عنوان المهمة', desc:'الوصف', datetime:'تاريخ ووقت', save:'💾 حفظ المهمة'},
-        attendance:{title:'الحضور'},
-        reports:{title:'التقارير'}
-    },
-    en:{
-        header:'Manager Dashboard',
-        switch:'التبديل إلى العربية',
-        nav:{users:'Users', tasks:'Tasks', attendance:'Attendance', reports:'Reports'},
-        users:{title:'Users', add:'Add New User', role:'Role', phone:'Phone', email:'Email', pass:'Password', addBtn:'➕ Add', current:'Current Users', th:{role:'Role', phone:'Phone', email:'Email', pass:'Password', actions:'Actions'}},
-        tasks:{title:'Tasks', emp:'Employee', titleLabel:'Title', desc:'Description', datetime:'Date & Time', save:'💾 Save Task'},
-        attendance:{title:'Attendance'},
-        reports:{title:'Reports'}
-    }
+    ar:{header:'لوحة المدير',switch:'Switch Language',nav:{users:'حسابات المستخدمين',tasks:'المهام',attendance:'الحضور',reports:'التقارير'}},
+    en:{header:'Manager Dashboard',switch:'التبديل إلى العربية',nav:{users:'Users',tasks:'Tasks',attendance:'Attendance',reports:'Reports'}}
 };
-function switchLanguage(){
+
+// ======= التبديل بين الصفحات =======
+const sections=['users','tasks','attendance','reports'];
+sections.forEach(id=>{
+    document.getElementById('btn-'+id).addEventListener('click',()=>{showSection(id);});
+});
+function showSection(id){
+    sections.forEach(s=>document.getElementById(s).classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    sections.forEach(s=>document.getElementById('btn-'+s).classList.remove('active'));
+    document.getElementById('btn-'+id).classList.add('active');
+}
+showSection('users');
+
+// ======= الساعة =======
+function updateTime(){ document.getElementById("current-time").innerText = new Date().toLocaleTimeString(); }
+setInterval(updateTime,1000); updateTime();
+
+// ======= التبديل بين اللغة =======
+document.getElementById('lang-switch').addEventListener('click',()=>{
     currentLang=currentLang==='ar'?'en':'ar';
     const t=texts[currentLang];
     document.body.style.direction=currentLang==='ar'?'rtl':'ltr';
@@ -134,76 +136,41 @@ function switchLanguage(){
     document.getElementById('btn-tasks').innerText=t.nav.tasks;
     document.getElementById('btn-attendance').innerText=t.nav.attendance;
     document.getElementById('btn-reports').innerText=t.nav.reports;
+});
 
-    document.getElementById('users-title').innerText=t.users.title;
-    document.getElementById('add-user-title').innerText=t.users.add;
-    document.getElementById('role-label').innerText=t.users.role;
-    document.getElementById('phone-label').innerText=t.users.phone;
-    document.getElementById('email-label').innerText=t.users.email;
-    document.getElementById('pass-label').innerText=t.users.pass;
-    document.getElementById('add-btn').innerText=t.users.addBtn;
-    document.getElementById('current-users-title').innerText=t.users.current;
-    document.getElementById('th-role').innerText=t.users.th.role;
-    document.getElementById('th-phone').innerText=t.users.th.phone;
-    document.getElementById('th-email').innerText=t.users.th.email;
-    document.getElementById('th-pass').innerText=t.users.th.pass;
-    document.getElementById('th-actions').innerText=t.users.th.actions;
-
-    document.getElementById('tasks-title').innerText=t.tasks.title;
-    document.getElementById('task-emp-label').innerText=t.tasks.emp;
-    document.getElementById('task-title-label').innerText=t.tasks.titleLabel;
-    document.getElementById('task-desc-label').innerText=t.tasks.desc;
-    document.getElementById('task-datetime-label').innerText=t.tasks.datetime;
-    document.getElementById('task-save-btn').innerText=t.tasks.save;
-
-    document.getElementById('attendance-title').innerText=t.attendance.title;
-    document.getElementById('reports-title').innerText=t.reports.title;
-}
-document.getElementById('lang-switch').onclick=switchLanguage;
-
-// ======================= الساعة =======================
-function updateTime(){ document.getElementById("current-time").innerText = new Date().toLocaleTimeString(); }
-setInterval(updateTime,1000); updateTime();
-
-// ======================= التنقل =======================
-window.showSection = function(id){
-    document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
-    document.getElementById('btn-'+id).classList.add('active');
-}
-showSection('users');
-
-// ======================= المستخدمون =======================
+// ======= المستخدمون =======
 async function loadUsers(){
     try{
         const users=await fetchUsers();
         const tbody=document.querySelector('#users-table tbody'); tbody.innerHTML='';
         users.forEach(u=>{
             const tr=document.createElement('tr');
-            tr.innerHTML=`<td>${u.role}</td><td>${u.phone}</td><td>${u.email||''}</td><td>${u.password}</td>
-            <td>
-                <button class="action-btn" onclick="editUser('${u.phone}')">✏️</button>
-                <button class="action-btn" onclick="removeUser('${u.phone}')">🗑️</button>
-            </td>`;
+            const editBtn=document.createElement('button');
+            editBtn.className='action-btn'; editBtn.innerText='✏️';
+            editBtn.addEventListener('click',()=>editUser(u.phone));
+            const delBtn=document.createElement('button');
+            delBtn.className='action-btn'; delBtn.innerText='🗑️';
+            delBtn.addEventListener('click',()=>removeUser(u.phone));
+            tr.innerHTML=`<td>${u.role}</td><td>${u.phone}</td><td>${u.email||''}</td><td>${u.password}</td><td></td>`;
+            tr.children[4].appendChild(editBtn); tr.children[4].appendChild(delBtn);
             tbody.appendChild(tr);
         });
-    }catch(err){ console.error(err); document.getElementById('error-msg').innerText='خطأ في جلب المستخدمين!'; }
+    }catch(e){ console.error(e); }
 }
-window.addUser=async function(){
+async function addUser(){
     const role=document.getElementById('user-role').value;
     const phone=document.getElementById('user-phone').value.trim();
     const email=document.getElementById('user-email').value.trim();
     const pass=document.getElementById('user-pass').value.trim();
     if(!phone||!pass) return alert('أدخل الهاتف وكلمة المرور');
-    await upsertUser({role, phone, email, password:pass});
+    await upsertUser({role,phone,email,password:pass});
     document.getElementById('user-phone').value='';
     document.getElementById('user-email').value='';
     document.getElementById('user-pass').value='';
     await loadUsers();
 }
-window.removeUser=async function(phone){ if(confirm('هل تريد الحذف؟')){ await deleteUser(phone); await loadUsers(); } }
-window.editUser=function(phone){
+async function removeUser(phone){ if(confirm('هل تريد الحذف؟')){ await deleteUser(phone); await loadUsers(); } }
+function editUser(phone){
     const rows=Array.from(document.querySelectorAll('#users-table tbody tr'));
     rows.forEach(tr=>{
         if(tr.children[1].innerText===phone){
@@ -214,8 +181,10 @@ window.editUser=function(phone){
         }
     });
 }
+document.getElementById('add-btn').addEventListener('click',addUser);
+loadUsers();
 
-// ======================= المهام =======================
+// ======= المهام =======
 async function loadEmployees(){
     const users=await fetchUsers();
     const empSelect=document.getElementById('task-employee'); empSelect.innerHTML='';
@@ -225,15 +194,16 @@ async function loadEmployees(){
     });
 }
 loadEmployees();
-window.saveTask=async function(){
+async function saveTask(){
     const task={employee:document.getElementById('task-employee').value,
         title:document.getElementById('task-title').value,
         description:document.getElementById('task-desc').value,
         datetime:document.getElementById('task-datetime').value};
     await upsertTask(task); alert('تم الحفظ');
 }
+document.getElementById('task-save-btn').addEventListener('click',saveTask);
 
-// ======================= الحضور =======================
+// ======= الحضور =======
 async function loadAttendance(){
     const attend=await fetchAttendance();
     const div=document.getElementById('attendance-cards'); div.innerHTML='';
@@ -245,7 +215,7 @@ async function loadAttendance(){
 }
 loadAttendance();
 
-// ======================= التقارير =======================
+// ======= التقارير =======
 async function loadReports(){
     const tasks=await fetchTasks();
     const ctx=document.getElementById('taskChart').getContext('2d');
@@ -255,9 +225,5 @@ async function loadReports(){
 }
 loadReports();
 
-// ======================= بدء التشغيل =======================
-loadUsers();
-
 </script>
-</body>
-</html>
+</body
