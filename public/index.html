@@ -1,145 +1,114 @@
-<!DOCTYPE html>
-<html lang="ar">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تسجيل الدخول</title>
+<!DOCTYPE html>    
+<html lang="ar">    
+<head>    
+<meta charset="UTF-8">    
+<meta name="viewport" content="width=device-width, initial-scale=1.0">    
+<title>تسجيل الدخول</title>    
 <script src="https://unpkg.com/@supabase/supabase-js"></script>
-<style>
-body { font-family: Arial, sans-serif; background-color: #f0f4f7; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-.login-container { background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); width: 300px; }
-h2 { text-align: center; margin-bottom: 20px; }
-label { display: block; margin-top: 10px; }
-input, select { width: 100%; padding: 8px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; }
-button { width: 100%; padding: 10px; margin-top: 20px; background-color: #007BFF; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
-button:hover { background-color: #0056b3; }
-.lang-switch { margin-top: 10px; text-align: center; cursor: pointer; color: #007BFF; }
-</style>
-</head>
-<body>
+<style>    
+  body { font-family: Arial, sans-serif; background-color: #f0f4f7; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }    
+  .login-container { background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); width: 300px; }    
+  h2 { text-align: center; margin-bottom: 20px; }    
+  label { display: block; margin-top: 10px; }    
+  input, select { width: 100%; padding: 8px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; }    
+  button { width: 100%; padding: 10px; margin-top: 20px; background-color: #007BFF; color: #fff; border: none; border-radius: 5px; cursor: pointer; }    
+  button:hover { background-color: #0056b3; }    
+  .lang-switch { margin-top: 10px; text-align: center; cursor: pointer; color: #007BFF; }    
+</style>    
+</head>    
+<body>    
 
-<div class="login-container">
-  <h2 id="title">تسجيل الدخول</h2>
+<div class="login-container">    
+  <h2 id="title">تسجيل الدخول</h2>    
+      
+  <label id="label-role" for="role">اختر الدور</label>    
+  <select id="role">    
+    <option value="manager">المدير</option>    
+    <option value="supervisor">المشرف</option>    
+    <option value="employee">المندوب</option>    
+  </select>    
+    
+  <label id="label-email" for="email">البريد الإلكتروني / رقم الهاتف</label>    
+  <input type="text" id="email" placeholder="أدخل البريد الإلكتروني أو رقم الهاتف">    
+    
+  <label id="label-password" for="password">كلمة المرور</label>    
+  <input type="password" id="password" placeholder="أدخل كلمة المرور">    
+    
+  <button id="loginBtn">تسجيل الدخول</button>    
+    
+  <div id="forgot" style="text-align:center; margin-top:10px; cursor:pointer; color:#007BFF;">نسيت كلمة المرور؟</div>    
+  <div class="lang-switch" id="langSwitch">English</div>    
+</div>    
 
-  <label id="label-role" for="role">اختر الدور</label>
-  <select id="role">
-    <option value="manager">المدير</option>
-    <option value="supervisor">المشرف</option>
-    <option value="employee">المندوب</option>
-  </select>
-
-  <label id="label-email" for="email">البريد الإلكتروني / رقم الهاتف</label>
-  <input type="text" id="email" placeholder="أدخل البريد الإلكتروني أو رقم الهاتف">
-
-  <label id="label-password" for="password">كلمة المرور</label>
-  <input type="password" id="password" placeholder="أدخل كلمة المرور">
-
-  <button id="loginBtn">تسجيل الدخول</button>
-
-  <div id="forgot" style="text-align:center; margin-top:10px; cursor:pointer; color:#007BFF;">نسيت كلمة المرور؟</div>
-  <div class="lang-switch" id="langSwitch">English</div>
-</div>
-
-<script>
-const SUPABASE_URL = "https://ncjxqfqwswwikedaffif.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NDEwNzQsImV4cCI6MjA3MzQxNzA3NH0.4G54968qAHyePjq9_ufSCSA1fHzx5XHFzOAqGKmVW18";
+<script>    
+// إعداد Supabase    
+const SUPABASE_URL="https://ncjxqfqwswwikedaffif.supabase.co";
+const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NDEwNzQsImV4cCI6MjA3MzQxNzA3NH0.4G54968qAHyePjq9_ufSCSA1fHzx5XHFzOAqGKmVW18";
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let isArabic = true;
+const langSwitch = document.getElementById('langSwitch');    
+let isArabic = true;    
+    
+langSwitch.addEventListener('click', () => {    
+  isArabic = !isArabic;    
+  if(isArabic){    
+    document.documentElement.lang = 'ar';    
+    document.body.style.direction = 'rtl';    
+    document.getElementById('title').innerText = 'تسجيل الدخول';    
+    document.getElementById('label-role').innerText = 'اختر الدور';    
+    document.getElementById('label-email').innerText = 'البريد الإلكتروني / رقم الهاتف';    
+    document.getElementById('label-password').innerText = 'كلمة المرور';    
+    document.getElementById('loginBtn').innerText = 'تسجيل الدخول';    
+    document.getElementById('forgot').innerText = 'نسيت كلمة المرور؟';    
+    langSwitch.innerText = 'English';    
+  } else {    
+    document.documentElement.lang = 'en';    
+    document.body.style.direction = 'ltr';    
+    document.getElementById('title').innerText = 'Login';    
+    document.getElementById('label-role').innerText = 'Select Role';    
+    document.getElementById('label-email').innerText = 'Email / Phone';    
+    document.getElementById('label-password').innerText = 'Password';    
+    document.getElementById('loginBtn').innerText = 'Login';    
+    document.getElementById('forgot').innerText = 'Forgot Password?';    
+    langSwitch.innerText = 'عربي';    
+  }    
+});    
 
-const texts = {
-  ar: {
-    title: "تسجيل الدخول",
-    role: "اختر الدور",
-    email: "البريد الإلكتروني / رقم الهاتف",
-    password: "كلمة المرور",
-    login: "تسجيل الدخول",
-    forgot: "نسيت كلمة المرور؟",
-    langSwitch: "English",
-    emailPlaceholder: "أدخل البريد الإلكتروني أو رقم الهاتف",
-    passwordPlaceholder: "أدخل كلمة المرور",
-    alertEmpty: "يرجى إدخال جميع البيانات",
-    alertInvalid: "بيانات غير صحيحة"
-  },
-  en: {
-    title: "Login",
-    role: "Select Role",
-    email: "Email / Phone",
-    password: "Password",
-    login: "Login",
-    forgot: "Forgot Password?",
-    langSwitch: "عربي",
-    emailPlaceholder: "Enter email or phone",
-    passwordPlaceholder: "Enter password",
-    alertEmpty: "Please enter all fields",
-    alertInvalid: "Invalid credentials"
-  }
-};
-
-const langSwitch = document.getElementById('langSwitch');
-langSwitch.addEventListener('click', () => {
-  isArabic = !isArabic;
-  const lang = isArabic ? 'ar' : 'en';
-  document.documentElement.lang = lang;
-  document.body.style.direction = isArabic ? 'rtl' : 'ltr';
-
-  document.getElementById('title').innerText = texts[lang].title;
-  document.getElementById('label-role').innerText = texts[lang].role;
-  document.getElementById('label-email').innerText = texts[lang].email;
-  document.getElementById('label-password').innerText = texts[lang].password;
-  document.getElementById('loginBtn').innerText = texts[lang].login;
-  document.getElementById('forgot').innerText = texts[lang].forgot;
-  document.getElementById('email').placeholder = texts[lang].emailPlaceholder;
-  document.getElementById('password').placeholder = texts[lang].passwordPlaceholder;
-  langSwitch.innerText = texts[lang].langSwitch;
-});
-
-// دالة تسجيل الدخول
-async function loginUser(role, email, password){
-  if(!email || !password){
-    alert(isArabic ? texts.ar.alertEmpty : texts.en.alertEmpty);
-    return;
-  }
-
-  const { data, error } = await supabase
+// تسجيل الدخول والتحقق من Supabase
+document.getElementById('loginBtn').addEventListener('click', async () => {    
+  const role = document.getElementById('role').value;    
+  const email = document.getElementById('email').value;    
+  const password = document.getElementById('password').value;    
+    
+  if(!email || !password){    
+    alert(isArabic ? 'يرجى إدخال جميع البيانات' : 'Please enter all fields');    
+    return;    
+  }    
+    
+  // تحقق من Supabase    
+  let { data: users, error } = await supabase
     .from('users')
     .select('*')
     .eq('role', role)
     .eq('email', email)
-    .eq('password', password)
-    .single();
+    .eq('password', password); // **يفضل أن تستخدم التشفير في الحقيقة**    
 
-  if(error || !data){
-    alert(isArabic ? texts.ar.alertInvalid : texts.en.alertInvalid);
-    return;
-  }
+  if(error){    
+    alert(isArabic ? 'حدث خطأ في تسجيل الدخول' : 'Login error');    
+    return;    
+  }    
 
-  if(role==='manager') window.location.href = 'admin.html';
-  else if(role==='supervisor') window.location.href = 'supervisor.html';
-  else if(role==='employee') window.location.href = 'employee.html';
-}
+  if(users.length === 0){    
+    alert(isArabic ? 'بيانات الدخول غير صحيحة' : 'Invalid credentials');    
+    return;    
+  }    
 
-// تسجيل الدخول عند الضغط على الزر
-document.getElementById('loginBtn').addEventListener('click', () => {
-  const role = document.getElementById('role').value;
-  const email = document.getElementById('email').value.trim();
-  const password = document.getElementById('password').value.trim();
-  loginUser(role,email,password);
-});
-
-// تسجيل الدخول تلقائيًا من الرابط إذا كانت الباراميترات موجودة
-const urlParams = new URLSearchParams(window.location.search);
-const roleParam = urlParams.get('role');
-const emailParam = urlParams.get('email_or_phone');
-const passwordParam = urlParams.get('password');
-
-if(roleParam && emailParam && passwordParam){
-  document.getElementById('role').value = roleParam;
-  document.getElementById('email').value = emailParam;
-  document.getElementById('password').value = passwordParam;
-  loginUser(roleParam,emailParam,passwordParam);
-}
-</script>
-
-</body>
+  // تحويل حسب الدور    
+  if(role === 'manager') window.location.href = 'manager.html';    
+  else if(role === 'supervisor') window.location.href = 'supervisor.html';    
+  else if(role === 'employee') window.location.href = 'employee.html';    
+});    
+</script>    
+    
+</body>    
 </html>
