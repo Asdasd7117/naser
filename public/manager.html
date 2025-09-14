@@ -98,10 +98,12 @@ import { fetchUsers, upsertUser, deleteUser, fetchTasks, upsertTask, fetchAttend
 
 // اللغة
 let currentLang = 'ar';
-function switchLanguage(){
+window.switchLanguage = function(){
     currentLang = currentLang==='ar' ? 'en' : 'ar';
     document.body.style.direction = currentLang==='ar' ? 'rtl' : 'ltr';
 }
+
+// الساعة
 function updateTime(){
     const now = new Date(new Date().toLocaleString("en-US",{timeZone:"Africa/Cairo"}));
     document.getElementById("current-time").innerText = now.toLocaleTimeString();
@@ -109,7 +111,7 @@ function updateTime(){
 setInterval(updateTime,1000); updateTime();
 
 // التنقل بين الأقسام
-function showSection(id){
+window.showSection = function(id){
     document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
@@ -132,7 +134,9 @@ async function loadUsers(){
         tbody.appendChild(tr);
     });
 }
-async function addUser(){
+
+// دوال المستخدمين على window
+window.addUser = async function(){
     const role=document.getElementById('user-role').value;
     const phone=document.getElementById('user-phone').value.trim();
     const email=document.getElementById('user-email').value.trim();
@@ -144,11 +148,13 @@ async function addUser(){
     document.getElementById('user-pass').value='';
     loadUsers();
 }
-async function removeUser(phone){
+
+window.removeUser = async function(phone){
     if(confirm('هل تريد الحذف؟ / Delete?')){
         await deleteUser(phone); loadUsers();
     }
 }
+
 window.editUser = function(phone){
     const rows = Array.from(document.querySelectorAll('#users-table tbody tr'));
     rows.forEach(tr=>{
@@ -173,7 +179,8 @@ async function loadEmployees(){
     });
 }
 loadEmployees();
-async function saveTask(){
+
+window.saveTask = async function(){
     const task={employee:document.getElementById('task-employee').value,title:document.getElementById('task-title').value,
         description:document.getElementById('task-desc').value,datetime:document.getElementById('task-datetime').value};
     await upsertTask(task);
