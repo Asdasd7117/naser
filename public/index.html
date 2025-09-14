@@ -4,8 +4,6 @@
   <meta charset="UTF-8">
   <title data-i18n="login_title">تسجيل الدخول</title>
   <link rel="stylesheet" href="style.css">
-  <!-- Supabase CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/supabase.min.js"></script>
   <script defer src="main.js"></script>
 </head>
 <body>
@@ -21,6 +19,7 @@
     <form id="loginForm">
       <label data-i18n="role">الدور:</label>
       <select name="role">
+        <!-- جميع الأدوار تظهر، لكن فقط المدير يسمح له بالدخول -->
         <option value="manager" data-i18n="manager">مدير</option>
         <option value="supervisor" data-i18n="supervisor">مشرف</option>
         <option value="delegate" data-i18n="delegate">مندوب</option>
@@ -34,30 +33,6 @@
 
       <button type="submit" data-i18n="login">تسجيل الدخول</button>
       <a href="#" id="forgotPassword" data-i18n="forgot_password">نسيت كلمة المرور؟</a>
-    </form>
-
-    <!-- إنشاء مستخدم جديد (للمدير) -->
-    <form id="createUserForm">
-      <h2 data-i18n="create_user">إنشاء مستخدم جديد</h2>
-      <label data-i18n="role">الدور:</label>
-      <select name="role">
-        <option value="supervisor" data-i18n="supervisor">مشرف</option>
-        <option value="delegate" data-i18n="delegate_role">مندوب</option>
-      </select><br>
-
-      <label data-i18n="name">الاسم:</label>
-      <input type="text" name="name" required><br>
-
-      <label data-i18n="email">البريد الإلكتروني:</label>
-      <input type="email" name="email" required><br>
-
-      <label data-i18n="phone">رقم الهاتف:</label>
-      <input type="text" name="phone" required><br>
-
-      <label data-i18n="password">كلمة المرور:</label>
-      <input type="password" name="password" required><br>
-
-      <button type="submit" data-i18n="create">إنشاء</button>
     </form>
   </main>
 </body>
