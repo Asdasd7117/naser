@@ -3,160 +3,75 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>إدارة الحسابات</title>
-<script src="https://unpkg.com/@supabase/supabase-js"></script>
+<title>الحسابات التفاعلية</title>
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+const SUPABASE_URL = "https://ncjxqfqwswwikedaffif.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NDEwNzQsImV4cCI6MjA3MzQxNzA3NH0.4G54968qAHyePjq9_ufSCSA1fHzx5XHFzOAqGKmVW18";
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const tbody = document.getElementById('usersList');
+const errorDiv = document.getElementById('error');
+
+// تحميل الحسابات وعرضها
+async function loadUsers() {
+  tbody.innerHTML = '';
+  errorDiv.innerText = '';
+  try {
+    const { data: users, error } = await supabase.from('users').select('*');
+    if(error){
+      errorDiv.innerText = "خطأ عند تحميل الحسابات: " + error.message;
+      return;
+    }
+    users.forEach(u => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${u.name || ''}</td>
+        <td>${u.email}</td>
+        <td>${u.phone || ''}</td>
+        <td>${u.role}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch(err) {
+    errorDiv.innerText = "حدث خطأ: " + err.message;
+  }
+}
+
+// زر التحديث
+document.getElementById('refreshBtn').addEventListener('click', loadUsers);
+
+// تحميل الحسابات عند فتح الصفحة
+document.addEventListener('DOMContentLoaded', loadUsers);
+</script>
+
 <style>
 body { font-family: Arial; background:#f0f4f7; margin:0; padding:20px; }
 h2 { text-align:center; margin-bottom:20px; }
-.container { max-width:800px; margin:0 auto; background:white; padding:20px; border-radius:12px; box-shadow:0 4px 8px rgba(0,0,0,0.1); }
-label { display:block; margin-top:10px; }
-input, select { width:100%; padding:8px; margin-top:5px; border-radius:5px; border:1px solid #ccc; }
-button { padding:10px 15px; margin-top:10px; border:none; border-radius:5px; cursor:pointer; }
-button.add { background:#28a745; color:white; }
-button.edit { background:#007bff; color:white; }
-button.delete { background:#dc3545; color:white; }
+.container { max-width:900px; margin:0 auto; background:white; padding:20px; border-radius:12px; box-shadow:0 4px 8px rgba(0,0,0,0.1); }
 table { width:100%; border-collapse:collapse; margin-top:20px; }
 table th, table td { border:1px solid #ddd; padding:8px; text-align:center; }
 table th { background:#f2f2f2; }
-#error { color:red; margin-top:10px; text-align:center; }
+#error { color:red; text-align:center; margin-bottom:10px; }
+button { padding:8px 12px; margin-top:10px; border:none; border-radius:5px; cursor:pointer; background:#007bff; color:white; }
+button:hover { background:#0056b3; }
 </style>
 </head>
 <body>
-
 <div class="container">
-<h2>إدارة الحسابات</h2>
-
+<h2>الحسابات الحالية</h2>
 <div id="error"></div>
-
-<!-- إضافة حساب جديد -->
-<h3>إضافة حساب جديد</h3>
-<label>الاسم:</label>
-<input type="text" id="newName" placeholder="أدخل الاسم">
-<label>البريد الإلكتروني:</label>
-<input type="text" id="newEmail" placeholder="أدخل البريد">
-<label>كلمة المرور:</label>
-<input type="text" id="newPassword" placeholder="أدخل كلمة المرور">
-<label>الدور:</label>
-<select id="newRole">
-  <option value="manager">المدير</option>
-  <option value="supervisor">المشرف</option>
-  <option value="employee">المندوب</option>
-</select>
-<button class="add" id="addUserBtn">إضافة حساب</button>
-
-<!-- قائمة الحسابات -->
-<h3>الحسابات الحالية</h3>
+<button id="refreshBtn">تحديث الحسابات</button>
 <table>
 <thead>
-<tr>
-<th>الاسم</th>
-<th>البريد</th>
-<th>الدور</th>
-<th>تعديل</th>
-<th>حذف</th>
-</tr>
+<tr><th>الاسم</th><th>البريد الإلكتروني</th><th>رقم الهاتف</th><th>الدور</th></tr>
 </thead>
 <tbody id="usersList"></tbody>
 </table>
+<p style="margin-top:20px; color:#555;">
+ملاحظة: لإضافة حسابات جديدة، استخدم <strong>Supabase Dashboard → Authentication أو جدول users</strong>.
+</p>
 </div>
-
-<script>
-const SUPABASE_URL = "https://ncjxqfqwswwikedaffif.supabase.co";
-// استخدم Service Role Key هنا إذا كانت RLS مفعلة
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NDEwNzQsImV4cCI6MjA3MzQxNzA3NH0.4G54968qAHyePjq9_ufSCSA1fHzx5XHFzOAqGKmVW18";
-
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const errorDiv = document.getElementById('error');
-
-// -------------------------
-// تحميل جميع الحسابات
-// -------------------------
-async function loadUsers(){
-  const { data: users, error } = await supabaseClient.from('users').select('*');
-  if(error){
-    console.error(error);
-    errorDiv.innerText = 'حدث خطأ عند تحميل الحسابات: ' + error.message;
-    return;
-  }
-  errorDiv.innerText = '';
-  const tbody = document.getElementById('usersList');
-  tbody.innerHTML = '';
-  users.forEach(u => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${u.name || ''}</td>
-      <td>${u.email}</td>
-      <td>${u.role}</td>
-      <td><button class="edit" onclick="editUser(${u.id})">تعديل</button></td>
-      <td><button class="delete" onclick="deleteUser(${u.id})">حذف</button></td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-// -------------------------
-// إضافة حساب جديد
-// -------------------------
-document.getElementById('addUserBtn').addEventListener('click', async ()=>{
-  const name = document.getElementById('newName').value.trim();
-  const email = document.getElementById('newEmail').value.trim();
-  const password = document.getElementById('newPassword').value.trim();
-  const role = document.getElementById('newRole').value;
-
-  if(!email || !password){
-    errorDiv.innerText = 'يرجى إدخال البريد وكلمة المرور';
-    return;
-  }
-
-  const { data, error } = await supabaseClient.from('users').insert([{ name, email, password, role }]);
-  if(error){
-    console.error(error);
-    errorDiv.innerText = 'حدث خطأ عند إضافة الحساب: ' + error.message;
-    return;
-  }
-
-  errorDiv.innerText = '';
-  alert('تم إنشاء الحساب بنجاح!');
-  document.getElementById('newName').value='';
-  document.getElementById('newEmail').value='';
-  document.getElementById('newPassword').value='';
-  loadUsers();
-});
-
-// -------------------------
-// تعديل حساب
-// -------------------------
-async function editUser(id){
-  const { data: user, error } = await supabaseClient.from('users').select('*').eq('id', id).single();
-  if(error){ errorDiv.innerText = 'خطأ عند جلب بيانات الحساب: ' + error.message; return; }
-
-  const newName = prompt('الاسم الجديد:', user.name);
-  const newEmail = prompt('البريد الجديد:', user.email);
-  const newPassword = prompt('كلمة المرور الجديدة:', user.password);
-  const newRole = prompt('الدور الجديد (manager, supervisor, employee):', user.role);
-
-  const { error: updateError } = await supabaseClient.from('users').update({ name:newName, email:newEmail, password:newPassword, role:newRole }).eq('id', id);
-  if(updateError){ errorDiv.innerText = 'خطأ عند تعديل الحساب: ' + updateError.message; return; }
-  alert('تم تعديل الحساب بنجاح!');
-  loadUsers();
-}
-
-// -------------------------
-// حذف حساب
-// -------------------------
-async function deleteUser(id){
-  if(!confirm('هل أنت متأكد من حذف الحساب؟')) return;
-  const { error } = await supabaseClient.from('users').delete().eq('id', id);
-  if(error){ errorDiv.innerText = 'خطأ عند حذف الحساب: ' + error.message; return; }
-  alert('تم حذف الحساب بنجاح!');
-  loadUsers();
-}
-
-// -------------------------
-// تحميل الحسابات عند الفتح
-// -------------------------
-loadUsers();
-</script>
-
 </body>
 </html>
