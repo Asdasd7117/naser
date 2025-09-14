@@ -1,48 +1,197 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar">
 <head>
-  <meta charset="UTF-8">
-  <title data-translate="manager">Manager</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="lang.js" defer></script>
-  <script src="main.js" type="module" defer></script>
+<meta charset="UTF-8">
+<title>لوحة المدير / Manager Dashboard</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js">
+<style>
+body { font-family: Arial, sans-serif; margin:0; padding:0; background: #f0f2f5; direction: rtl;}
+header { background:#007bff; color:#fff; padding:15px; display:flex; justify-content:space-between; align-items:center;}
+header h1 { margin:0; font-size:18px;}
+header .time { font-size:14px;}
+.lang-switch { position:absolute; top:15px; right:15px; background:#ffc107; color:#000; border:none; padding:8px; border-radius:6px; cursor:pointer;}
+.container { padding:20px; max-width:1200px; margin:auto;}
+nav { display:flex; justify-content:space-around; margin-bottom:20px; flex-wrap:wrap;}
+nav button { padding:10px 20px; border:none; border-radius:8px; cursor:pointer; background:#28a745; color:#fff; font-weight:bold; margin:5px;}
+nav button.active { background:#218838;}
+section { display:none; }
+section.active { display:block; }
+.card { background:#fff; padding:15px; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.1); margin-bottom:15px;}
+table { width:100%; border-collapse: collapse;}
+table th, table td { border:1px solid #ccc; padding:8px; text-align:center;}
+label { display:block; margin-top:10px;}
+input, select, textarea, button { width:100%; padding:8px; margin-top:5px; margin-bottom:10px; border-radius:6px; border:1px solid #ccc;}
+button.action-btn { width:auto; margin:2px; background:#dc3545;}
+</style>
 </head>
 <body>
-  <button id="langToggle">🌐</button>
-  <button id="logoutBtn" data-translate="logout">Logout</button>
 
-  <h2 data-translate="dashboard">Control Panel</h2>
+<header>
+    <h1 id="header-name">المدير</h1>
+    <div class="time" id="current-time">00:00:00</div>
+</header>
+<button class="lang-switch" onclick="switchLanguage()">تبديل اللغة / Switch Language</button>
 
-  <section>
-    <h3 data-translate="performanceReports">Reports & Analytics</h3>
-    <ul id="analyticsList"></ul>
-  </section>
+<nav>
+    <button onclick="showSection('users')" id="btn-users">حسابات المستخدمين / Users</button>
+    <button onclick="showSection('tasks')" id="btn-tasks">المهام / Tasks</button>
+    <button onclick="showSection('attendance')" id="btn-attendance">الحضور / Attendance</button>
+    <button onclick="showSection('reports')" id="btn-reports">التقارير / Reports</button>
+</nav>
 
-  <section>
-    <h3 data-translate="attendance">Attendance</h3>
-    <ul id="attendanceList"></ul>
-  </section>
+<div class="container">
 
-  <section>
-    <h3 data-translate="addUser">Add New User</h3>
-    <form id="addUserForm">
-      <label data-translate="fullName">Full Name</label>
-      <input type="text" id="newFullName" required>
+<!-- إدارة الحسابات -->
+<section id="users">
+    <h2>حسابات المستخدمين / Users</h2>
+    <h3>إضافة مستخدم جديد / Add User</h3>
+    <label>الدور / Role</label>
+    <select id="user-role">
+        <option value="supervisor">مشرف / Supervisor</option>
+        <option value="employee">مندوب / Employee</option>
+    </select>
+    <label>الهاتف / Phone</label>
+    <input type="text" id="user-phone">
+    <label>البريد الإلكتروني / Email</label>
+    <input type="text" id="user-email">
+    <label>كلمة المرور / Password</label>
+    <input type="text" id="user-pass">
+    <button onclick="addUser()">إضافة / Add</button>
+    <h3>المستخدمون الحاليون / Current Users</h3>
+    <table id="users-table">
+        <thead><tr><th>الدور</th><th>الهاتف</th><th>البريد</th><th>كلمة المرور</th><th>إجراءات</th></tr></thead>
+        <tbody></tbody>
+    </table>
+</section>
 
-      <label data-translate="emailPhone">Email or Phone</label>
-      <input type="text" id="newEmailOrPhone" required>
+<!-- المهام -->
+<section id="tasks">
+    <h2>المهام / Tasks</h2>
+    <label>المندوب / Employee</label>
+    <select id="task-employee"></select>
+    <label>عنوان المهمة / Title</label>
+    <input type="text" id="task-title">
+    <label>الوصف / Description</label>
+    <textarea id="task-desc"></textarea>
+    <label>تاريخ ووقت / Date & Time</label>
+    <input type="datetime-local" id="task-datetime">
+    <button onclick="saveTask()">حفظ المهمة / Save Task</button>
+</section>
 
-      <label data-translate="password">Password</label>
-      <input type="password" id="newPassword" required>
+<!-- الحضور -->
+<section id="attendance">
+    <h2>الحضور / Attendance</h2>
+    <div id="attendance-cards"></div>
+</section>
 
-      <label data-translate="role">Role</label>
-      <select id="newRole">
-        <option value="supervisor" data-translate="supervisor">Supervisor</option>
-        <option value="delegate" data-translate="delegate">Delegate</option>
-      </select>
+<!-- التقارير -->
+<section id="reports">
+    <h2>التقارير / Reports</h2>
+    <canvas id="taskChart" style="max-height:300px;"></canvas>
+</section>
 
-      <button type="submit" data-translate="submit">Submit</button>
-    </form>
-  </section>
+</div>
+
+<script type="module">
+import { fetchUsers, upsertUser, deleteUser, fetchTasks, upsertTask, fetchAttendance } from './supabase.js';
+
+// اللغة
+let currentLang = 'ar';
+function switchLanguage(){ currentLang=currentLang==='ar'?'en':'ar'; document.body.style.direction=currentLang==='ar'?'rtl':'ltr'; }
+function updateTime(){ const now=new Date(new Date().toLocaleString("en-US",{timeZone:"Africa/Cairo"})); document.getElementById("current-time").innerText=now.toLocaleTimeString();}
+setInterval(updateTime,1000); updateTime();
+
+// التنقل بين الأقسام
+function showSection(id){
+    document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+    document.getElementById('btn-'+id).classList.add('active');
+}
+showSection('users');
+
+// إدارة المستخدمين
+async function loadUsers(){
+    const users = await fetchUsers();
+    const tbody = document.querySelector('#users-table tbody');
+    tbody.innerHTML='';
+    users.forEach(u=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML=`<td>${u.role}</td><td>${u.phone}</td><td>${u.email||''}</td><td>${u.password}</td>
+        <td>
+            <button class="action-btn" onclick="editUser('${u.phone}')">تعديل</button>
+            <button class="action-btn" onclick="removeUser('${u.phone}')">حذف</button>
+        </td>`;
+        tbody.appendChild(tr);
+    });
+}
+async function addUser(){
+    const role=document.getElementById('user-role').value;
+    const phone=document.getElementById('user-phone').value.trim();
+    const email=document.getElementById('user-email').value.trim();
+    const pass=document.getElementById('user-pass').value.trim();
+    if(!phone||!pass) return alert('أدخل الهاتف وكلمة المرور / Enter phone & password');
+    await upsertUser({role, phone, email, password:pass});
+    document.getElementById('user-phone').value='';
+    document.getElementById('user-email').value='';
+    document.getElementById('user-pass').value='';
+    loadUsers();
+}
+async function removeUser(phone){ if(confirm('هل تريد الحذف؟ / Delete?')){ await deleteUser(phone); loadUsers(); }}
+function editUser(phone){
+    const users = Array.from(document.querySelectorAll('#users-table tbody tr'));
+    users.forEach(tr=>{
+        if(tr.children[1].innerText===phone){
+            document.getElementById('user-role').value=tr.children[0].innerText.includes('Supervisor')?'supervisor':'employee';
+            document.getElementById('user-phone').value=tr.children[1].innerText;
+            document.getElementById('user-email').value=tr.children[2].innerText;
+            document.getElementById('user-pass').value=tr.children[3].innerText;
+        }
+    });
+}
+
+// المهام
+async function loadEmployees(){
+    const users = await fetchUsers();
+    const empSelect = document.getElementById('task-employee');
+    empSelect.innerHTML='';
+    users.filter(u=>u.role==='employee').forEach(u=>{
+        const opt = document.createElement('option'); opt.value=u.phone; opt.innerText=u.phone; empSelect.appendChild(opt);
+    });
+}
+loadEmployees();
+async function saveTask(){
+    const task={employee:document.getElementById('task-employee').value,title:document.getElementById('task-title').value,
+        description:document.getElementById('task-desc').value,datetime:document.getElementById('task-datetime').value};
+    await upsertTask(task);
+    alert('تم الحفظ / Saved');
+}
+
+// الحضور
+async function loadAttendance(){
+    const attend = await fetchAttendance();
+    const div=document.getElementById('attendance-cards'); div.innerHTML='';
+    attend.forEach(a=>{
+        const card = document.createElement('div'); card.className='card';
+        card.innerHTML=`<strong>${a.employee}</strong><br>دخول: ${a.checkin||'-'} - خروج: ${a.checkout||'-'}`;
+        div.appendChild(card);
+    });
+}
+loadAttendance();
+
+// الرسوم البيانية للتقارير
+async function loadReports(){
+    const tasks = await fetchTasks();
+    const ctx = document.getElementById('taskChart').getContext('2d');
+    const labels = [...new Set(tasks.map(t=>t.employee))];
+    const data = labels.map(l=>tasks.filter(t=>t.employee===l).length);
+    new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'عدد المهام',data,backgroundColor:'#28a745'}]}});
+}
+loadReports();
+
+// تحميل المستخدمين عند بدء التشغيل
+loadUsers();
+
+</script>
 </body>
 </html>
