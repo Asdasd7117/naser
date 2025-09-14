@@ -19,29 +19,29 @@ button:hover { background-color: #0056b3; }
 <body>
 
 <div class="login-container">
-  <h2 id="title"></h2>
+  <h2 id="title">تسجيل الدخول</h2>
 
-  <label id="label-role" for="role"></label>
+  <label id="label-role" for="role">اختر الدور</label>
   <select id="role">
     <option value="manager">المدير</option>
     <option value="supervisor">المشرف</option>
     <option value="employee">المندوب</option>
   </select>
 
-  <label id="label-email" for="email"></label>
-  <input type="text" id="email" placeholder="">
+  <label id="label-email" for="email">البريد الإلكتروني / رقم الهاتف</label>
+  <input type="text" id="email" placeholder="أدخل البريد الإلكتروني أو رقم الهاتف">
 
-  <label id="label-password" for="password"></label>
-  <input type="password" id="password" placeholder="">
+  <label id="label-password" for="password">كلمة المرور</label>
+  <input type="password" id="password" placeholder="أدخل كلمة المرور">
 
-  <button id="loginBtn"></button>
-  <div id="forgot" style="text-align:center; margin-top:10px; cursor:pointer; color:#007BFF;"></div>
-  <div class="lang-switch" id="langSwitch"></div>
+  <button id="loginBtn">تسجيل الدخول</button>
+  <div id="forgot" style="text-align:center; margin-top:10px; cursor:pointer; color:#007BFF;">نسيت كلمة المرور؟</div>
+  <div class="lang-switch" id="langSwitch">English</div>
 </div>
 
 <script>
 // ---------------------------
-// إعداد Supabase (اختياري)
+// إعداد Supabase (يمكن تفعيله لاحقاً)
 // ---------------------------
 const SUPABASE_URL = "https://ncjxqfqwswwikedaffif.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NDEwNzQsImV4cCI6MjA3MzQxNzA3NH0.4G54968qAHyePjq9_ufSCSA1fHzx5XHFzOAqGKmVW18";
@@ -104,14 +104,13 @@ updateLanguage(); // عند تحميل الصفحة
 // ---------------------------
 // تسجيل الدخول
 // ---------------------------
-// تجربة وهمية للتطوير (يمكن استبدالها بالتحقق من Supabase Auth)
 const dummyUsers = [
   { role: 'manager', email: 'admin@domain.com', password: '1234', page: 'manager.html' },
   { role: 'supervisor', email: 'super@domain.com', password: '1234', page: 'supervisor.html' },
   { role: 'employee', email: 'agent@domain.com', password: '1234', page: 'employee.html' }
 ];
 
-document.getElementById('loginBtn').addEventListener('click', async () => {
+document.getElementById('loginBtn').addEventListener('click', () => {
   const role = document.getElementById('role').value;
   const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value.trim();
@@ -121,28 +120,11 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
     return;
   }
 
-  try {
-    // ---------------------------------------
-    // للتحقق من Supabase Auth الحقيقي:
-    /*
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if(error) throw error;
-    const userRole = data.user?.role; // تأكد من أن جدول المستخدمين يحتوي role
-    */
-    // ---------------------------------------
-
-    // تجربة وهمية
-    const user = dummyUsers.find(u => u.role===role && u.email===email && u.password===password);
-    if(!user){
-      alert(isArabic ? texts.ar.invalid : texts.en.invalid);
-      return;
-    }
-
+  const user = dummyUsers.find(u => u.role===role && u.email===email && u.password===password);
+  if(user){
     window.location.href = user.page;
-
-  } catch(err){
-    console.error(err);
-    alert(isArabic ? texts.ar.error : texts.en.error);
+  } else {
+    alert(isArabic ? texts.ar.invalid : texts.en.invalid);
   }
 });
 </script>
