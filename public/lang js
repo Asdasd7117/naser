@@ -1,3 +1,27 @@
+document.addEventListener("DOMContentLoaded", initLanguage);
+
+function initLanguage() {
+  const savedLang = localStorage.getItem("lang") || "en";
+  setLanguage(savedLang);
+
+  const toggleBtn = document.getElementById("langToggle");
+  if(toggleBtn){
+    toggleBtn.addEventListener("click", () => {
+      const newLang = localStorage.getItem("lang") === "en" ? "ar" : "en";
+      setLanguage(newLang);
+    });
+  }
+}
+
+function setLanguage(lang) {
+  localStorage.setItem("lang", lang);
+  document.querySelectorAll("[data-translate]").forEach(el => {
+    const key = el.getAttribute("data-translate");
+    if(translations[lang][key]) el.textContent = translations[lang][key];
+  });
+  document.body.dir = lang === "ar" ? "rtl" : "ltr";
+}
+
 const translations = {
   en: {
     loginTitle: "Login",
@@ -26,6 +50,12 @@ const translations = {
     sendReport: "Send Report",
     map: "Map",
     notifications: "Notifications",
+    dashboard: "Control Panel",
+    performanceReports: "Reports & Analytics",
+    attendance: "Attendance",
+    addUser: "Add New User",
+    fullName: "Full Name",
+    submit: "Submit"
   },
   ar: {
     loginTitle: "تسجيل الدخول",
@@ -54,28 +84,11 @@ const translations = {
     sendReport: "إرسال التقرير",
     map: "الخريطة",
     notifications: "الإشعارات",
+    dashboard: "لوحة التحكم",
+    performanceReports: "التقارير والتحليلات",
+    attendance: "الحضور والانصراف",
+    addUser: "إضافة مستخدم جديد",
+    fullName: "الاسم الكامل",
+    submit: "إرسال"
   }
 };
-
-function setLanguage(lang) {
-  localStorage.setItem("lang", lang);
-  document.querySelectorAll("[data-translate]").forEach(el => {
-    const key = el.getAttribute("data-translate");
-    el.textContent = translations[lang][key];
-  });
-
-  // تغيير اتجاه الصفحة عند اختيار العربية
-  document.body.dir = lang === "ar" ? "rtl" : "ltr";
-}
-
-function initLanguage() {
-  const savedLang = localStorage.getItem("lang") || "en";
-  setLanguage(savedLang);
-
-  document.getElementById("langToggle").addEventListener("click", () => {
-    const newLang = localStorage.getItem("lang") === "en" ? "ar" : "en";
-    setLanguage(newLang);
-  });
-}
-
-document.addEventListener("DOMContentLoaded", initLanguage);
