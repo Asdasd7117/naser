@@ -1,47 +1,102 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="manager_title">لوحة تحكم المدير</title>
-  <link rel="stylesheet" href="style.css">
-  <!-- Supabase CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script defer src="manager.js"></script>
-</head>
-<body>
-  <header>
-    <h1 data-i18n="manager_title">لوحة تحكم المدير</h1>
-    <select id="languageSwitcher">
-      <option value="ar" selected>العربية</option>
-      <option value="en">English</option>
-    </select>
-    <button id="logout" data-i18n="logout">تسجيل الخروج</button>
-  </header>
+// ====== إعداد Supabase ======
+const SUPABASE_URL = "https://olwguiyogqwzraikq.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5c3dxZGRjd3Frd2RsZXB2ZGJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4MDA2MjIsImV4cCI6MjA3MzM3NjYyMn0.WbBlOesDGGhFLNp_WI0JFpdvuDgD-A8U4CDIlt8Wvhs";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  <main>
-    <form id="createUserForm">
-      <h2 data-i18n="create_user">إنشاء مستخدم جديد</h2>
-      <label data-i18n="role">الدور:</label>
-      <select name="role" required>
-        <option value="supervisor" data-i18n="supervisor">مشرف</option>
-        <option value="delegate" data-i18n="delegate">مندوب</option>
-      </select><br>
+// ====== اللغة ======
+let currentLang = "ar";
+const translations = {
+  ar: {
+    login_title: "تسجيل الدخول",
+    role: "الدور:",
+    manager: "مدير",
+    supervisor: "مشرف",
+    delegate: "مندوب",
+    email_or_phone: "البريد الإلكتروني / رقم الهاتف:",
+    password: "كلمة المرور:",
+    login: "تسجيل الدخول",
+    forgot_password: "نسيت كلمة المرور؟"
+  },
+  en: {
+    login_title: "Login",
+    role: "Role:",
+    manager: "Manager",
+    supervisor: "Supervisor",
+    delegate: "Delegate",
+    email_or_phone: "Email / Phone:",
+    password: "Password",
+    login: "Login",
+    forgot_password: "Forgot Password?"
+  }
+};
 
-      <label data-i18n="name">الاسم:</label>
-      <input type="text" name="name" required><br>
+document.addEventListener("DOMContentLoaded", () => {
+  // تغيير اللغة
+  function setLanguage(lang) {
+    console.log("Changing language to:", lang);
+    currentLang = lang;
+    document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+    document.documentElement.lang = lang;
+    document.querySelectorAll("[data-i18n]").forEach(el => {
+      const key = el.getAttribute("data-i18n");
+      if (translations[lang][key]) {
+        el.innerText = translations[lang][key];
+      } else {
+        console.warn(`Translation key ${key} not found for language ${lang}`);
+      }
+    });
+  }
 
-      <label data-i18n="email">البريد الإلكتروني:</label>
-      <input type="email" name="email" required><br>
+  // ربط مفتاح اللغة
+  const languageSwitcher = document.getElementById("languageSwitcher");
+  if (languageSwitcher) {
+    languageSwitcher.addEventListener("change", e => {
+      setLanguage(e.target.value);
+    });
+  }
+  setLanguage(currentLang);
 
-      <label data-i18n="phone">رقم الهاتف:</label>
-      <input type="text" name="phone" required><br>
+  // ====== تسجيل الدخول ======
+  const loginForm = document.getElementById("loginForm");
+  if (loginForm) {
+    loginForm.addEventListener("submit", async e => {
+      e.preventDefault();
+      const role = loginForm.role.value;
+      const identifier = loginForm.email_or_phone.value;
+      const password = loginForm.password.value;
 
-      <label data-i18n="password">كلمة المرور:</label>
-      <input type="password" name="password" required><br>
+      // تسجيل الدخول باستخدام Supabase Auth
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: identifier.includes("@") ? identifier : undefined,
+        phone: !identifier.includes("@") ? identifier : undefined,
+        password,
+      });
 
-      <button type="submit" data-i18n="create">إنشاء</button>
-    </form>
-  </main>
-</body>
-</html>
+      if (error || !data.user) {
+        return alert(currentLang === "ar" ? "خطأ في تسجيل الدخول: " + (error?.message || "المستخدم غير موجود") : 
+                     "Login error: " + (error?.message || "User not found"));
+      }
+
+      // التحقق من الدور
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", data.user.id)
+        .single();
+
+      if (userError || !userData) {
+        return alert(currentLang === "ar" ? "خطأ في استرجاع بيانات المستخدم" : 
+                     "Error retrieving user data");
+      }
+
+      if (userData.role !== role) {
+        return alert(currentLang === "ar" ? "الدور غير صحيح" : "Incorrect role");
+      }
+
+      alert(currentLang === "ar" ? "تم تسجيل الدخول بنجاح!" : "Logged in successfully!");
+      if (role === "manager") window.location.href = "manager.html";
+      if (role === "supervisor") window.location.href = "supervisor.html";
+      if (role === "delegate") window.location.href = "delegate.html";
+    });
+  }
+});
