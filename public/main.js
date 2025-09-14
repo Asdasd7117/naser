@@ -1,102 +1,148 @@
-// ====== إعداد Supabase ======
-const SUPABASE_URL = "https://olwguiyogqwzraikq.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5c3dxZGRjd3Frd2RsZXB2ZGJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4MDA2MjIsImV4cCI6MjA3MzM3NjYyMn0.WbBlOesDGGhFLNp_WI0JFpdvuDgD-A8U4CDIlt8Wvhs";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// ✅ ربط Supabase
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-// ====== اللغة ======
-let currentLang = "ar";
-const translations = {
-  ar: {
-    login_title: "تسجيل الدخول",
-    role: "الدور:",
-    manager: "مدير",
-    supervisor: "مشرف",
-    delegate: "مندوب",
-    email_or_phone: "البريد الإلكتروني / رقم الهاتف:",
-    password: "كلمة المرور:",
-    login: "تسجيل الدخول",
-    forgot_password: "نسيت كلمة المرور؟"
-  },
-  en: {
-    login_title: "Login",
-    role: "Role:",
-    manager: "Manager",
-    supervisor: "Supervisor",
-    delegate: "Delegate",
-    email_or_phone: "Email / Phone:",
-    password: "Password",
-    login: "Login",
-    forgot_password: "Forgot Password?"
+// بيانات مشروعك (من Dashboard Supabase)
+const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
+const SUPABASE_KEY = "YOUR_ANON_PUBLIC_KEY";
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ✅ دالة تسجيل الدخول
+async function login(emailOrPhone, password, role) {
+  // البحث عن المستخدم حسب البريد أو الهاتف
+  let { data: users, error } = await supabase
+    .from("users")
+    .select("*")
+    .or(`email.eq.${emailOrPhone},phone.eq.${emailOrPhone}`)
+    .eq("role", role)
+    .single();
+
+  if (error || !users) {
+    alert("❌ المستخدم غير موجود أو الدور غير صحيح");
+    return;
   }
-};
 
+  // التحقق من كلمة المرور (هنا عادي، ممكن تضيف تشفير لاحقاً)
+  if (users.password === password) {
+    localStorage.setItem("user", JSON.stringify(users));
+
+    // إعادة التوجيه حسب الدور
+    if (users.role === "manager") {
+      window.location.href = "manager.html";
+    } else if (users.role === "supervisor") {
+      window.location.href = "supervisor.html";
+    } else if (users.role === "delegate") {
+      window.location.href = "delegate.html";
+    }
+  } else {
+    alert("❌ كلمة المرور غير صحيحة");
+  }
+}
+
+// ✅ دالة إضافة مستخدم جديد (للمدير فقط)
+async function addUser(fullName, email, phone, password, role) {
+  let { data, error } = await supabase
+    .from("users")
+    .insert([{ full_name: fullName, email, phone, password, role }]);
+
+  if (error) {
+    console.error("خطأ في إضافة المستخدم:", error);
+    alert("❌ لم يتم إضافة المستخدم");
+  } else {
+    alert("✅ تم إضافة المستخدم بنجاح");
+  }
+}
+
+// ✅ دالة تحميل المهام (للمندوب)
+async function loadTasks(delegateId) {
+  let { data, error } = await supabase
+    .from("tasks")
+    .select("*")
+    .eq("delegate_id", delegateId);
+
+  if (error) {
+    console.error(error);
+    return [];
+  }
+  return data;
+}
+
+// ✅ دالة تحديث حالة المهمة
+async function updateTaskStatus(taskId, newStatus) {
+  let { data, error } = await supabase
+    .from("tasks")
+    .update({ status: newStatus })
+    .eq("id", taskId);
+
+  if (error) {
+    console.error("❌ خطأ في تحديث المهمة", error);
+  } else {
+    alert("✅ تم تحديث حالة المهمة");
+  }
+}
+
+// ✅ دالة رفع تقرير (مندوب)
+async function submitReport(taskId, notes, imageUrl, signature) {
+  let { data, error } = await supabase
+    .from("reports")
+    .insert([{ task_id: taskId, notes, image_url: imageUrl, signature }]);
+
+  if (error) {
+    console.error("❌ خطأ في رفع التقرير:", error);
+  } else {
+    alert("✅ تم إرسال التقرير");
+  }
+}
+
+// ✅ عند تحميل الصفحة
 document.addEventListener("DOMContentLoaded", () => {
-  // تغيير اللغة
-  function setLanguage(lang) {
-    console.log("Changing language to:", lang);
-    currentLang = lang;
-    document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
-    document.documentElement.lang = lang;
-    document.querySelectorAll("[data-i18n]").forEach(el => {
-      const key = el.getAttribute("data-i18n");
-      if (translations[lang][key]) {
-        el.innerText = translations[lang][key];
-      } else {
-        console.warn(`Translation key ${key} not found for language ${lang}`);
-      }
-    });
-  }
+  const currentPage = window.location.pathname.split("/").pop();
 
-  // ربط مفتاح اللغة
-  const languageSwitcher = document.getElementById("languageSwitcher");
-  if (languageSwitcher) {
-    languageSwitcher.addEventListener("change", e => {
-      setLanguage(e.target.value);
-    });
-  }
-  setLanguage(currentLang);
-
-  // ====== تسجيل الدخول ======
-  const loginForm = document.getElementById("loginForm");
-  if (loginForm) {
-    loginForm.addEventListener("submit", async e => {
+  // شاشة تسجيل الدخول
+  if (currentPage === "index.html") {
+    const form = document.querySelector("form");
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const role = loginForm.role.value;
-      const identifier = loginForm.email_or_phone.value;
-      const password = loginForm.password.value;
-
-      // تسجيل الدخول باستخدام Supabase Auth
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: identifier.includes("@") ? identifier : undefined,
-        phone: !identifier.includes("@") ? identifier : undefined,
-        password,
-      });
-
-      if (error || !data.user) {
-        return alert(currentLang === "ar" ? "خطأ في تسجيل الدخول: " + (error?.message || "المستخدم غير موجود") : 
-                     "Login error: " + (error?.message || "User not found"));
-      }
-
-      // التحقق من الدور
-      const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("role")
-        .eq("id", data.user.id)
-        .single();
-
-      if (userError || !userData) {
-        return alert(currentLang === "ar" ? "خطأ في استرجاع بيانات المستخدم" : 
-                     "Error retrieving user data");
-      }
-
-      if (userData.role !== role) {
-        return alert(currentLang === "ar" ? "الدور غير صحيح" : "Incorrect role");
-      }
-
-      alert(currentLang === "ar" ? "تم تسجيل الدخول بنجاح!" : "Logged in successfully!");
-      if (role === "manager") window.location.href = "manager.html";
-      if (role === "supervisor") window.location.href = "supervisor.html";
-      if (role === "delegate") window.location.href = "delegate.html";
+      const emailOrPhone = form.querySelector("input[type=text]").value;
+      const password = form.querySelector("input[type=password]").value;
+      const role = form.querySelector("select").value;
+      await login(emailOrPhone, password, role);
     });
+  }
+
+  // شاشة المدير (إضافة مستخدم)
+  if (currentPage === "manager.html") {
+    const form = document.querySelector("form");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fullName = form.querySelector("input[type=text]").value;
+      const emailOrPhone = form.querySelectorAll("input[type=text]")[1].value;
+      const password = form.querySelector("input[type=password]").value;
+      const role = form.querySelector("select").value;
+
+      let email = emailOrPhone.includes("@") ? emailOrPhone : null;
+      let phone = email ? null : emailOrPhone;
+
+      await addUser(fullName, email, phone, password, role);
+    });
+  }
+
+  // شاشة المندوب (عرض المهام)
+  if (currentPage === "delegate.html") {
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (user && user.role === "delegate") {
+      loadTasks(user.id).then(tasks => {
+        const ul = document.querySelector("ul");
+        ul.innerHTML = "";
+        tasks.forEach(task => {
+          const li = document.createElement("li");
+          li.innerHTML = `
+            <b>${task.client_name}</b> - ${task.address} - ${task.visit_time} - ${task.status}
+            <button onclick="updateTaskStatus(${task.id}, 'completed')">✅</button>
+            <button onclick="updateTaskStatus(${task.id}, 'delayed')">⏳</button>
+          `;
+          ul.appendChild(li);
+        });
+      });
+    }
   }
 });
