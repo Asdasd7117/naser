@@ -1,7 +1,6 @@
 // ====== إعداد Supabase ======
 const SUPABASE_URL = "https://olwguiyogqwzraikq.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5c3dxZGRjd3Frd2RsZXB2ZGJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4MDA2MjIsImV4cCI6MjA3MzM3NjYyMn0.WbBlOesDGGhFLNp_WI0JFpdvuDgD-A8U4CDIlt8Wvhs";
-
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ====== اللغة ======
@@ -61,52 +60,64 @@ const translations = {
   }
 };
 
-function setLanguage(lang){
+// تغيير اللغة في الواجهة
+function setLanguage(lang) {
   currentLang = lang;
-  document.documentElement.dir = (lang==="ar")?"rtl":"ltr";
+  document.documentElement.dir = (lang === "ar") ? "rtl" : "ltr";
   document.documentElement.lang = lang;
-  document.querySelectorAll("[data-i18n]").forEach(el=>{
+  document.querySelectorAll("[data-i18n]").forEach(el => {
     const key = el.getAttribute("data-i18n");
-    if(translations[lang][key]) el.innerText = translations[lang][key];
+    if (translations[lang][key]) el.innerText = translations[lang][key];
   });
 }
-document.getElementById("languageSwitcher")?.addEventListener("change", e=>{
+document.getElementById("languageSwitcher")?.addEventListener("change", e => {
   setLanguage(e.target.value);
 });
 setLanguage(currentLang);
 
 // ====== تسجيل الدخول ======
 const loginForm = document.getElementById("loginForm");
-loginForm?.addEventListener("submit", async e=>{
+loginForm?.addEventListener("submit", async e => {
   e.preventDefault();
+
   const role = loginForm.role.value;
-  const identifier = loginForm.email_or_phone.value;
+  const identifier = loginForm.email_or_phone.value.trim();
   const password = loginForm.password.value;
 
-  const { data: users, error } = await supabase
-    .from('users')
-    .select('*')
-    .or(`phone.eq.${identifier},email.eq.${identifier}`)
-    .limit(1);
+  let emailToLogin = identifier;
 
-  if(error || !users || users.length===0){
-    return alert("المستخدم غير موجود");
+  // إذا أدخل المستخدم رقم الهاتف، نحصل على البريد المرتبط
+  if (!identifier.includes("@")) {
+    const { data: users, error } = await supabase
+      .from("users")
+      .select("email, role")
+      .eq("phone", identifier)
+      .limit(1);
+
+    if (error || !users || users.length === 0) return alert("المستخدم غير موجود");
+    emailToLogin = users[0].email;
+    if (users[0].role !== role) return alert("الدور غير صحيح");
   }
 
-  const user = users[0];
-  if(user.password !== password) return alert("كلمة المرور غير صحيحة");
-  if(user.role !== role) return alert("الدور غير صحيح");
+  // تسجيل الدخول باستخدام Supabase Auth
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: emailToLogin,
+    password
+  });
+
+  if (error) return alert("خطأ في تسجيل الدخول: " + error.message);
 
   alert("تم تسجيل الدخول بنجاح!");
 
-  if(role === "manager") window.location.href = "manager.html";
-  if(role === "supervisor") window.location.href = "supervisor.html";
-  if(role === "delegate") window.location.href = "delegate.html";
+  // توجيه المستخدم حسب دوره
+  if (role === "manager") window.location.href = "manager.html";
+  if (role === "supervisor") window.location.href = "supervisor.html";
+  if (role === "delegate") window.location.href = "delegate.html";
 });
 
 // ====== إنشاء مستخدم جديد (للمدير) ======
 const createUserForm = document.getElementById("createUserForm");
-createUserForm?.addEventListener("submit", async e=>{
+createUserForm?.addEventListener("submit", async e => {
   e.preventDefault();
   const formData = new FormData(createUserForm);
   const role = formData.get("role");
@@ -116,30 +127,30 @@ createUserForm?.addEventListener("submit", async e=>{
   const password = formData.get("password");
 
   const { data, error } = await supabase.auth.signUp({ email, password });
-  if(error) return alert("Error: "+error.message);
+  if (error) return alert("خطأ: " + error.message);
 
-  await supabase.from("users").insert([{ id: data.user.id, name, email, phone, role, password }]);
+  await supabase.from("users").insert([{ id: data.user.id, name, email, phone, role }]);
   alert("تم إنشاء المستخدم بنجاح!");
   createUserForm.reset();
 });
 
 // ====== إضافة مهمة جديدة ======
 const taskForm = document.getElementById("taskForm");
-taskForm?.addEventListener("submit", async e=>{
+taskForm?.addEventListener("submit", async e => {
   e.preventDefault();
   const formData = new FormData(taskForm);
   const client = formData.get("client");
   const address = formData.get("address");
   const time = formData.get("time");
 
-  await supabase.from("tasks").insert([{ client, address, time }]);
+  await supabase.from("tasks").insert([{ client_name: client, client_address: address, scheduled_time: time }]);
   alert("تم حفظ المهمة بنجاح!");
   taskForm.reset();
 });
 
 // ====== رفع تقرير ======
 const reportForm = document.getElementById("reportForm");
-reportForm?.addEventListener("submit", async e=>{
+reportForm?.addEventListener("submit", async e => {
   e.preventDefault();
   const formData = new FormData(reportForm);
   const clientNotes = formData.get("notes");
@@ -152,10 +163,10 @@ reportForm?.addEventListener("submit", async e=>{
 });
 
 // ====== إرسال إشعارات جماعية ======
-document.querySelectorAll("button[data-i18n='send']").forEach(btn=>{
-  btn.addEventListener("click", async ()=>{
+document.querySelectorAll("button[data-i18n='send']").forEach(btn => {
+  btn.addEventListener("click", async () => {
     const message = btn.previousElementSibling.value;
-    if(!message) return alert("أدخل نص الإشعار");
+    if (!message) return alert("أدخل نص الإشعار");
     await supabase.from("notifications").insert([{ message }]);
     alert("تم إرسال الإشعار للجميع!");
   });
