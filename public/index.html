@@ -31,19 +31,18 @@ button:hover { background:#0056b3;}
     <div class="message" id="msg"></div>
 </div>
 
-<script type="module">
-import { loginUser } from './supabase.js';
-
+<script>
+// ترجمة النصوص
 const translations = {
     ar: {
         pageTitle: "تسجيل الدخول",
         title: "تسجيل الدخول",
         roleLabel: "اختر الدور",
-        roles: ["مدير", "مشرف", "مندوب"],
+        roles: ["مدير","مشرف","مندوب"],
         userLabel: "رقم الهاتف أو البريد الإلكتروني",
-        userPlaceholder: "",
+        userPlaceholder: "مثال: 7123456789 أو email@example.com",
         passLabel: "كلمة المرور",
-        passPlaceholder: "",
+        passPlaceholder: "مثال: 123456",
         loginBtn: "تسجيل الدخول",
         msgFill: "يرجى ملء جميع الحقول",
         msgInvalid: "بيانات تسجيل الدخول غير صحيحة",
@@ -53,11 +52,11 @@ const translations = {
         pageTitle: "Login",
         title: "Login",
         roleLabel: "Select Role",
-        roles: ["Manager", "Supervisor", "Employee"],
+        roles: ["Manager","Supervisor","Employee"],
         userLabel: "Phone or Email",
-        userPlaceholder: "",
+        userPlaceholder: "Example: 7123456789 or email@example.com",
         passLabel: "Password",
-        passPlaceholder: "",
+        passPlaceholder: "Example: 123456",
         loginBtn: "Login",
         msgFill: "Please fill all fields",
         msgInvalid: "Invalid credentials",
@@ -68,7 +67,7 @@ const translations = {
 let lang = 'ar';
 
 function switchLanguage(){
-    lang = lang === 'ar' ? 'en' : 'ar';
+    lang = lang==='ar' ? 'en' : 'ar';
     document.body.style.direction = lang==='ar' ? 'rtl' : 'ltr';
     const t = translations[lang];
 
@@ -77,20 +76,20 @@ function switchLanguage(){
     document.getElementById('role-label').innerText = t.roleLabel;
 
     const roleSelect = document.getElementById('role');
-    roleSelect.innerHTML = '';
-    t.roles.forEach((r, i)=>{
-        const opt = document.createElement('option');
-        opt.value = ['manager','supervisor','employee'][i];
-        opt.text = r;
+    roleSelect.innerHTML='';
+    t.roles.forEach((r,i)=>{
+        const opt=document.createElement('option');
+        opt.value=['manager','supervisor','employee'][i];
+        opt.text=r;
         roleSelect.appendChild(opt);
     });
 
     document.getElementById('user-label').innerText = t.userLabel;
     document.getElementById('username').placeholder = t.userPlaceholder;
-    document.getElementById('username').value = ''; // لا تظهر أي بيانات مسبقة
+    document.getElementById('username').value='';
     document.getElementById('pass-label').innerText = t.passLabel;
     document.getElementById('password').placeholder = t.passPlaceholder;
-    document.getElementById('password').value = ''; // لا تظهر أي بيانات مسبقة
+    document.getElementById('password').value='';
 
     document.getElementById('loginBtn').innerText = t.loginBtn;
     document.querySelector('.lang-switch').innerText = t.langSwitch;
@@ -99,7 +98,8 @@ function switchLanguage(){
 // تحميل اللغة الافتراضية عند فتح الصفحة
 window.onload = switchLanguage;
 
-document.getElementById('loginBtn').addEventListener('click', async ()=>{
+// اختبار تسجيل الدخول بدون supabase (يمكنك ربطها لاحقًا)
+document.getElementById('loginBtn').addEventListener('click', ()=>{
     const role = document.getElementById('role').value;
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value.trim();
@@ -107,12 +107,18 @@ document.getElementById('loginBtn').addEventListener('click', async ()=>{
     const t = translations[lang];
 
     if(!username || !password){ msg.innerText = t.msgFill; return; }
-    const user = await loginUser(role, username, password);
-    if(!user){ msg.innerText = t.msgInvalid; return; }
 
-    if(user.role==='manager') window.location.href='manager.html';
-    else if(user.role==='supervisor') window.location.href='supervisor.html';
-    else if(user.role==='employee') window.location.href='employee.html';
+    // بيانات تجريبية
+    let userValid = false;
+    if(role==='manager' && username==='7123456789' && password==='123456') userValid=true;
+    else if(role==='supervisor' || role==='employee') userValid=true; // السماح لتجربة الصفحات
+
+    if(!userValid){ msg.innerText=t.msgInvalid; return; }
+
+    // إعادة التوجيه (يمكنك إنشاء الصفحات لاحقًا)
+    if(role==='manager') window.location.href='manager.html';
+    else if(role==='supervisor') window.location.href='supervisor.html';
+    else if(role==='employee') window.location.href='employee.html';
 });
 </script>
 
