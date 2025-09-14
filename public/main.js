@@ -1,147 +1,134 @@
-// ✅ ربط Supabase
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-// بيانات مشروعك (من Dashboard Supabase)
+// ضع بيانات مشروعك من Dashboard Supabase
 const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
 const SUPABASE_KEY = "YOUR_ANON_PUBLIC_KEY";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ✅ دالة تسجيل الدخول
-async function login(emailOrPhone, password, role) {
-  // البحث عن المستخدم حسب البريد أو الهاتف
-  let { data: users, error } = await supabase
+// =====================
+// دوال Supabase
+// =====================
+
+// تسجيل الدخول
+export async function login(emailOrPhone, password, role) {
+  const { data: user, error } = await supabase
     .from("users")
     .select("*")
     .or(`email.eq.${emailOrPhone},phone.eq.${emailOrPhone}`)
     .eq("role", role)
     .single();
 
-  if (error || !users) {
-    alert("❌ المستخدم غير موجود أو الدور غير صحيح");
+  if (error || !user) {
+    alert("❌ User not found or wrong role");
     return;
   }
-
-  // التحقق من كلمة المرور (هنا عادي، ممكن تضيف تشفير لاحقاً)
-  if (users.password === password) {
-    localStorage.setItem("user", JSON.stringify(users));
-
-    // إعادة التوجيه حسب الدور
-    if (users.role === "manager") {
-      window.location.href = "manager.html";
-    } else if (users.role === "supervisor") {
-      window.location.href = "supervisor.html";
-    } else if (users.role === "delegate") {
-      window.location.href = "delegate.html";
-    }
-  } else {
-    alert("❌ كلمة المرور غير صحيحة");
+  if (user.password !== password) {
+    alert("❌ Incorrect password");
+    return;
   }
+  localStorage.setItem("user", JSON.stringify(user));
+  if (user.role === "manager") window.location.href = "manager.html";
+  if (user.role === "supervisor") window.location.href = "supervisor.html";
+  if (user.role === "delegate") window.location.href = "delegate.html";
 }
 
-// ✅ دالة إضافة مستخدم جديد (للمدير فقط)
-async function addUser(fullName, email, phone, password, role) {
-  let { data, error } = await supabase
+// إضافة مستخدم جديد (المدير)
+export async function addUser(fullName, email, phone, password, role) {
+  const { data, error } = await supabase
     .from("users")
     .insert([{ full_name: fullName, email, phone, password, role }]);
-
   if (error) {
-    console.error("خطأ في إضافة المستخدم:", error);
-    alert("❌ لم يتم إضافة المستخدم");
+    console.error(error);
+    alert("❌ Failed to add user");
   } else {
-    alert("✅ تم إضافة المستخدم بنجاح");
+    alert("✅ User added successfully");
   }
 }
 
-// ✅ دالة تحميل المهام (للمندوب)
-async function loadTasks(delegateId) {
-  let { data, error } = await supabase
+// جلب المهام للمندوب
+export async function loadTasks(delegateId) {
+  const { data, error } = await supabase
     .from("tasks")
     .select("*")
     .eq("delegate_id", delegateId);
-
-  if (error) {
-    console.error(error);
-    return [];
-  }
+  if (error) { console.error(error); return []; }
   return data;
 }
 
-// ✅ دالة تحديث حالة المهمة
-async function updateTaskStatus(taskId, newStatus) {
-  let { data, error } = await supabase
+// تحديث حالة المهمة
+export async function updateTaskStatus(taskId, newStatus) {
+  const { error } = await supabase
     .from("tasks")
     .update({ status: newStatus })
     .eq("id", taskId);
-
-  if (error) {
-    console.error("❌ خطأ في تحديث المهمة", error);
-  } else {
-    alert("✅ تم تحديث حالة المهمة");
-  }
+  if (error) console.error(error);
 }
 
-// ✅ دالة رفع تقرير (مندوب)
-async function submitReport(taskId, notes, imageUrl, signature) {
-  let { data, error } = await supabase
+// رفع تقرير
+export async function submitReport(taskId, delegateId, notes, images, signature) {
+  const { data, error } = await supabase
     .from("reports")
-    .insert([{ task_id: taskId, notes, image_url: imageUrl, signature }]);
-
-  if (error) {
-    console.error("❌ خطأ في رفع التقرير:", error);
-  } else {
-    alert("✅ تم إرسال التقرير");
-  }
+    .insert([{ task_id: taskId, delegate_id: delegateId, notes, image_urls: images, client_signature: signature }]);
+  if (error) console.error(error);
 }
 
-// ✅ عند تحميل الصفحة
-document.addEventListener("DOMContentLoaded", () => {
+// =====================
+// DOM Loaded – جميع الصفحات
+// =====================
+document.addEventListener("DOMContentLoaded", async () => {
   const currentPage = window.location.pathname.split("/").pop();
+  const user = JSON.parse(localStorage.getItem("user"));
 
-  // شاشة تسجيل الدخول
-  if (currentPage === "index.html") {
-    const form = document.querySelector("form");
+  // صفحة تسجيل الدخول
+  if(currentPage === "index.html"){
+    const form = document.getElementById("loginForm");
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const emailOrPhone = form.querySelector("input[type=text]").value;
-      const password = form.querySelector("input[type=password]").value;
-      const role = form.querySelector("select").value;
+      const emailOrPhone = document.getElementById("emailOrPhone").value;
+      const password = document.getElementById("password").value;
+      const role = document.getElementById("role").value;
       await login(emailOrPhone, password, role);
     });
   }
 
-  // شاشة المدير (إضافة مستخدم)
-  if (currentPage === "manager.html") {
-    const form = document.querySelector("form");
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const fullName = form.querySelector("input[type=text]").value;
-      const emailOrPhone = form.querySelectorAll("input[type=text]")[1].value;
-      const password = form.querySelector("input[type=password]").value;
-      const role = form.querySelector("select").value;
-
-      let email = emailOrPhone.includes("@") ? emailOrPhone : null;
-      let phone = email ? null : emailOrPhone;
-
-      await addUser(fullName, email, phone, password, role);
+  // زر تسجيل الخروج لجميع الصفحات
+  const logoutBtn = document.getElementById("logoutBtn");
+  if(logoutBtn){
+    logoutBtn.addEventListener("click", () => {
+      localStorage.removeItem("user");
+      window.location.href = "index.html";
     });
   }
 
-  // شاشة المندوب (عرض المهام)
-  if (currentPage === "delegate.html") {
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (user && user.role === "delegate") {
-      loadTasks(user.id).then(tasks => {
-        const ul = document.querySelector("ul");
-        ul.innerHTML = "";
-        tasks.forEach(task => {
-          const li = document.createElement("li");
-          li.innerHTML = `
-            <b>${task.client_name}</b> - ${task.address} - ${task.visit_time} - ${task.status}
-            <button onclick="updateTaskStatus(${task.id}, 'completed')">✅</button>
-            <button onclick="updateTaskStatus(${task.id}, 'delayed')">⏳</button>
-          `;
-          ul.appendChild(li);
-        });
+  // صفحة المندوب
+  if(currentPage === "delegate.html" && user && user.role === "delegate"){
+    const ul = document.getElementById("tasksList");
+    const tasks = await loadTasks(user.id);
+    tasks.forEach(task => {
+      const li = document.createElement("li");
+      li.innerHTML = `${task.client_name} - ${task.address} - ${task.visit_time} - ${task.status}
+        <button onclick="updateTaskStatus(${task.id}, 'completed')">✅</button>
+        <button onclick="updateTaskStatus(${task.id}, 'delayed')">⏳</button>`;
+      ul.appendChild(li);
+    });
+  }
+
+  // صفحة المدير – إضافة مستخدم
+  if(currentPage === "manager.html" && user && user.role === "manager"){
+    const form = document.getElementById("addUserForm");
+    if(form){
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const fullName = document.getElementById("newFullName").value;
+        const emailOrPhone = document.getElementById("newEmailOrPhone").value;
+        const password = document.getElementById("newPassword").value;
+        const role = document.getElementById("newRole").value;
+
+        let email = emailOrPhone.includes("@") ? emailOrPhone : null;
+        let phone = email ? null : emailOrPhone;
+
+        await addUser(fullName, email, phone, password, role);
+        form.reset();
       });
     }
   }
