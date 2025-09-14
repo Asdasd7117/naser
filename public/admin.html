@@ -29,7 +29,7 @@ async function loadUsers() {
       tr.innerHTML = `
         <td>${u.name || ''}</td>
         <td>${u.email}</td>
-        <td>${u.phone || ''}</td>
+        <td>${u.phone_number || ''}</td>
         <td>${u.role}</td>
       `;
       tbody.appendChild(tr);
