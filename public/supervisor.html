@@ -2,157 +2,139 @@
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
-<title>لوحة المشرف / Supervisor Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>صفحة المشرف</title>
 <style>
-body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f0f2f5; direction:rtl;}
-header { background:#007bff; color:#fff; padding:15px; display:flex; justify-content:space-between; align-items:center;}
-header h1 { margin:0; font-size:18px;}
-header .time { font-size:14px;}
-.lang-switch { position:absolute; top:15px; right:15px; background:#ffc107; color:#000; border:none; padding:8px; border-radius:6px; cursor:pointer;}
-nav { display:flex; justify-content:space-around; margin-bottom:20px; flex-wrap:wrap;}
-nav button { padding:10px 20px; border:none; border-radius:8px; cursor:pointer; background:#28a745; color:#fff; font-weight:bold; margin:5px;}
-nav button.active { background:#218838;}
-section { display:none; }
-section.active { display:block; }
-.card { background:#fff; padding:15px; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.1); margin-bottom:15px;}
-label { display:block; margin-top:10px;}
-input, select, textarea, button { width:100%; padding:8px; margin-top:5px; margin-bottom:10px; border-radius:6px; border:1px solid #ccc;}
-.notifications { max-height:300px; overflow-y:auto;}
-.notifications .notif { padding:10px; margin-bottom:5px; border-radius:8px; background:#fff; box-shadow:0 2px 5px rgba(0,0,0,0.1);}
-.notifications .unread { background:#f8d7da;}
-#map { width:100%; height:300px; margin-top:10px; }
+  body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f0f4f7; }
+  header { background:#28a745; color:#fff; padding:15px; text-align:center; }
+  nav { display:flex; justify-content:space-around; background:#fff; padding:10px 0; box-shadow:0 2px 4px rgba(0,0,0,0.1); }
+  nav button { padding:10px 15px; border:none; background:none; cursor:pointer; font-weight:bold; }
+  nav button.active { color:#28a745; border-bottom:2px solid #28a745; }
+  .section { padding:20px; display:none; }
+  .section.active { display:block; }
+  table { width:100%; border-collapse:collapse; margin-bottom:20px; background:#fff; border-radius:8px; overflow:hidden; }
+  th, td { padding:10px; border-bottom:1px solid #ddd; text-align:center; }
+  th { background:#f1f1f1; }
+  .map { width:100%; height:300px; background:#ccc; border-radius:8px; display:flex; justify-content:center; align-items:center; color:#555; font-weight:bold; }
+  button.submit { background:#28a745; color:#fff; border:none; padding:8px 12px; border-radius:5px; cursor:pointer; }
+  button.submit:hover { background:#1e7e34; }
 </style>
 </head>
 <body>
 
-<header>
-    <h1 id="supervisor-name">المشرف</h1>
-    <div class="time" id="current-time">00:00:00</div>
-</header>
-<button class="lang-switch" onclick="switchLanguage()">تبديل اللغة / Switch Language</button>
+<header id="header-title">المشرف</header>
 
 <nav>
-    <button onclick="showSection('employees')" id="btn-employees">متابعة المندوبين / Employees</button>
-    <button onclick="showSection('map')" id="btn-map">الخريطة / Map</button>
-    <button onclick="showSection('reports')" id="btn-reports">التقارير / Reports</button>
-    <button onclick="showSection('notifications')" id="btn-notif">الإشعارات / Notifications</button>
+  <button class="tab active" data-tab="team">المندوبين</button>
+  <button class="tab" data-tab="map">الخريطة</button>
+  <button class="tab" data-tab="reports">التقارير</button>
+  <button class="tab" data-tab="notifications">الإشعارات</button>
 </nav>
 
-<div class="container">
-<!-- متابعة المندوبين -->
-<section id="employees">
-    <h2>متابعة المندوبين / Employees Tracking</h2>
-    <div id="employees-cards"></div>
-</section>
-
-<!-- الخريطة -->
-<section id="map">
-    <h2>المواقع / Map</h2>
-    <select id="select-employee">
-        <option value="all">عرض الجميع / All</option>
-    </select>
-    <div id="map"></div>
-</section>
-
-<!-- التقارير -->
-<section id="reports">
-    <h2>التقارير / Reports</h2>
-    <div id="reports-cards"></div>
-</section>
-
-<!-- الإشعارات -->
-<section id="notifications">
-    <h2>الإشعارات / Notifications</h2>
-    <div class="notifications" id="notif-list"></div>
-</section>
+<div class="section active" id="team">
+  <h3>متابعة المندوبين</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>اسم المندوب</th>
+        <th>الحالة</th>
+        <th>عرض الموقع</th>
+        <th>حالة المهام</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>أحمد علي</td>
+        <td>نشط</td>
+        <td><button class="submit">عرض</button></td>
+        <td>3/5 مكتملة</td>
+      </tr>
+      <tr>
+        <td>سارة محمد</td>
+        <td>نشط</td>
+        <td><button class="submit">عرض</button></td>
+        <td>2/4 مكتملة</td>
+      </tr>
+    </tbody>
+  </table>
 </div>
 
-<script type="module">
-import { fetchEmployees, fetchReports, addReportNote, fetchNotifications } from './supabase.js';
+<div class="section" id="map">
+  <h3>الخريطة</h3>
+  <div class="map">الخريطة ستظهر هنا</div>
+</div>
 
-const supervisorName = prompt("أدخل اسم المشرف / Enter your name"); 
-document.getElementById('supervisor-name').innerText = "المشرف: " + supervisorName;
+<div class="section" id="reports">
+  <h3>مراجعة التقارير</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>المندوب</th>
+        <th>التقرير</th>
+        <th>ملاحظات</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>أحمد علي</td>
+        <td>زيارة العميل أ</td>
+        <td><input type="text" placeholder="أدخل ملاحظات"></td>
+      </tr>
+      <tr>
+        <td>سارة محمد</td>
+        <td>زيارة العميل ب</td>
+        <td><input type="text" placeholder="أدخل ملاحظات"></td>
+      </tr>
+    </tbody>
+  </table>
+  <button class="submit">حفظ الملاحظات</button>
+</div>
 
-// اللغة والوقت
-let currentLang='ar';
-function switchLanguage(){ currentLang=currentLang==='ar'?'en':'ar'; document.body.style.direction=currentLang==='ar'?'rtl':'ltr'; }
-function updateTime(){ const now=new Date(new Date().toLocaleString("en-US",{timeZone:"Africa/Cairo"})); document.getElementById("current-time").innerText=now.toLocaleTimeString();}
-setInterval(updateTime,1000); updateTime();
+<div class="section" id="notifications">
+  <h3>الإشعارات</h3>
+  <ul>
+    <li>تأخر المندوب أحمد علي في بدء المهمة</li>
+    <li>المهمة الخاصة بسارة محمد غير مكتملة</li>
+  </ul>
+</div>
 
-// التنقل بين الأقسام
-function showSection(id){
-    document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
-    document.getElementById('btn-'+id).classList.add('active');
-}
-showSection('employees');
+<div class="lang-switch" style="text-align:center; margin:15px; cursor:pointer; color:#28a745;">English</div>
 
-// متابعة المندوبين
-async function loadEmployees(){
-    const employees = await fetchEmployees();
-    const container = document.getElementById('employees-cards');
-    const select = document.getElementById('select-employee');
-    container.innerHTML=''; select.innerHTML='<option value="all">عرض الجميع / All</option>';
-    employees.forEach(emp=>{
-        const card = document.createElement('div'); card.className='card';
-        card.innerHTML = `<strong>المندوب / Name:</strong> ${emp.name}<br>
-                          <strong>الحالة / Status:</strong> ${emp.status || 'نشط'}<br>
-                          <strong>المهام / Tasks:</strong> ${emp.tasks_completed || 0} مكتملة / ${emp.tasks_pending || 0} قيد التنفيذ / ${emp.tasks_delayed || 0} مؤجلة
-                          <br><button onclick="showEmployeeLocation('${emp.phone}')">عرض الموقع / Show Location</button>`;
-        container.appendChild(card);
-        const option = document.createElement('option'); option.value = emp.phone; option.innerText = emp.name;
-        select.appendChild(option);
-    });
-}
-loadEmployees();
+<script>
+const tabs = document.querySelectorAll('.tab');
+const sections = document.querySelectorAll('.section');
+tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    tabs.forEach(t => t.classList.remove('active'));
+    sections.forEach(s => s.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.tab).classList.add('active');
+  });
+});
 
-// مراجعة التقارير
-async function loadReports(){
-    const reports = await fetchReports();
-    const container = document.getElementById('reports-cards');
-    container.innerHTML='';
-    reports.forEach(r=>{
-        const card = document.createElement('div'); card.className='card';
-        card.innerHTML = `<strong>المندوب / Employee:</strong> ${r.employee}<br>
-                          <strong>العميل / Client:</strong> ${r.client || '-'}<br>
-                          <strong>الملاحظات / Notes:</strong> ${r.notes || '-'}<br>
-                          <label>ملاحظة المشرف / Supervisor Note</label>
-                          <textarea id="note-${r.id}">${r.supervisor_note || ''}</textarea>
-                          <button onclick="saveNote('${r.id}')">حفظ / Save</button>`;
-        container.appendChild(card);
-    });
-}
-async function saveNote(reportId){
-    const note = document.getElementById('note-'+reportId).value;
-    await addReportNote(reportId, note);
-    alert('تم الحفظ / Saved');
-}
-loadReports();
-
-// الإشعارات
-async function loadNotifications(){
-    const notifs = await fetchNotifications('supervisor');
-    const container = document.getElementById('notif-list');
-    container.innerHTML='';
-    notifs.forEach(n=>{
-        const div = document.createElement('div'); div.className='notif';
-        if(!n.read) div.classList.add('unread');
-        div.innerText = n.message;
-        container.appendChild(div);
-    });
-}
-loadNotifications();
-
-// الخريطة
-let map, markers=[];
-function initMap(lat=24.7136, lng=46.6753){
-    map = new google.maps.Map(document.getElementById('map'), {center:{lat,lng}, zoom:12});
-}
-function showEmployeeLocation(phone){
-    alert("عرض موقع المندوب "+phone+" على الخريطة"); // سيتم ربطه لاحقاً بالمواقع الفعلية
-}
+let isArabic = true;
+const langSwitch = document.querySelector('.lang-switch');
+langSwitch.addEventListener('click', () => {
+  isArabic = !isArabic;
+  if(isArabic){
+    document.body.style.direction='rtl';
+    document.getElementById('header-title').innerText='المشرف';
+    document.querySelectorAll('.tab')[0].innerText='المندوبين';
+    document.querySelectorAll('.tab')[1].innerText='الخريطة';
+    document.querySelectorAll('.tab')[2].innerText='التقارير';
+    document.querySelectorAll('.tab')[3].innerText='الإشعارات';
+    langSwitch.innerText='English';
+  } else {
+    document.body.style.direction='ltr';
+    document.getElementById('header-title').innerText='Supervisor';
+    document.querySelectorAll('.tab')[0].innerText='Team';
+    document.querySelectorAll('.tab')[1].innerText='Map';
+    document.querySelectorAll('.tab')[2].innerText='Reports';
+    document.querySelectorAll('.tab')[3].innerText='Notifications';
+    langSwitch.innerText='عربي';
+  }
+});
 </script>
-<script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap"></script>
+
 </body>
 </html>
