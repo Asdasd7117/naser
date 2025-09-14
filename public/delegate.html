@@ -1,160 +1,176 @@
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-  <meta charset="UTF-8">
-  <title data-translate="delegate"></title>
-  <link rel="stylesheet" href="style.css">
-  <script src="lang.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-    header { display: flex; justify-content: space-between; padding: 10px; background: #2a7cc7; color: white; }
-    .container { padding: 15px; }
-    .card {
-      background: #fff; border-radius: 10px; padding: 15px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 15px;
-    }
-    .task-status span { margin-right: 10px; font-weight: bold; }
-    .status-in-progress { color: orange; }
-    .status-completed { color: green; }
-    .status-delayed { color: red; }
-    .scroll-view { max-height: 300px; overflow-y: auto; }
-    textarea { width: 100%; padding: 10px; margin: 10px 0; }
-    .upload-preview img { width: 70px; margin: 5px; border-radius: 5px; }
-    #signature-pad { border: 2px dashed #aaa; width: 100%; height: 150px; }
-    button {
-      background: #2a7cc7; color: white; border: none; padding: 10px 15px;
-      border-radius: 6px; cursor: pointer; margin-top: 10px;
-    }
-    button.green { background: green; }
-    #map { width: 100%; height: 300px; background: #eaeaea; margin: 10px 0; }
-    .notification { padding: 10px; border-bottom: 1px solid #ccc; }
-    .notification.unread { background: #ffe5e5; }
-    nav { position: fixed; bottom: 0; left: 0; width: 100%;
-      display: flex; justify-content: space-around; background: #2a7cc7; color: white; padding: 10px 0; }
-    nav a { color: white; text-decoration: none; text-align: center; }
-    nav a i { display: block; font-size: 20px; }
-  </style>
+<meta charset="UTF-8">
+<title>لوحة المندوب / Employee Dashboard</title>
+<style>
+body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f0f2f5; direction:rtl;}
+header { background:#007bff; color:#fff; padding:15px; display:flex; justify-content:space-between; align-items:center;}
+header h1 { margin:0; font-size:18px;}
+header .time { font-size:14px;}
+.lang-switch { position:absolute; top:15px; right:15px; background:#ffc107; color:#000; border:none; padding:8px; border-radius:6px; cursor:pointer;}
+nav { display:flex; justify-content:space-around; margin-bottom:20px; flex-wrap:wrap;}
+nav button { padding:10px 20px; border:none; border-radius:8px; cursor:pointer; background:#28a745; color:#fff; font-weight:bold; margin:5px;}
+nav button.active { background:#218838;}
+section { display:none; }
+section.active { display:block; }
+.card { background:#fff; padding:15px; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.1); margin-bottom:15px;}
+label { display:block; margin-top:10px;}
+input, select, textarea, button { width:100%; padding:8px; margin-top:5px; margin-bottom:10px; border-radius:6px; border:1px solid #ccc;}
+.status { font-weight:bold; padding:3px 8px; border-radius:6px; color:#fff;}
+.status.pending { background:#ffc107;}
+.status.completed { background:#28a745;}
+.status.delayed { background:#dc3545;}
+img.preview { max-width:80px; max-height:80px; margin:3px;}
+canvas { border:1px solid #ccc; }
+#map { width:100%; height:300px; margin-top:10px; }
+.notifications { max-height:300px; overflow-y:auto;}
+.notifications .notif { padding:10px; margin-bottom:5px; border-radius:8px; background:#fff; box-shadow:0 2px 5px rgba(0,0,0,0.1);}
+.notifications .unread { background:#f8d7da; }
+</style>
 </head>
-<body onload="setLanguage(currentLang)">
+<body>
 
-  <!-- ====== الهيدر ====== -->
-  <header>
-    <span data-translate="delegate"></span>
-    <div>
-      <button onclick="setLanguage('ar')" data-translate="switchArabic"></button>
-      <button onclick="setLanguage('en')" data-translate="switchEnglish"></button>
-    </div>
-  </header>
+<header>
+    <h1 id="employee-name">المندوب</h1>
+    <div class="time" id="current-time">00:00:00</div>
+</header>
+<button class="lang-switch" onclick="switchLanguage()">تبديل اللغة / Switch Language</button>
 
-  <div class="container">
-    <!-- ====== لوحة المهام اليومية ====== -->
-    <h2 data-translate="dailyTasks"></h2>
-    <div class="scroll-view">
-      <div class="card">
-        <p><i class="fa-solid fa-user"></i> <b data-translate="clientName"></b>: شركة أبجد</p>
-        <p><i class="fa-solid fa-location-dot"></i> <b data-translate="address"></b>: الرياض، شارع الملك فهد</p>
-        <p><i class="fa-solid fa-clock"></i> <b data-translate="visitTime"></b>: 10:00 صباحًا</p>
-        <p class="task-status">
-          <i class="fa-solid fa-spinner status-in-progress"></i>
-          <span data-translate="status"></span>: <span class="status-in-progress">قيد التنفيذ</span>
-        </p>
-        <button data-translate="updateStatus"></button>
-      </div>
-    </div>
+<nav>
+    <button onclick="showSection('tasks')" id="btn-tasks">المهام / Tasks</button>
+    <button onclick="showSection('report')" id="btn-report">رفع التقرير / Report</button>
+    <button onclick="showSection('map')" id="btn-map">الخريطة / Map</button>
+    <button onclick="showSection('notifications')" id="btn-notif">الإشعارات / Notifications</button>
+</nav>
 
-    <!-- ====== رفع التقرير ====== -->
-    <h2 data-translate="report"></h2>
-    <form>
-      <label data-translate="notes"></label>
-      <textarea rows="4"></textarea>
+<div class="container">
+<!-- المهام -->
+<section id="tasks">
+    <h2>المهام اليومية / Daily Tasks</h2>
+    <div id="tasks-cards"></div>
+</section>
 
-      <label><i class="fa-solid fa-camera"></i> <span data-translate="uploadImage"></span></label>
-      <input type="file" multiple onchange="previewImages(event)">
-      <div class="upload-preview" id="preview"></div>
+<!-- رفع التقرير -->
+<section id="report">
+    <h2>رفع التقرير / Submit Report</h2>
+    <label>ملاحظات / Notes</label>
+    <textarea id="report-notes"></textarea>
+    <label>صور / Images</label>
+    <input type="file" id="report-images" multiple>
+    <div id="images-preview"></div>
+    <label>توقيع العميل / Client Signature</label>
+    <canvas id="signature" width="300" height="100" style="border:1px solid #ccc;"></canvas>
+    <button onclick="submitReport()">إرسال / Submit</button>
+</section>
 
-      <label><i class="fa-solid fa-pen"></i> <span data-translate="clientSignature"></span></label>
-      <canvas id="signature-pad"></canvas>
-      <button type="button" onclick="clearSignature()">🧹 مسح التوقيع</button>
+<!-- الخريطة -->
+<section id="map">
+    <h2>الموقع / Map</h2>
+    <div id="map"></div>
+    <button onclick="updateLocation()">تحديث الموقع / Update Location</button>
+</section>
 
-      <button class="green" type="submit" data-translate="sendReport"></button>
-    </form>
+<!-- الإشعارات -->
+<section id="notifications">
+    <h2>الإشعارات / Notifications</h2>
+    <div class="notifications" id="notif-list"></div>
+</section>
 
-    <!-- ====== الخريطة ====== -->
-    <h2 data-translate="map"></h2>
-    <div id="map">[خريطة جوجل]</div>
-    <button onclick="refreshLocation()">🔄 تحديث الموقع</button>
+<script type="module">
+import { fetchTasksByEmployee, updateTaskStatus, submitReport, fetchNotifications } from './supabase.js';
 
-    <!-- ====== الإشعارات ====== -->
-    <h2 data-translate="notifications"></h2>
-    <div class="scroll-view">
-      <div class="notification unread">
-        <i class="fa-solid fa-bell"></i> تذكير: مهمة مع العميل أبجد الساعة 10:00 صباحًا
-      </div>
-      <div class="notification">
-        <i class="fa-solid fa-clock"></i> تأخرت عن مهمة العميل بـ 15 دقيقة
-      </div>
-    </div>
-  </div>
+const employeePhone = prompt("أدخل رقم هاتفك / Enter your phone"); // تسجيل دخول مؤقت
+document.getElementById('employee-name').innerText = "المندوب: " + employeePhone;
 
-  <!-- ====== شريط التنقل ====== -->
-  <nav>
-    <a href="#tasks"><i class="fa-solid fa-list-check"></i><span data-translate="dailyTasks"></span></a>
-    <a href="#report"><i class="fa-solid fa-file-signature"></i><span data-translate="report"></span></a>
-    <a href="#map"><i class="fa-solid fa-map-location-dot"></i><span data-translate="map"></span></a>
-    <a href="#notifications"><i class="fa-solid fa-bell"></i><span data-translate="notifications"></span></a>
-  </nav>
+// اللغة والوقت
+let currentLang='ar';
+function switchLanguage(){ currentLang=currentLang==='ar'?'en':'ar'; document.body.style.direction=currentLang==='ar'?'rtl':'ltr'; }
+function updateTime(){ const now=new Date(new Date().toLocaleString("en-US",{timeZone:"Africa/Cairo"})); document.getElementById("current-time").innerText=now.toLocaleTimeString();}
+setInterval(updateTime,1000); updateTime();
 
-  <script>
-    // ===== معاينة الصور =====
-    function previewImages(event) {
-      const preview = document.getElementById("preview");
-      preview.innerHTML = "";
-      for (let file of event.target.files) {
-        const reader = new FileReader();
-        reader.onload = e => {
-          const img = document.createElement("img");
-          img.src = e.target.result;
-          preview.appendChild(img);
-        };
-        reader.readAsDataURL(file);
-      }
-    }
+// التنقل بين الأقسام
+function showSection(id){
+    document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+    document.getElementById('btn-'+id).classList.add('active');
+}
+showSection('tasks');
 
-    // ===== التوقيع =====
-    const canvas = document.getElementById("signature-pad");
-    const ctx = canvas.getContext("2d");
-    let drawing = false;
+// المهام اليومية
+async function loadTasks(){
+    const tasks = await fetchTasksByEmployee(employeePhone);
+    const container = document.getElementById('tasks-cards');
+    container.innerHTML='';
+    tasks.forEach(t=>{
+        const card = document.createElement('div'); card.className='card';
+        card.innerHTML=`<strong>العميل / Client:</strong> ${t.client||'-'}<br>
+                        <strong>العنوان / Address:</strong> ${t.address||'-'}<br>
+                        <strong>وقت الزيارة / Visit Time:</strong> ${t.datetime||'-'}<br>
+                        <strong>الحالة / Status:</strong> 
+                        <span class="status ${t.status}">${t.status}</span>
+                        <br><button onclick="changeStatus('${t.id}')">تغيير الحالة / Change Status</button>`;
+        container.appendChild(card);
+    });
+}
+async function changeStatus(taskId){
+    const status = prompt("أدخل الحالة: pending, completed, delayed");
+    if(status) await updateTaskStatus(taskId, status);
+    loadTasks();
+}
+loadTasks();
 
-    canvas.addEventListener("mousedown", () => drawing = true);
-    canvas.addEventListener("mouseup", () => drawing = false);
-    canvas.addEventListener("mousemove", draw);
+// رفع التقرير
+const signatureCanvas = document.getElementById('signature');
+const ctx = signatureCanvas.getContext('2d'); let drawing=false;
+signatureCanvas.addEventListener('mousedown',()=>drawing=true);
+signatureCanvas.addEventListener('mouseup',()=>drawing=false);
+signatureCanvas.addEventListener('mousemove',(e)=>{ if(drawing){ ctx.lineTo(e.offsetX,e.offsetY); ctx.stroke(); ctx.beginPath(); ctx.moveTo(e.offsetX,e.offsetY); }});
+document.getElementById('report-images').addEventListener('change',(e)=>{
+    const preview = document.getElementById('images-preview'); preview.innerHTML='';
+    Array.from(e.target.files).forEach(file=>{
+        const img = document.createElement('img'); img.className='preview';
+        img.src = URL.createObjectURL(file);
+        preview.appendChild(img);
+    });
+});
+async function submitReport(){
+    const notes = document.getElementById('report-notes').value;
+    const imgFiles = document.getElementById('report-images').files;
+    const dataURL = signatureCanvas.toDataURL();
+    await submitReport({employee:employeePhone, notes, images: Array.from(imgFiles).map(f=>f.name), signature:dataURL, datetime:new Date()});
+    alert('تم الإرسال / Submitted'); document.getElementById('report-notes').value=''; signatureCanvas.getContext('2d').clearRect(0,0,signatureCanvas.width,signatureCanvas.height);
+}
 
-    function draw(e) {
-      if (!drawing) return;
-      ctx.lineWidth = 2;
-      ctx.lineCap = "round";
-      ctx.strokeStyle = "#000";
-      ctx.lineTo(e.offsetX, e.offsetY);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(e.offsetX, e.offsetY);
-    }
+// الإشعارات
+async function loadNotifications(){
+    const notifs = await fetchNotifications(employeePhone);
+    const container = document.getElementById('notif-list');
+    container.innerHTML='';
+    notifs.forEach(n=>{
+        const div = document.createElement('div'); div.className='notif';
+        if(!n.read) div.classList.add('unread');
+        div.innerText = n.message;
+        container.appendChild(div);
+    });
+}
+loadNotifications();
 
-    function clearSignature() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-
-    // ===== الموقع (Google Maps API أو HTML5 Geolocation) =====
-    function refreshLocation() {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(pos => {
-          alert("موقعك الحالي: " + pos.coords.latitude + ", " + pos.coords.longitude);
-        });
-      } else {
-        alert("الموقع غير مدعوم");
-      }
-    }
-  </script>
+// الخريطة
+let map, marker;
+function initMap(lat=24.7136, lng=46.6753){ // default الرياض
+    map = new google.maps.Map(document.getElementById('map'), {center:{lat,lng}, zoom:12});
+    marker = new google.maps.Marker({position:{lat,lng}, map});
+}
+function updateLocation(){
+    navigator.geolocation.getCurrentPosition(pos=>{
+        const {latitude, longitude} = pos.coords;
+        map.setCenter({lat:latitude, lng:longitude});
+        marker.setPosition({lat:latitude, lng:longitude});
+    });
+}
+</script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap"></script>
 </body>
 </html>
