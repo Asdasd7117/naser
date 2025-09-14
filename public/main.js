@@ -21,6 +21,7 @@ const translations = {
     name: "الاسم",
     email: "البريد الإلكتروني",
     phone: "رقم الهاتف",
+    password_field: "كلمة المرور",
     create: "إنشاء",
     client: "العميل",
     address: "العنوان",
@@ -47,6 +48,7 @@ const translations = {
     name: "Name",
     email: "Email",
     phone: "Phone",
+    password_field: "Password",
     create: "Create",
     client: "Client",
     address: "Address",
@@ -61,27 +63,32 @@ const translations = {
   }
 };
 
-function setLanguage(lang){
+function setLanguage(lang) {
   currentLang = lang;
-  document.documentElement.dir = (lang==="ar")?"rtl":"ltr";
+  document.documentElement.dir = (lang === "ar") ? "rtl" : "ltr";
   document.documentElement.lang = lang;
-  document.querySelectorAll("[data-i18n]").forEach(el=>{
+  document.querySelectorAll("[data-i18n]").forEach(el => {
     const key = el.getAttribute("data-i18n");
-    if(translations[lang][key]) el.innerText = translations[lang][key];
+    if (translations[lang][key]) el.innerText = translations[lang][key];
   });
 }
-document.getElementById("languageSwitcher")?.addEventListener("change", e=>{
+document.getElementById("languageSwitcher")?.addEventListener("change", e => {
   setLanguage(e.target.value);
 });
 setLanguage(currentLang);
 
-// ====== تسجيل الدخول ======
+// ====== تسجيل الدخول فقط للمدير ======
 const loginForm = document.getElementById("loginForm");
-loginForm?.addEventListener("submit", async e=>{
+loginForm?.addEventListener("submit", async e => {
   e.preventDefault();
   const role = loginForm.role.value;
   const identifier = loginForm.email_or_phone.value;
   const password = loginForm.password.value;
+
+  // السماح فقط بالمدير
+  if (role !== "manager") {
+    return alert("❌ الدخول مسموح للمدير فقط");
+  }
 
   const { data: users, error } = await supabase
     .from('users')
@@ -89,43 +96,42 @@ loginForm?.addEventListener("submit", async e=>{
     .or(`phone.eq.${identifier},email.eq.${identifier}`)
     .limit(1);
 
-  if(error || !users || users.length===0){
-    return alert("المستخدم غير موجود");
+  if (error || !users || users.length === 0) {
+    return alert("❌ المستخدم غير موجود");
   }
 
   const user = users[0];
-  if(user.password !== password) return alert("كلمة المرور غير صحيحة");
-  if(user.role !== role) return alert("الدور غير صحيح");
+  if (user.password !== password) return alert("❌ كلمة المرور غير صحيحة");
+  if (user.role !== "manager") return alert("❌ الدور غير صحيح");
 
-  alert("تم تسجيل الدخول بنجاح!");
-
-  if(role === "manager") window.location.href = "manager.html";
-  if(role === "supervisor") window.location.href = "supervisor.html";
-  if(role === "delegate") window.location.href = "delegate.html";
+  alert("✅ تم تسجيل الدخول بنجاح!");
+  window.location.href = "manager.html"; // تحويل للوحة المدير
 });
 
-// ====== إنشاء مستخدم جديد (للمدير) ======
+// ====== إنشاء مستخدم جديد (من داخل لوحة المدير فقط) ======
 const createUserForm = document.getElementById("createUserForm");
-createUserForm?.addEventListener("submit", async e=>{
+createUserForm?.addEventListener("submit", async e => {
   e.preventDefault();
   const formData = new FormData(createUserForm);
-  const role = formData.get("role");
+  const role = formData.get("role"); // هنا المدير يختار مشرف أو مندوب
   const name = formData.get("name");
   const email = formData.get("email");
   const phone = formData.get("phone");
   const password = formData.get("password");
 
-  const { data, error } = await supabase.auth.signUp({ email, password });
-  if(error) return alert("Error: "+error.message);
+  // إضافة المستخدم مباشرة إلى جدول users
+  const { error } = await supabase.from("users").insert([
+    { name, email, phone, role, password }
+  ]);
+  if (error) return alert("❌ خطأ: " + error.message);
 
-  await supabase.from("users").insert([{ id: data.user.id, name, email, phone, role, password }]);
-  alert("تم إنشاء المستخدم بنجاح!");
+  alert("✅ تم إنشاء المستخدم بنجاح!");
   createUserForm.reset();
 });
 
 // ====== إضافة مهمة جديدة ======
 const taskForm = document.getElementById("taskForm");
-taskForm?.addEventListener("submit", async e=>{
+taskForm?.addEventListener("submit", async e => {
   e.preventDefault();
   const formData = new FormData(taskForm);
   const client = formData.get("client");
@@ -133,30 +139,32 @@ taskForm?.addEventListener("submit", async e=>{
   const time = formData.get("time");
 
   await supabase.from("tasks").insert([{ client, address, time }]);
-  alert("تم حفظ المهمة بنجاح!");
+  alert("✅ تم حفظ المهمة بنجاح!");
   taskForm.reset();
 });
 
 // ====== رفع تقرير ======
 const reportForm = document.getElementById("reportForm");
-reportForm?.addEventListener("submit", async e=>{
+reportForm?.addEventListener("submit", async e => {
   e.preventDefault();
   const formData = new FormData(reportForm);
   const clientNotes = formData.get("notes");
   const files = formData.getAll("images"); // صور متعددة
   const signature = formData.get("signature");
 
-  await supabase.from("reports").insert([{ notes: clientNotes, images: files.join(","), signature }]);
-  alert("تم إرسال التقرير بنجاح!");
+  await supabase.from("reports").insert([
+    { notes: clientNotes, images: files.join(","), signature }
+  ]);
+  alert("✅ تم إرسال التقرير بنجاح!");
   reportForm.reset();
 });
 
 // ====== إرسال إشعارات جماعية ======
-document.querySelectorAll("button[data-i18n='send']").forEach(btn=>{
-  btn.addEventListener("click", async ()=>{
+document.querySelectorAll("button[data-i18n='send']").forEach(btn => {
+  btn.addEventListener("click", async () => {
     const message = btn.previousElementSibling.value;
-    if(!message) return alert("أدخل نص الإشعار");
+    if (!message) return alert("❌ أدخل نص الإشعار");
     await supabase.from("notifications").insert([{ message }]);
-    alert("تم إرسال الإشعار للجميع!");
+    alert("✅ تم إرسال الإشعار للجميع!");
   });
 });
