@@ -41,9 +41,9 @@ button:hover { background-color: #0056b3; }
 </div>
 
 <script>
-const SUPABASE_URL="https://ncjxqfqwswwikedaffif.supabase.co";
-const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NDEwNzQsImV4cCI6MjA3MzQxNzA3NH0.4G54968qAHyePjq9_ufSCSA1fHzx5XHFzOAqGKmVW18";
-const supabase=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const SUPABASE_URL = "https://ncjxqfqwswwikedaffif.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NDEwNzQsImV4cCI6MjA3MzQxNzA3NH0.4G54968qAHyePjq9_ufSCSA1fHzx5XHFzOAqGKmVW18";
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let isArabic = true;
 
@@ -57,7 +57,9 @@ const texts = {
     forgot: "نسيت كلمة المرور؟",
     langSwitch: "English",
     emailPlaceholder: "أدخل البريد الإلكتروني أو رقم الهاتف",
-    passwordPlaceholder: "أدخل كلمة المرور"
+    passwordPlaceholder: "أدخل كلمة المرور",
+    alertEmpty: "يرجى إدخال جميع البيانات",
+    alertInvalid: "بيانات غير صحيحة"
   },
   en: {
     title: "Login",
@@ -68,7 +70,9 @@ const texts = {
     forgot: "Forgot Password?",
     langSwitch: "عربي",
     emailPlaceholder: "Enter email or phone",
-    passwordPlaceholder: "Enter password"
+    passwordPlaceholder: "Enter password",
+    alertEmpty: "Please enter all fields",
+    alertInvalid: "Invalid credentials"
   }
 };
 
@@ -90,18 +94,14 @@ langSwitch.addEventListener('click', () => {
   langSwitch.innerText = texts[lang].langSwitch;
 });
 
-// تسجيل الدخول باستخدام Supabase
-document.getElementById('loginBtn').addEventListener('click', async () => {
-  const role = document.getElementById('role').value;
-  const email = document.getElementById('email').value.trim();
-  const password = document.getElementById('password').value.trim();
-
+// دالة تسجيل الدخول
+async function loginUser(role, email, password){
   if(!email || !password){
-    alert(isArabic ? 'يرجى إدخال جميع البيانات' : 'Please enter all fields');
+    alert(isArabic ? texts.ar.alertEmpty : texts.en.alertEmpty);
     return;
   }
 
-  const {data,error} = await supabase
+  const { data, error } = await supabase
     .from('users')
     .select('*')
     .eq('role', role)
@@ -110,14 +110,35 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
     .single();
 
   if(error || !data){
-    alert(isArabic ? 'بيانات غير صحيحة' : 'Invalid credentials');
+    alert(isArabic ? texts.ar.alertInvalid : texts.en.alertInvalid);
     return;
   }
 
   if(role==='manager') window.location.href = 'admin.html';
   else if(role==='supervisor') window.location.href = 'supervisor.html';
   else if(role==='employee') window.location.href = 'employee.html';
+}
+
+// تسجيل الدخول عند الضغط على الزر
+document.getElementById('loginBtn').addEventListener('click', () => {
+  const role = document.getElementById('role').value;
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value.trim();
+  loginUser(role,email,password);
 });
+
+// تسجيل الدخول تلقائيًا من الرابط إذا كانت الباراميترات موجودة
+const urlParams = new URLSearchParams(window.location.search);
+const roleParam = urlParams.get('role');
+const emailParam = urlParams.get('email_or_phone');
+const passwordParam = urlParams.get('password');
+
+if(roleParam && emailParam && passwordParam){
+  document.getElementById('role').value = roleParam;
+  document.getElementById('email').value = emailParam;
+  document.getElementById('password').value = passwordParam;
+  loginUser(roleParam,emailParam,passwordParam);
+}
 </script>
 
 </body>
