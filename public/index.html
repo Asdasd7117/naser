@@ -1,39 +1,71 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-translate="loginTitle">Login</title>
-  <link rel="stylesheet" href="style.css">
-
-  <!-- استدعاء ملفات الترجمة والجافاسكربت -->
-  <script src="lang.js" defer></script>
-  <script src="main.js" type="module" defer></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تسجيل الدخول / Login</title>
+<style>
+body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f0f2f5; display:flex; justify-content:center; align-items:center; height:100vh; transition:all 0.3s;}
+.container { background:#fff; padding:30px; border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,0.2); width:320px;}
+h2 { text-align:center; margin-bottom:20px;}
+label { display:block; margin:10px 0 5px;}
+input, select, button { width:100%; padding:10px; margin-bottom:15px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box;}
+button { background:#007bff; color:#fff; border:none; font-weight:bold; cursor:pointer; transition:0.2s;}
+button:hover { background:#0056b3;}
+.lang-switch { background:#ffc107; color:#000; border:none; cursor:pointer; margin-bottom:10px; border-radius:6px; padding:8px;}
+.message { text-align:center; margin-top:10px; color:red; min-height:20px;}
+</style>
 </head>
 <body>
-  <!-- زر تبديل اللغة -->
-  <button id="langToggle">🌐</button>
 
-  <h1 data-translate="loginTitle">Login</h1>
-
-  <!-- نموذج تسجيل الدخول -->
-  <form id="loginForm">
-    <label for="emailOrPhone" data-translate="emailPhone">Email or Phone</label>
-    <input type="text" id="emailOrPhone" required placeholder="Email or Phone">
-
-    <label for="password" data-translate="password">Password</label>
-    <input type="password" id="password" required placeholder="Password">
-
-    <label for="role" data-translate="role">Role</label>
+<div class="container">
+    <button class="lang-switch" onclick="switchLanguage()">تبديل اللغة / Switch Language</button>
+    <h2 id="title">تسجيل الدخول</h2>
+    <label id="role-label">اختر الدور</label>
     <select id="role">
-      <option value="manager" data-translate="manager">Manager</option>
-      <option value="supervisor" data-translate="supervisor">Supervisor</option>
-      <option value="delegate" data-translate="delegate">Delegate</option>
+        <option value="manager">مدير / Manager</option>
+        <option value="supervisor">مشرف / Supervisor</option>
+        <option value="employee">مندوب / Employee</option>
     </select>
+    <label id="user-label">رقم الهاتف / البريد الإلكتروني</label>
+    <input type="text" id="username" placeholder="7123456789 أو email@example.com">
+    <label id="pass-label">كلمة المرور / Password</label>
+    <input type="password" id="password" placeholder="123456">
+    <button id="loginBtn">تسجيل الدخول / Login</button>
+    <div class="message" id="msg"></div>
+</div>
 
-    <button type="submit" id="loginBtn" data-translate="loginBtn">Login</button>
-  </form>
+<script type="module">
+import { loginUser } from './supabase.js';
 
-  <a href="#" id="forgotPassword" data-translate="forgotPassword">Forgot password?</a>
+let lang='ar';
+function switchLanguage(){
+    lang = lang==='ar'?'en':'ar';
+    document.body.style.direction = lang==='ar'?'rtl':'ltr';
+    document.getElementById('title').innerText = lang==='ar'?'تسجيل الدخول':'Login';
+    document.getElementById('role-label').innerText = lang==='ar'?'اختر الدور':'Select Role';
+    document.getElementById('user-label').innerText = lang==='ar'?'رقم الهاتف / البريد الإلكتروني':'Phone / Email';
+    document.getElementById('pass-label').innerText = lang==='ar'?'كلمة المرور / Password':'Password';
+    document.getElementById('loginBtn').innerText = lang==='ar'?'تسجيل الدخول / Login':'Login';
+}
+
+document.getElementById('loginBtn').addEventListener('click', async ()=>{
+    const role = document.getElementById('role').value;
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    const msg = document.getElementById('msg');
+
+    if(!username || !password){ msg.innerText = lang==='ar'?'يرجى ملء جميع الحقول':'Please fill all fields'; return; }
+
+    const user = await loginUser(role, username, password);
+    if(!user){ msg.innerText = lang==='ar'?'بيانات تسجيل الدخول غير صحيحة':'Invalid credentials'; return; }
+
+    // إعادة التوجيه حسب الدور
+    if(user.role==='manager') window.location.href='manager.html';
+    else if(user.role==='supervisor') window.location.href='supervisor.html';
+    else if(user.role==='employee') window.location.href='employee.html';
+});
+</script>
+
 </body>
 </html>
