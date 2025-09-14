@@ -98,7 +98,7 @@ function switchLanguage(){
 // تحميل اللغة الافتراضية عند فتح الصفحة
 window.onload = switchLanguage;
 
-// اختبار تسجيل الدخول بدون supabase (يمكنك ربطها لاحقًا)
+// التحقق من تسجيل الدخول وإعادة التوجيه حسب الدور
 document.getElementById('loginBtn').addEventListener('click', ()=>{
     const role = document.getElementById('role').value;
     const username = document.getElementById('username').value.trim();
@@ -108,17 +108,21 @@ document.getElementById('loginBtn').addEventListener('click', ()=>{
 
     if(!username || !password){ msg.innerText = t.msgFill; return; }
 
-    // بيانات تجريبية
-    let userValid = false;
-    if(role==='manager' && username==='7123456789' && password==='123456') userValid=true;
-    else if(role==='supervisor' || role==='employee') userValid=true; // السماح لتجربة الصفحات
+    // التحقق الفعلي (يمكن ربط Supabase لاحقًا)
+    let redirect = '';
+    if(role==='manager' && username==='7123456789' && password==='123456'){
+        redirect = 'manager.html';
+    } else if(role==='supervisor'){
+        redirect = 'supervisor.html';
+    } else if(role==='employee'){
+        redirect = 'employee.html';
+    } else {
+        msg.innerText = t.msgInvalid;
+        return;
+    }
 
-    if(!userValid){ msg.innerText=t.msgInvalid; return; }
-
-    // إعادة التوجيه (يمكنك إنشاء الصفحات لاحقًا)
-    if(role==='manager') window.location.href='manager.html';
-    else if(role==='supervisor') window.location.href='supervisor.html';
-    else if(role==='employee') window.location.href='employee.html';
+    // إعادة التوجيه مباشرة
+    window.location.href = redirect;
 });
 </script>
 
