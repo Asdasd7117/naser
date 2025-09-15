@@ -52,7 +52,7 @@
       const container = document.getElementById("tasks");
       container.innerHTML = "";
 
-      tasks.filter(t => t.employee_id === USER_ID).forEach(t => {
+      tasks.filter(t => Number(t.employee_id) === Number(USER_ID)).forEach(t => {
         const div = document.createElement("div");
         div.style.border = "1px solid #ccc";
         div.style.padding = "5px";
