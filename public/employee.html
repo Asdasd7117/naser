@@ -3,138 +3,160 @@
 <head>
 <meta charset="UTF-8">
 <title>لوحة المندوب</title>
-<script src="https://unpkg.com/@supabase/supabase-js"></script>
+<link rel="stylesheet" href="assets/style.css">
 <style>
-body { font-family: Arial; background:#f4f6f9; margin:0; }
-header { background:#e67e22; color:white; padding:15px; text-align:center; position:relative; }
-nav { background:#2c3e50; color:white; display:flex; justify-content:space-around; padding:10px; }
-nav button { background:none; border:none; color:white; font-size:16px; cursor:pointer; }
-nav button:hover { text-decoration:underline; }
-.container { padding:20px; }
-.card { background:white; border-radius:8px; padding:15px; margin-bottom:20px; box-shadow:0 3px 8px rgba(0,0,0,0.1); }
-h3 { margin-top:0; color:#2c3e50; }
-table { width:100%; border-collapse:collapse; margin-top:10px; }
-table th, table td { border:1px solid #ddd; padding:8px; text-align:center; }
-table th { background:#ecf0f1; }
-input, textarea { width:100%; padding:10px; margin:8px 0; border-radius:6px; border:1px solid #ccc; }
-button.action { background:#3498db; color:white; border:none; padding:10px; border-radius:6px; cursor:pointer; margin-top:5px; }
-button.action:hover { background:#2980b9; }
-.lang-btn { position:absolute; top:15px; left:15px; background:#2ecc71; border:none; padding:8px 12px; border-radius:5px; cursor:pointer; color:white; }
+.map { width: 100%; height: 300px; margin-top: 10px; }
+.task-card { border:1px solid #ccc; padding:10px; margin-bottom:10px; border-radius:5px; }
+button.update-status { margin-top:5px; }
 </style>
 </head>
 <body>
-<header>
-<h2 id="title">لوحة المندوب</h2>
-<button class="lang-btn" onclick="toggleLang()">🇸🇦/🇬🇧</button>
-</header>
+<header><h2>لوحة المندوب</h2></header>
 
 <nav>
-<button onclick="showSection('tasks')">📝 <span id="navTasks">المهام</span></button>
-<button onclick="showSection('report')">📄 <span id="navReport">رفع التقرير</span></button>
-<button onclick="showSection('map')">🗺 <span id="navMap">الخريطة</span></button>
-<button onclick="showSection('noti')">🔔 <span id="navNoti">الإشعارات</span></button>
+<button onclick="showSection('tasks')">المهام اليومية</button>
+<button onclick="showSection('report')">رفع التقرير</button>
+<button onclick="showSection('map')">الخريطة</button>
+<button onclick="showSection('notifications')">الإشعارات</button>
 </nav>
 
 <div class="container">
-<div class="card" id="tasks">
-<h3 id="tasksTitle">المهام اليومية</h3>
-<table>
-<thead>
-<tr><th>اسم العميل</th><th>العنوان</th><th>وقت الزيارة</th><th>الحالة</th><th>تحديث</th></tr>
-</thead>
-<tbody id="tasksList"></tbody>
-</table>
+<!-- المهام اليومية -->
+<div id="tasks" class="card">
+<h3>المهام اليومية</h3>
+<div id="taskList"></div>
 </div>
 
-<div class="card" id="report" style="display:none;">
-<h3 id="reportTitle">رفع التقرير</h3>
-<textarea id="notes" placeholder="الملاحظات"></textarea>
-<input type="file" id="images" multiple>
-<input type="text" id="signature" placeholder="توقيع العميل">
-<button class="action" onclick="submitReport()">إرسال التقرير</button>
+<!-- رفع التقرير -->
+<div id="report" class="card" style="display:none;">
+<h3>رفع التقرير</h3>
+<textarea id="reportNotes" placeholder="الملاحظات"></textarea><br>
+<input type="file" id="reportImages" multiple><br>
+<input type="text" id="clientSignature" placeholder="توقيع العميل"><br>
+<button onclick="submitReport()">إرسال التقرير</button>
 </div>
 
-<div class="card" id="map" style="display:none;">
-<h3 id="mapTitle">موقعك الحالي</h3>
-<p>📍 سيتم عرض موقعك ونقاط زيارات العملاء هنا (Google Maps API لاحقًا)</p>
+<!-- الخريطة -->
+<div id="map" class="card" style="display:none;">
+<h3>الخريطة</h3>
+<div id="mapDiv" class="map"></div>
 </div>
 
-<div class="card" id="noti" style="display:none;">
-<h3 id="notiTitle">الإشعارات</h3>
-<ul id="notiList"></ul>
+<!-- الإشعارات -->
+<div id="notifications" class="card" style="display:none;">
+<h3>الإشعارات</h3>
+<ul id="notifList"></ul>
 </div>
 </div>
+
+<script src="https://unpkg.com/@supabase/supabase-js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 
 <script>
-const SUPABASE_URL="https://ncjxqfqwswwikedaffif.supabase.co";
-const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NDEwNzQsImV4cCI6MjA3MzQxNzA3NH0.4G54968qAHyePjq9_ufSCSA1fHzx5XHFzOAqGKmVW18";
-const supabase=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const SUPABASE_URL = 'https://ncjxqfqwswwikedaffif.supabase.co';
+const SUPABASE_KEY = 'ZX7giBBgWRScW6usplziAWjNYn9yCVeLVAQz7YUBjvA';
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let lang="ar";
-const texts={
-ar:{title:"لوحة المندوب",nav:{tasks:"المهام",report:"رفع التقرير",map:"الخريطة",noti:"الإشعارات"},tasks:"المهام اليومية",report:"رفع التقرير",map:"موقعك الحالي",noti:"الإشعارات",submitReport:"إرسال التقرير",notes:"الملاحظات",signature:"توقيع العميل"},
-en:{title:"Agent Dashboard",nav:{tasks:"Tasks",report:"Upload Report",map:"Map",noti:"Notifications"},tasks:"Daily Tasks",report:"Upload Report",map:"Your Location",noti:"Notifications",submitReport:"Submit Report",notes:"Notes",signature:"Client Signature"}
-};
-
-function toggleLang(){
-lang=lang==="ar"?"en":"ar";
-document.documentElement.lang=lang;
-document.documentElement.dir=lang==="ar"?"rtl":"ltr";
-document.getElementById("title").innerText=texts[lang].title;
-document.getElementById("navTasks").innerText=texts[lang].nav.tasks;
-document.getElementById("navReport").innerText=texts[lang].nav.report;
-document.getElementById("navMap").innerText=texts[lang].nav.map;
-document.getElementById("navNoti").innerText=texts[lang].nav.noti;
-document.getElementById("tasksTitle").innerText=texts[lang].tasks;
-document.getElementById("reportTitle").innerText=texts[lang].report;
-document.getElementById("mapTitle").innerText=texts[lang].map;
-document.getElementById("notiTitle").innerText=texts[lang].noti;
-document.querySelector("#report textarea").placeholder=texts[lang].notes;
-document.querySelector("#report input[type=text]").placeholder=texts[lang].signature;
-document.querySelector("#report button").innerText=texts[lang].submitReport;
-}
+let employeeId = prompt('ادخل ID المندوب'); // للتجربة، لاحقاً يمكن تسجيل الدخول
 
 function showSection(section){
-document.querySelectorAll(".card").forEach(c=>c.style.display="none");
-document.getElementById(section).style.display="block";
+  document.querySelectorAll(".card").forEach(c=>c.style.display='none');
+  document.getElementById(section).style.display='block';
 }
 
+// تحميل المهام
 async function loadTasks(){
-const {data,error}=await supabase.from("tasks").select("*").eq("agent_id",1); // استبدل 1 بـ ID المندوب
-const tbody=document.getElementById("tasksList");
-tbody.innerHTML="";
-if(data){
-data.forEach(t=>{
-const tr=document.createElement("tr");
-tr.innerHTML=`<td>${t.client_name}</td><td>${t.address}</td><td>${t.visit_time}</td><td>${t.status}</td><td><button class="action" onclick="updateTask(${t.id})">✓ تحديث</button></td>`;
-tbody.appendChild(tr);
-});
-}
+  const { data: tasks } = await supabase.from('tasks').select('*').eq('agent_id', employeeId);
+  const container = document.getElementById('taskList');
+  container.innerHTML='';
+  tasks.forEach(t=>{
+    const div = document.createElement('div');
+    div.className='task-card';
+    div.innerHTML=`
+      <strong>${t.client_name}</strong><br>
+      ${t.address}<br>
+      ${t.visit_time}<br>
+      الحالة: ${t.status}<br>
+      <button class="update-status" onclick="updateTaskStatus(${t.id})">تحديث الحالة</button>
+    `;
+    container.appendChild(div);
+  });
 }
 
-async function updateTask(taskId){
-await supabase.from("tasks").update({status:"مكتملة"}).eq("id",taskId);
-loadTasks();
+// تحديث الحالة
+async function updateTaskStatus(taskId){
+  const newStatus = prompt('ادخل الحالة الجديدة: قيد التنفيذ / مكتملة / مؤجلة');
+  if(newStatus){
+    await supabase.from('tasks').update({status:newStatus}).eq('id',taskId);
+    loadTasks();
+  }
 }
 
+// رفع التقرير
 async function submitReport(){
-const notes=document.getElementById("notes").value;
-const signature=document.getElementById("signature").value;
-await supabase.from("reports").insert([{agent_id:1,notes,signature,date:new Date()}]);
-alert(lang==="ar"?"تم إرسال التقرير!":"Report submitted!");
-document.getElementById("notes").value="";
-document.getElementById("signature").value="";
-loadTasks();
+  const notes = document.getElementById('reportNotes').value;
+  const files = document.getElementById('reportImages').files;
+  const signature = document.getElementById('clientSignature').value;
+
+  let fileUrls = [];
+  for(let f of files){
+    const { data, error } = await supabase.storage.from('reports').upload(`report_${Date.now()}_${f.name}`, f);
+    if(data) fileUrls.push(data.path);
+  }
+
+  await supabase.from('reports').insert([{
+    agent_id: employeeId,
+    notes, images: fileUrls, signature
+  }]);
+
+  alert('تم رفع التقرير');
 }
 
+// الخريطة
+async function loadMap(){
+  const mapDiv = document.getElementById('mapDiv');
+  mapDiv.innerHTML='';
+  const map = L.map('mapDiv').setView([24.7136,46.6753], 13); // مركز السعودية
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution:'&copy; OpenStreetMap'}).addTo(map);
+
+  // مواقع الزيارات السابقة
+  const { data: tasks } = await supabase.from('tasks').select('*').eq('agent_id', employeeId);
+  tasks.forEach(t=>{
+    if(t.lat && t.lng) L.marker([t.lat, t.lng]).addTo(map).bindPopup(`${t.client_name}`);
+  });
+
+  // موقع الموظف الحالي (مثال عشوائي)
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(pos=>{
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      L.marker([lat,lng], {color:'red'}).addTo(map).bindPopup('موقعك الحالي');
+      map.setView([lat,lng],14);
+    });
+  }
+}
+
+// الإشعارات
 async function loadNotifications(){
-const {data}=await supabase.from("notifications").select("*").eq("agent_id",1);
-const ul=document.getElementById("notiList"); ul.innerHTML="";
-if(data) data.forEach(n=>{const li=document.createElement("li"); li.innerText=n.message; ul.appendChild(li);});
+  const { data: tasks } = await supabase.from('tasks').select('*').eq('agent_id', employeeId);
+  const list = document.getElementById('notifList');
+  list.innerHTML='';
+  const now = new Date();
+  tasks.forEach(t=>{
+    const visitTime = new Date(t.visit_time);
+    if(t.status==='قيد التنفيذ' && visitTime < now){
+      const li = document.createElement('li');
+      li.innerText = `تأخر بدء مهمة: ${t.client_name}`;
+      list.appendChild(li);
+    }
+  });
 }
 
-// تحميل البيانات عند فتح الصفحة
-loadTasks(); loadNotifications();
+// تحميل البيانات أول مرة
+loadTasks();
+loadMap();
+loadNotifications();
 </script>
 </body>
 </html>
