@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>تسجيل الدخول</title>
 <script src="https://unpkg.com/@supabase/supabase-js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
 <style>
 body { font-family: Arial, sans-serif; background-color: #f0f4f7; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
 .login-container { background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); width: 320px; }
@@ -86,18 +87,27 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       try {
-        // البحث حسب البريد أو الهاتف والدور (بدون تشفير الباسورد لاختبار)
         const { data: users, error } = await supabaseClient
           .from('users')
           .select('*')
           .eq('role', role)
-          .or(`email.eq.${email},phone.eq.${email}`)
-          .eq('password', password);
+          .or(`email.eq.${email},phone.eq.${email}`);
 
         if(error) throw error;
-        console.log("Users found:", users);
-
         if(users.length === 0){
+          alert(isArabic ? texts.ar.invalid : texts.en.invalid);
+          return;
+        }
+
+        // تحقق الباسورد المشفر باستخدام bcrypt
+        let matched = false;
+        for(let u of users){
+          if(bcrypt.compareSync(password, u.password_hash)){
+            matched = true;
+            break;
+          }
+        }
+        if(!matched){
           alert(isArabic ? texts.ar.invalid : texts.en.invalid);
           return;
         }
