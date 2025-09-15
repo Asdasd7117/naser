@@ -3,185 +3,124 @@
 <head>
 <meta charset="UTF-8">
 <title>لوحة المدير</title>
-<script src="https://unpkg.com/@supabase/supabase-js"></script>
-<style>
-body{font-family:Arial;background:#f4f6f9;margin:0;}
-header{background:#8e44ad;color:white;padding:15px;text-align:center;position:relative;}
-nav{background:#2c3e50;color:white;display:flex;justify-content:space-around;padding:10px;}
-nav button{background:none;border:none;color:white;font-size:16px;cursor:pointer;}
-nav button:hover{text-decoration:underline;}
-.container{padding:20px;}
-.card{background:white;border-radius:8px;padding:15px;margin-bottom:20px;box-shadow:0 3px 8px rgba(0,0,0,0.1);}
-h3{margin-top:0;color:#2c3e50;}
-table{width:100%;border-collapse:collapse;margin-top:10px;}
-table th,table td{border:1px solid #ddd;padding:8px;text-align:center;}
-table th{background:#ecf0f1;}
-.lang-btn{position:absolute;top:15px;left:15px;background:#2980b9;border:none;padding:8px 12px;border-radius:5px;cursor:pointer;color:white;}
-button.action{background:#3498db;color:white;border:none;padding:10px;border-radius:6px;cursor:pointer;margin-top:5px;}
-button.action:hover{background:#2980b9;}
-</style>
+<link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
 <header>
-<h2 id="title">لوحة المدير</h2>
-<button class="lang-btn" onclick="toggleLang()">🇸🇦/🇬🇧</button>
+<h2>لوحة المدير</h2>
 </header>
 
 <nav>
-<button onclick="showSection('analytics')">📊 <span id="navAnalytics">التقارير والتحليلات</span></button>
-<button onclick="showSection('attendance')">⏰ <span id="navAttendance">الحضور والانصراف</span></button>
-<button onclick="showSection('control')">⚙️ <span id="navControl">لوحة التحكم</span></button>
+<button onclick="showSection('analytics')">التقارير والتحليلات</button>
+<button onclick="showSection('attendance')">الحضور والانصراف</button>
+<button onclick="showSection('control')">لوحة التحكم</button>
 </nav>
 
 <div class="container">
-<!-- التقارير والتحليلات -->
+<!-- التقارير -->
 <div class="card" id="analytics">
-<h3 id="analyticsTitle">التقارير والتحليلات</h3>
+<h3>التقارير والتحليلات</h3>
 <table>
-<thead><tr><th>المندوب / المشرف</th><th>المهام المكتملة</th><th>المهام المؤجلة</th></tr></thead>
+<thead><tr><th>المندوب</th><th>المهام المكتملة</th><th>المهام المؤجلة</th></tr></thead>
 <tbody id="analyticsList"></tbody>
 </table>
 </div>
 
-<!-- الحضور والانصراف -->
+<!-- الحضور -->
 <div class="card" id="attendance" style="display:none;">
-<h3 id="attendanceTitle">الحضور والانصراف</h3>
+<h3>الحضور والانصراف</h3>
 <table>
-<thead><tr><th>المندوب / المشرف</th><th>ساعات العمل</th></tr></thead>
+<thead><tr><th>المندوب</th><th>ساعات العمل</th></tr></thead>
 <tbody id="attendanceList"></tbody>
 </table>
 </div>
 
-<!-- لوحة التحكم -->
+<!-- التحكم -->
 <div class="card" id="control" style="display:none;">
-<h3 id="controlTitle">لوحة التحكم</h3>
-<button class="action" onclick="addTask()">إضافة مهمة</button>
-<button class="action" onclick="editAgent()">تعديل بيانات مستخدم</button>
-<button class="action" onclick="addAgent('employee')">➕ إضافة مندوب</button>
-<button class="action" onclick="addAgent('supervisor')">➕ إضافة مشرف</button>
-<button class="action" onclick="deleteAgent()">🗑️ حذف مستخدم</button>
+<h3>لوحة التحكم</h3>
+<button onclick="addAgent('employee')">إضافة مندوب</button>
+<button onclick="addAgent('supervisor')">إضافة مشرف</button>
+<button onclick="deleteAgent()">حذف مستخدم</button>
+<button onclick="addTask()">إضافة مهمة</button>
 </div>
 </div>
 
+<script src="https://unpkg.com/@supabase/supabase-js"></script>
 <script>
-const SUPABASE_URL="https://ncjxqfqwswwikedaffif.supabase.co";
-const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NDEwNzQsImV4cCI6MjA3MzQxNzA3NH0.4G54968qAHyePjq9_ufSCSA1fHzx5XHFzOAqGKmVW18";
-const supabase=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-
-let lang="ar";
-
-// اللغة
-const texts={
-ar:{title:"لوحة المدير",nav:{analytics:"التقارير والتحليلات",attendance:"الحضور والانصراف",control:"لوحة التحكم"},analytics:"التقارير والتحليلات",attendance:"الحضور والانصراف",control:"لوحة التحكم"},
-en:{title:"Admin Dashboard",nav:{analytics:"Analytics",attendance:"Attendance",control:"Control Panel"},analytics:"Analytics",attendance:"Attendance",control:"Control Panel"}
-};
-
-function toggleLang(){
-lang=lang==="ar"?"en":"ar";
-document.documentElement.lang=lang;
-document.documentElement.dir=lang==="ar"?"rtl":"ltr";
-document.getElementById("title").innerText=texts[lang].title;
-document.getElementById("navAnalytics").innerText=texts[lang].nav.analytics;
-document.getElementById("navAttendance").innerText=texts[lang].nav.attendance;
-document.getElementById("navControl").innerText=texts[lang].nav.control;
-document.getElementById("analyticsTitle").innerText=texts[lang].analytics;
-document.getElementById("attendanceTitle").innerText=texts[lang].attendance;
-document.getElementById("controlTitle").innerText=texts[lang].control;
-}
+const SUPABASE_URL = 'https://ncjxqfqwswwikedaffif.supabase.co';
+const SUPABASE_KEY = 'ZX7giBBgWRScW6usplziAWjNYn9yCVeLVAQz7YUBjvA';
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 function showSection(section){
-document.querySelectorAll(".card").forEach(c=>c.style.display="none");
-document.getElementById(section).style.display="block";
+  document.querySelectorAll(".card").forEach(c=>c.style.display='none');
+  document.getElementById(section).style.display='block';
 }
 
-// تحميل Analytics + Attendance
+// تحميل التحليلات
 async function loadAnalytics(){
-const {data: tasks}=await supabase.from("tasks").select("*");
-const {data: users}=await supabase.from("users").select("*").in("role",["employee","supervisor"]);
-const tbody=document.getElementById("analyticsList");
-tbody.innerHTML="";
-if(tasks && users){
-users.forEach(u=>{
-let completed=tasks.filter(t=>t.agent_id===u.id && t.status==="مكتملة").length;
-let delayed=tasks.filter(t=>t.agent_id===u.id && t.status==="مؤجلة").length;
-const tr=document.createElement("tr");
-tr.innerHTML=`<td>${u.email}</td><td>${completed}</td><td>${delayed}</td>`;
-tbody.appendChild(tr);
-});
-}
+  const { data: tasks } = await supabase.from('tasks').select('*');
+  const { data: users } = await supabase.from('users').select('*').eq('role','employee');
+  const tbody = document.getElementById('analyticsList');
+  tbody.innerHTML='';
+  users.forEach(u=>{
+    let completed = tasks.filter(t=>t.agent_id===u.id && t.status==='مكتملة').length;
+    let delayed = tasks.filter(t=>t.agent_id===u.id && t.status==='مؤجلة').length;
+    const tr = document.createElement('tr');
+    tr.innerHTML=`<td>${u.email}</td><td>${completed}</td><td>${delayed}</td>`;
+    tbody.appendChild(tr);
+  });
 }
 
+// تحميل الحضور
 async function loadAttendance(){
-const {data: attendances}=await supabase.from("attendance").select("*");
-const {data: users}=await supabase.from("users").select("*").in("role",["employee","supervisor"]);
-const tbody=document.getElementById("attendanceList");
-tbody.innerHTML="";
-if(attendances && users){
-users.forEach(u=>{
-let record=attendances.find(a=>a.agent_id===u.id);
-let hours=record?record.hours_worked:0;
-const tr=document.createElement("tr");
-tr.innerHTML=`<td>${u.email}</td><td>${hours} ساعة</td>`;
-tbody.appendChild(tr);
-});
-}
+  const { data: attendance } = await supabase.from('attendance').select('*');
+  const { data: users } = await supabase.from('users').select('*').eq('role','employee');
+  const tbody = document.getElementById('attendanceList');
+  tbody.innerHTML='';
+  users.forEach(u=>{
+    const record = attendance.find(a=>a.agent_id===u.id);
+    const hours = record ? record.hours_worked : 0;
+    const tr = document.createElement('tr');
+    tr.innerHTML=`<td>${u.email}</td><td>${hours}</td>`;
+    tbody.appendChild(tr);
+  });
 }
 
-// إضافة مهمة
-async function addTask(){
-let agentId=prompt("ادخل ID المستخدم:");
-let client=prompt("ادخل اسم العميل:");
-let address=prompt("ادخل العنوان:");
-let visitTime=prompt("ادخل وقت الزيارة:");
-if(agentId && client && address && visitTime){
-await supabase.from("tasks").insert([{agent_id:parseInt(agentId),client_name:client,address:address,visit_time:visitTime,status:"قيد التنفيذ"}]);
-alert(lang==="ar"?"تم إضافة المهمة!":"Task added!");
-loadAnalytics();
-}
-}
-
-// تعديل بيانات مستخدم
-async function editAgent(){
-let agentId=prompt("ادخل ID المستخدم لتعديله:");
-let email=prompt("ادخل البريد الإلكتروني الجديد:");
-let password=prompt("ادخل كلمة المرور الجديدة:");
-if(agentId){
-await supabase.from("users").update({email,password}).eq("id",parseInt(agentId));
-alert(lang==="ar"?"تم تعديل المستخدم!":"User updated!");
-loadAnalytics(); loadAttendance();
-}
-}
-
-// إضافة مندوب/مشرف
+// إضافة مستخدم
 async function addAgent(role){
-let email=prompt("ادخل البريد الإلكتروني أو رقم الهاتف:");
-let password=prompt("ادخل كلمة المرور:");
-if(email && password){
-const { error } = await supabase.from("users").insert([{email,password,role}]);
-if(error){
-alert("خطأ: "+error.message);
-}else{
-alert(lang==="ar"?(role==="employee"?"تم إضافة المندوب!":"تم إضافة المشرف!"):(role==="employee"?"Employee added!":"Supervisor added!"));
-loadAnalytics(); loadAttendance();
-}
-}
+  const email = prompt('أدخل البريد الإلكتروني أو رقم الهاتف:');
+  const password = prompt('أدخل كلمة المرور:');
+  if(email && password){
+    await supabase.from('users').insert([{email,password,role}]);
+    alert('تم الإضافة!');
+    loadAnalytics(); loadAttendance();
+  }
 }
 
 // حذف مستخدم
 async function deleteAgent(){
-let email=prompt("ادخل البريد الإلكتروني أو رقم الهاتف للمستخدم المراد حذفه:");
-if(email){
-const { error } = await supabase.from("users").delete().eq("email",email);
-if(error){
-alert("خطأ: "+error.message);
-}else{
-alert(lang==="ar"?"تم حذف المستخدم!":"User deleted!");
-loadAnalytics(); loadAttendance();
-}
-}
+  const email = prompt('أدخل البريد الإلكتروني لحذف المستخدم:');
+  if(email){
+    await supabase.from('users').delete().eq('email',email);
+    alert('تم الحذف!');
+    loadAnalytics(); loadAttendance();
+  }
 }
 
-// تحميل البيانات عند الفتح
+// إضافة مهمة
+async function addTask(){
+  const agent_id = prompt('ادخل ID المندوب:');
+  const client_name = prompt('اسم العميل:');
+  const address = prompt('العنوان:');
+  const visit_time = prompt('وقت الزيارة:');
+  if(agent_id && client_name && address && visit_time){
+    await supabase.from('tasks').insert([{agent_id,client_name,address,visit_time,status:'قيد التنفيذ'}]);
+    alert('تم إضافة المهمة!');
+    loadAnalytics();
+  }
+}
+
+// تحميل البيانات عند فتح الصفحة
 loadAnalytics(); loadAttendance();
 </script>
 </body>
