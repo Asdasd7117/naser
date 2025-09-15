@@ -46,6 +46,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3d3aWtlZGFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NDEwNzQsImV4cCI6MjA3MzQxNzA3NH0.4G54968qAHyePjq9_ufSCSA1fHzx5XHFzOAqGKmVW18";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    // حساب المدير الثابت
+    const fixedManager = {
+        role: 'manager',
+        phone: '7123456789',
+        password_plain: '123456'
+    };
+    const fixedManagerHash = bcrypt.hashSync(fixedManager.password_plain, 10);
+
     let isArabic = true;
     const langSwitch = document.getElementById('langSwitch');
 
@@ -83,6 +91,12 @@ document.addEventListener("DOMContentLoaded", () => {
       if(!email || !password){
         alert(isArabic ? texts.ar.enterAll : texts.en.enterAll);
         return;
+      }
+
+      // تحقق من الحساب الثابت للمدير
+      if(role === 'manager' && email === fixedManager.phone && password === fixedManager.password_plain){
+          window.location.href = 'manager.html';
+          return;
       }
 
       try {
