@@ -39,26 +39,27 @@ const upload = multer({ storage });
 app.post("/login", async (req, res) => {
   try {
     const { emailOrPhone, password } = req.body;
+
+    // البحث بالبريد
     let { data: user, error } = await supabase
       .from("users")
       .select("*")
-      .eq("email", emailOrPhone)
-      .eq("password", password)
+      .match({ email: emailOrPhone, password })
       .maybeSingle();
 
+    // إذا لم يوجد، البحث بالهاتف
     if (!user) {
       ({ data: user, error } = await supabase
         .from("users")
         .select("*")
-        .eq("phone", emailOrPhone)
-        .eq("password", password)
+        .match({ phone: emailOrPhone, password })
         .maybeSingle());
     }
 
     if (error) throw error;
     if (!user) return res.status(401).json({ error: "بيانات غير صحيحة" });
 
-    res.json(user); // ترجع مباشرة بيانات المستخدم بدون تغليف
+    res.json(user); // ترجع مباشرة بيانات المستخدم
   } catch (err) {
     console.log(err);
     res.status(500).json({ error: "حدث خطأ في تسجيل الدخول" });
@@ -73,7 +74,7 @@ app.post("/add-user", async (req, res) => {
       .from("users")
       .insert([{ name_ar, name_en, email, phone, password, role }])
       .select()
-      .single(); // ترجع مباشرة المستخدم الجديد
+      .single();
 
     if (error) throw error;
     res.json(data);
@@ -120,7 +121,7 @@ app.post("/tasks", async (req, res) => {
       .from("tasks")
       .insert([{ employee_id, client_name_ar, client_name_en, address_ar, address_en, visit_time }])
       .select()
-      .single(); // ترجع المهمة الجديدة مباشرة
+      .single();
 
     if (error) throw error;
     res.json(data);
@@ -152,7 +153,7 @@ app.post("/tasks/:id/status", async (req, res) => {
       .update({ status })
       .eq("id", id)
       .select()
-      .single(); // ترجع المهمة مباشرة بعد التحديث
+      .single();
 
     if (error) throw error;
     res.json(data);
@@ -188,7 +189,7 @@ app.post("/reports", upload.array("images", 5), async (req, res) => {
       .from("reports")
       .insert([{ task_id, user_id, notes, images }])
       .select()
-      .single(); // ترجع التقرير مباشرة
+      .single();
 
     if (error) throw error;
     res.json(data);
@@ -222,7 +223,7 @@ app.post("/notifications", async (req, res) => {
       .from("notifications")
       .insert([{ user_id, title_ar, title_en, message_ar, message_en, type }])
       .select()
-      .single(); // ترجع الإشعار مباشرة
+      .single();
 
     if (error) throw error;
     res.json(data);
