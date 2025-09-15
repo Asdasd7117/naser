@@ -3,34 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>شاشة المدير</title>
+  <title>لوحة المدير</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    nav {
-      display: flex;
-      justify-content: space-around;
-      background: #2196f3;
-      padding: 10px;
-      color: white;
-    }
-    nav button {
-      background: transparent;
-      border: none;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    section { display: none; padding: 20px; }
-    section.active { display: block; }
-    .card {
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      padding: 15px;
-      margin: 10px 0;
-    }
-    .btn-delete { color: red; cursor: pointer; margin-left: 10px; }
-  </style>
 </head>
 <body>
   <nav>
@@ -39,22 +14,21 @@
     <button onclick="showTab('control')">⚙️ لوحة التحكم</button>
   </nav>
 
-  <!-- ===== التقارير ===== -->
+  <!-- التقارير -->
   <section id="reports" class="active">
     <h2>📊 التقارير والتحليلات</h2>
     <canvas id="generalChart" width="400" height="200"></canvas>
-
     <h3>📈 أداء المندوبين</h3>
     <div id="employeesPerformance"></div>
   </section>
 
-  <!-- ===== الحضور والانصراف ===== -->
+  <!-- الحضور -->
   <section id="attendance">
     <h2>⏰ الحضور والانصراف</h2>
     <div id="attendanceList"></div>
   </section>
 
-  <!-- ===== لوحة التحكم ===== -->
+  <!-- لوحة التحكم -->
   <section id="control">
     <h2>👥 إدارة المستخدمين</h2>
     <form id="addUserForm">
@@ -88,170 +62,154 @@
     </form>
   </section>
 
-<script>
-function showTab(id) {
-  document.querySelectorAll("section").forEach(s => s.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-}
-
-// ===== تحميل التقارير =====
-async function loadReports() {
-  const res = await fetch("/tasks");
-  const tasks = await res.json();
-
-  const completed = tasks.filter(t => t.status === "completed").length;
-  const in_progress = tasks.filter(t => t.status === "in_progress").length;
-  const delayed = tasks.filter(t => t.status === "delayed").length;
-
-  new Chart(document.getElementById("generalChart"), {
-    type: "doughnut",
-    data: {
-      labels: ["مكتملة", "قيد التنفيذ", "مؤجلة"],
-      datasets: [{
-        data: [completed, in_progress, delayed],
-        backgroundColor: ["#4caf50", "#2196f3", "#f44336"]
-      }]
+  <script>
+    function showTab(id){
+      document.querySelectorAll("section").forEach(s => s.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
     }
-  });
 
-  const perfContainer = document.getElementById("employeesPerformance");
-  perfContainer.innerHTML = "";
-  const grouped = {};
-  tasks.forEach(t => {
-    if (!grouped[t.employee_id]) grouped[t.employee_id] = { completed: 0, total: 0 };
-    grouped[t.employee_id].total++;
-    if (t.status === "completed") grouped[t.employee_id].completed++;
-  });
-  for (let emp in grouped) {
-    const p = Math.round((grouped[emp].completed / grouped[emp].total) * 100);
-    const div = document.createElement("div");
-    div.className = "card";
-    div.innerHTML = `<strong>مندوب ID ${emp}</strong> - نسبة الإنجاز: ${p}%`;
-    perfContainer.appendChild(div);
-  }
-}
+    // ===== إدارة المستخدمين =====
+    async function loadUsers() {
+      const res = await fetch("/users");
+      const users = await res.json();
+      const container = document.getElementById("usersList");
+      container.innerHTML = "";
+      users.forEach(u => {
+        const div = document.createElement("div");
+        div.className = "card";
+        div.innerHTML = `
+          ${u.name_ar} | ${u.role} | ${u.email || u.phone} 
+          <button onclick="deleteUser(${u.id})">❌ حذف</button>
+        `;
+        container.appendChild(div);
+      });
 
-// ===== الحضور =====
-async function loadAttendance() {
-  const res = await fetch("/attendance");
-  const data = await res.json();
-  const container = document.getElementById("attendanceList");
-  container.innerHTML = "";
-  data.forEach(a => {
-    const div = document.createElement("div");
-    div.className = "card";
-    div.innerHTML = `<strong>${a.user_name}</strong><br> دخول: ${a.check_in} - خروج: ${a.check_out || "لم يسجل خروج"}`;
-    container.appendChild(div);
-  });
-}
+      // تحديث قائمة المندوبين للمهام
+      const select = document.getElementById("employeeSelect");
+      select.innerHTML = "<option value=''>اختر المندوب</option>";
+      users.filter(u => u.role === "employee").forEach(u => {
+        const opt = document.createElement("option");
+        opt.value = u.id;
+        opt.textContent = u.name_ar;
+        select.appendChild(opt);
+      });
+    }
 
-// ===== إدارة المستخدمين =====
-document.getElementById("addUserForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  const payload = {
-    name_ar: document.getElementById("name").value,
-    email: document.getElementById("email").value,
-    phone: document.getElementById("phone").value,
-    password: document.getElementById("password").value,
-    role: document.getElementById("role").value
-  };
-  const res = await fetch("/add-user", {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
-  });
-  if (res.ok) { alert("تم إضافة المستخدم"); loadUsers(); loadEmployees(); }
-});
+    document.getElementById("addUserForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const payload = {
+        name_ar: document.getElementById("name").value,
+        email: document.getElementById("email").value,
+        phone: document.getElementById("phone").value,
+        password: document.getElementById("password").value,
+        role: document.getElementById("role").value
+      };
+      const res = await fetch("/add-user", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(payload) });
+      if(res.ok){ alert("تم إضافة المستخدم"); loadUsers(); loadTasks(); }
+    });
 
-async function loadUsers() {
-  const res = await fetch("/users");
-  const users = await res.json();
-  const container = document.getElementById("usersList");
-  container.innerHTML = "";
-  users.forEach(u => {
-    const div = document.createElement("div");
-    div.className = "card";
-    div.innerHTML = `
-      ${u.name_ar} | ${u.role} | ${u.email || u.phone} 
-      <span class="btn-delete" onclick="deleteUser(${u.id})">❌ حذف</span>
-    `;
-    container.appendChild(div);
-  });
-}
+    async function deleteUser(id){
+      if(!confirm("هل تريد حذف هذا المستخدم؟")) return;
+      const res = await fetch(`/users/${id}`, { method: "DELETE" });
+      if(res.ok) loadUsers();
+    }
 
-async function deleteUser(id) {
-  if (!confirm("هل أنت متأكد من حذف المستخدم؟")) return;
-  const res = await fetch(`/users/${id}`, { method: "DELETE" });
-  if (res.ok) loadUsers();
-}
+    // ===== إدارة المهام =====
+    async function loadTasks() {
+      const res = await fetch("/tasks");
+      const tasks = await res.json();
+      const container = document.getElementById("tasksList");
+      container.innerHTML = "";
+      tasks.forEach(t=>{
+        const div = document.createElement("div");
+        div.className = "card";
+        div.innerHTML = `
+          <strong>العميل:</strong> ${t.client_name_ar} | <strong>مندوب:</strong> ${t.employee_id} | <strong>الحالة:</strong> ${t.status || "جديدة"}
+          <button onclick="deleteTask(${t.id})">❌ حذف المهمة</button>
+        `;
+        container.appendChild(div);
+      });
+    }
 
-// ===== إدارة المهام =====
-document.getElementById("addTaskForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  const payload = {
-    employee_id: document.getElementById("employeeSelect").value,
-    client_name_ar: document.getElementById("client_name").value,
-    address_ar: document.getElementById("address").value,
-    visit_time: document.getElementById("visit_time").value
-  };
-  const res = await fetch("/tasks", {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
-  });
-  if (res.ok) { alert("تمت إضافة المهمة"); loadTasks(); }
-});
+    document.getElementById("addTaskForm").addEventListener("submit", async e=>{
+      e.preventDefault();
+      const payload = {
+        employee_id: document.getElementById("employeeSelect").value,
+        client_name_ar: document.getElementById("client_name").value,
+        address_ar: document.getElementById("address").value,
+        visit_time: document.getElementById("visit_time").value
+      };
+      const res = await fetch("/tasks",{ method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(payload)});
+      if(res.ok){ alert("تمت إضافة المهمة"); loadTasks(); }
+    });
 
-async function loadTasks() {
-  const res = await fetch("/tasks");
-  const tasks = await res.json();
-  const container = document.getElementById("tasksList");
-  container.innerHTML = "";
-  tasks.forEach(t => {
-    const div = document.createElement("div");
-    div.className = "card";
-    div.innerHTML = `
-      <strong>${t.client_name_ar}</strong> - الحالة: ${t.status || "جديدة"}
-      <span class="btn-delete" onclick="deleteTask(${t.id})">❌ حذف</span>
-    `;
-    container.appendChild(div);
-  });
-}
+    async function deleteTask(id){
+      if(!confirm("هل تريد حذف هذه المهمة؟")) return;
+      const res = await fetch(`/tasks/${id}`, { method:"DELETE" });
+      if(res.ok) loadTasks();
+    }
 
-async function deleteTask(id) {
-  if (!confirm("هل تريد حذف هذه المهمة؟")) return;
-  const res = await fetch(`/tasks/${id}`, { method: "DELETE" });
-  if (res.ok) loadTasks();
-}
+    // ===== الإشعارات =====
+    document.getElementById("notifyForm").addEventListener("submit", async e=>{
+      e.preventDefault();
+      const message = document.getElementById("message").value;
+      const res = await fetch("/notifications", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ user_id:null, title_ar:"تنبيه جماعي", title_en:"", message_ar:message, message_en:"", type:"broadcast" })
+      });
+      if(res.ok) alert("تم إرسال الإشعار");
+    });
 
-// ===== تحميل الموظفين في القائمة =====
-async function loadEmployees() {
-  const res = await fetch("/users");
-  const users = await res.json();
-  const select = document.getElementById("employeeSelect");
-  select.innerHTML = "<option value=''>اختر المندوب</option>";
-  users.filter(u => u.role === "employee").forEach(u => {
-    const opt = document.createElement("option");
-    opt.value = u.id;
-    opt.textContent = u.name_ar;
-    select.appendChild(opt);
-  });
-}
+    async function loadReports() {
+      const res = await fetch("/tasks");
+      const tasks = await res.json();
+      const completed = tasks.filter(t=>t.status==="completed").length;
+      const in_progress = tasks.filter(t=>t.status==="in_progress").length;
+      const delayed = tasks.filter(t=>t.status==="delayed").length;
+      new Chart(document.getElementById("generalChart"), { type:"doughnut", data:{ labels:["مكتملة","قيد التنفيذ","مؤجلة"], datasets:[{ data:[completed,in_progress,delayed], backgroundColor:["#4caf50","#2196f3","#f44336"] }] } });
 
-// ===== إرسال إشعارات =====
-document.getElementById("notifyForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  const message = document.getElementById("message").value;
-  const res = await fetch("/notifications", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message })
-  });
-  if (res.ok) alert("✅ تم إرسال الإشعار");
-});
+      const perfContainer = document.getElementById("employeesPerformance");
+      perfContainer.innerHTML="";
+      const grouped={};
+      tasks.forEach(t=>{
+        if(!grouped[t.employee_id]) grouped[t.employee_id]={ completed:0, total:0 };
+        grouped[t.employee_id].total++;
+        if(t.status==="completed") grouped[t.employee_id].completed++;
+      });
+      for(let emp in grouped){
+        const p=Math.round((grouped[emp].completed/grouped[emp].total)*100);
+        const div=document.createElement("div");
+        div.className="card";
+        div.innerHTML=`<strong>مندوب ID ${emp}</strong> - نسبة الإنجاز: ${p}%`;
+        perfContainer.appendChild(div);
+      }
+    }
 
-// ===== بدء الصفحة =====
-loadReports();
-loadAttendance();
-loadUsers();
-loadEmployees();
-loadTasks();
-</script>
+    // ===== الحضور =====
+    async function loadAttendance(){
+      const res=await fetch("/attendance");
+      const data=await res.json();
+      const container=document.getElementById("attendanceList");
+      container.innerHTML="";
+      data.forEach(a=>{
+        const div=document.createElement("div");
+        div.className="card";
+        div.innerHTML=`<strong>${a.user_name}</strong><br>دخول: ${a.check_in || "-"} - خروج: ${a.check_out || "-"}`;
+        container.appendChild(div);
+      });
+    }
+
+    // ===== بدء الصفحة =====
+    (async()=>{
+      await loadUsers();
+      await loadTasks();
+      await loadReports();
+      await loadAttendance();
+      setInterval(loadReports,5000);
+      setInterval(loadTasks,5000);
+      setInterval(loadAttendance,5000);
+    })();
+  </script>
 </body>
 </html>
