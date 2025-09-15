@@ -75,8 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     updateLanguage();
 
-    const loginBtn = document.getElementById('loginBtn');
-    loginBtn.addEventListener('click', async () => {
+    document.getElementById('loginBtn').addEventListener('click', async () => {
       const role = document.getElementById('role').value;
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value.trim();
@@ -99,7 +98,6 @@ document.addEventListener("DOMContentLoaded", () => {
           return;
         }
 
-        // تحقق الباسورد المشفر باستخدام bcrypt
         let matched = false;
         for(let u of users){
           if(bcrypt.compareSync(password, u.password_hash)){
@@ -112,7 +110,6 @@ document.addEventListener("DOMContentLoaded", () => {
           return;
         }
 
-        // توجيه حسب الدور
         if(role === 'manager') window.location.href = 'manager.html';
         else if(role === 'supervisor') window.location.href = 'supervisor.html';
         else if(role === 'employee') window.location.href = 'employee.html';
