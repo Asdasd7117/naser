@@ -1,154 +1,146 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar">
 <head>
-<meta charset="UTF-8">
-<title>لوحة المشرف</title>
-<link rel="stylesheet" href="assets/style.css">
-<style>
-.map { width: 100%; height: 300px; margin-top: 10px; }
-.card { background:white;border-radius:8px;padding:15px;margin-bottom:20px;box-shadow:0 3px 8px rgba(0,0,0,0.1);}
-.table { width:100%; border-collapse:collapse; }
-.table th, .table td { border:1px solid #ddd; padding:8px; text-align:center; }
-.table th { background:#ecf0f1; }
-button.action { background:#3498db;color:white;border:none;padding:5px;border-radius:6px;cursor:pointer; }
-button.action:hover { background:#2980b9; }
-</style>
+  <meta charset="UTF-8">
+  <title>المشرف</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 <body>
-<header><h2>لوحة المشرف</h2></header>
+  <h2>📑 مراجعة التقارير</h2>
+  <div id="reports"></div>
 
-<nav>
-<button onclick="showSection('agents')">متابعة المندوبين</button>
-<button onclick="showSection('map')">الخريطة</button>
-<button onclick="showSection('reports')">مراجعة التقارير</button>
-<button onclick="showSection('notifications')">الإشعارات</button>
-</nav>
+  <h2>👥 متابعة المندوبين</h2>
+  <div id="employeesList"></div>
 
-<div class="container">
-<!-- متابعة المندوبين -->
-<div id="agents" class="card">
-<h3>المندوبين</h3>
-<table class="table">
-<thead>
-<tr><th>المندوب</th><th>الحالة</th><th>الموقع</th><th>المهام</th></tr>
-</thead>
-<tbody id="agentList"></tbody>
-</table>
-</div>
+  <h2>🗺️ خريطة المندوبين - تتبع الوقت الحقيقي</h2>
+  <div id="map" style="height:500px;"></div>
 
-<!-- الخريطة -->
-<div id="map" class="card" style="display:none;">
-<h3>الخريطة</h3>
-<div id="mapDiv" class="map"></div>
-</div>
+  <h2>🔔 إرسال إشعار</h2>
+  <form id="notifyForm">
+    <select id="notifyEmployee" required>
+      <option value="">اختر المندوب</option>
+    </select>
+    <input type="text" id="notifyTitle" placeholder="عنوان الإشعار" required>
+    <input type="text" id="notifyMessage" placeholder="نص الإشعار" required>
+    <button type="submit">إرسال</button>
+  </form>
 
-<!-- مراجعة التقارير -->
-<div id="reports" class="card" style="display:none;">
-<h3>مراجعة التقارير</h3>
-<div id="reportList"></div>
-</div>
+  <script>
+    let map;
+    let markers = {};
 
-<!-- الإشعارات -->
-<div id="notifications" class="card" style="display:none;">
-<h3>الإشعارات</h3>
-<ul id="notifList"></ul>
-</div>
-</div>
+    // ===== تحميل التقارير =====
+    async function loadReports() {
+      const res = await fetch("/reports");
+      const reports = await res.json();
+      const container = document.getElementById("reports");
+      container.innerHTML = "";
 
-<script src="https://unpkg.com/@supabase/supabase-js"></script>
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
-
-<script>
-const SUPABASE_URL = 'https://ncjxqfqwswwikedaffif.supabase.co';
-const SUPABASE_KEY = 'ZX7giBBgWRScW6usplziAWjNYn9yCVeLVAQz7YUBjvA';
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-function showSection(section){
-  document.querySelectorAll(".card").forEach(c=>c.style.display='none');
-  document.getElementById(section).style.display='block';
-}
-
-// تحميل قائمة المندوبين وحالتهم
-async function loadAgents(){
-  const { data: agents } = await supabase.from('users').select('*').eq('role','employee');
-  const { data: tasks } = await supabase.from('tasks').select('*');
-  const tbody = document.getElementById('agentList');
-  tbody.innerHTML='';
-  agents.forEach(a=>{
-    const agentTasks = tasks.filter(t=>t.agent_id===a.id);
-    const status = agentTasks.every(t=>t.status==='مكتملة') ? 'نشط' : 'متأخر';
-    const tr = document.createElement('tr');
-    tr.innerHTML=`
-      <td>${a.name || a.email}</td>
-      <td>${status}</td>
-      <td><button class="action" onclick="showAgentLocation(${a.id})">عرض الموقع</button></td>
-      <td>${agentTasks.length} مهمة</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-// عرض الخريطة
-let map;
-async function loadMap(){
-  map = L.map('mapDiv').setView([24.7136,46.6753], 6);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ attribution:'&copy; OpenStreetMap'}).addTo(map);
-
-  const { data: agents } = await supabase.from('users').select('*').eq('role','employee');
-  agents.forEach(a=>{
-    if(a.lat && a.lng){
-      L.marker([a.lat,a.lng]).addTo(map).bindPopup(a.name || a.email);
+      reports.forEach(r => {
+        const div = document.createElement("div");
+        div.style.border = "1px solid #ccc";
+        div.style.padding = "5px";
+        div.style.marginBottom = "5px";
+        div.innerHTML = `
+          <p><strong>مندوب:</strong> ${r.users?.name}</p>
+          <p><strong>مهمة:</strong> ${r.tasks?.client_name}</p>
+          <p><strong>ملاحظات:</strong> ${r.notes}</p>
+          <p><strong>توقيع:</strong> ${r.client_signature || 'غير موجود'}</p>
+        `;
+        container.appendChild(div);
+      });
     }
-  });
-}
 
-function showAgentLocation(agentId){
-  showSection('map');
-  loadMap();
-}
+    // ===== تحميل المندوبين =====
+    async function loadEmployees() {
+      const res = await fetch("/users");
+      const users = await res.json();
+      const list = document.getElementById("employeesList");
+      const select = document.getElementById("notifyEmployee");
+      list.innerHTML = "";
+      select.innerHTML = '<option value="">اختر المندوب</option>';
 
-// مراجعة التقارير
-async function loadReports(){
-  const { data: reports } = await supabase.from('reports').select('*');
-  const { data: agents } = await supabase.from('users').select('*').eq('role','employee');
-  const container = document.getElementById('reportList');
-  container.innerHTML='';
-  reports.forEach(r=>{
-    const agent = agents.find(a=>a.id===r.agent_id);
-    const div = document.createElement('div');
-    div.className='task-card';
-    div.innerHTML=`
-      <strong>${agent ? agent.name || agent.email : 'مندوب'}</strong><br>
-      ملاحظات: ${r.notes}<br>
-      توقيع: ${r.signature}<br>
-      الصور: ${r.images ? r.images.map(img=>`<a href="https://ncjxqfqwswwikedaffif.supabase.co/storage/v1/object/public/reports/${img}" target="_blank">صورة</a>`).join(', ') : ''}
-      <hr>
-    `;
-    container.appendChild(div);
-  });
-}
+      users.filter(u => u.role === "employee").forEach(u => {
+        // عرض حالة المهام
+        const div = document.createElement("div");
+        div.style.border = "1px solid #ccc";
+        div.style.padding = "8px";
+        div.style.marginBottom = "5px";
+        div.innerHTML = `<strong>${u.name}</strong> | ID: ${u.id} | حالة: ${u.status || 'غير محددة'}`;
+        list.appendChild(div);
 
-// الإشعارات
-async function loadNotifications(){
-  const { data: tasks } = await supabase.from('tasks').select('*');
-  const list = document.getElementById('notifList');
-  list.innerHTML='';
-  const now = new Date();
-  tasks.forEach(t=>{
-    const visitTime = new Date(t.visit_time);
-    if(t.status==='قيد التنفيذ' && visitTime < now){
-      const li = document.createElement('li');
-      li.innerText = `تأخر بدء مهمة للمندوب: ${t.agent_id}`;
-      list.appendChild(li);
+        // خيار الإشعار
+        const opt = document.createElement("option");
+        opt.value = u.id;
+        opt.textContent = u.name;
+        select.appendChild(opt);
+      });
+
+      return users.filter(u => u.role === "employee");
     }
-  });
-}
 
-// تحميل البيانات عند فتح الصفحة
-loadAgents();
-loadReports();
-loadNotifications();
-</script>
+    // ===== تحميل الخريطة =====
+    async function initMap() {
+      map = L.map('map').setView([24.7136, 46.6753], 5); // السعودية كمثال
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+    }
+
+    async function updateMap() {
+      const employees = await loadEmployees();
+
+      employees.forEach(emp => {
+        if(emp.latitude && emp.longitude){
+          // تحديث العلامة إذا موجودة
+          if(markers[emp.id]) {
+            markers[emp.id].setLatLng([emp.latitude, emp.longitude]);
+            markers[emp.id].bindPopup(`<strong>${emp.name}</strong><br>حالة: ${emp.status || 'غير محددة'}`);
+          } else {
+            // إنشاء علامة جديدة
+            const marker = L.marker([emp.latitude, emp.longitude]).addTo(map)
+              .bindPopup(`<strong>${emp.name}</strong><br>حالة: ${emp.status || 'غير محددة'}`);
+            markers[emp.id] = marker;
+          }
+        }
+      });
+    }
+
+    // ===== إرسال إشعار =====
+    document.getElementById("notifyForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const user_id = document.getElementById("notifyEmployee").value;
+      const title = document.getElementById("notifyTitle").value;
+      const message = document.getElementById("notifyMessage").value;
+
+      const res = await fetch("/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id, title, message, type: "manual" })
+      });
+
+      if(res.ok) alert("✅ تم إرسال الإشعار");
+      else alert("❌ خطأ في إرسال الإشعار");
+    });
+
+    // ===== التحديث التلقائي =====
+    async function refreshData() {
+      await loadReports();
+      await updateMap();
+    }
+
+    async function startAutoRefresh(interval = 10000) {
+      await refreshData();
+      setInterval(refreshData, interval);
+    }
+
+    // ===== بدء الصفحة =====
+    (async () => {
+      await initMap();
+      startAutoRefresh(10000); // تحديث كل 10 ثواني
+    })();
+  </script>
 </body>
 </html>
