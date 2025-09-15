@@ -31,6 +31,7 @@ button.action:hover{background:#2980b9;}
 <button onclick="showSection('analytics')">📊 <span id="navAnalytics">التقارير والتحليلات</span></button>
 <button onclick="showSection('attendance')">⏰ <span id="navAttendance">الحضور والانصراف</span></button>
 <button onclick="showSection('control')">⚙️ <span id="navControl">لوحة التحكم</span></button>
+<button onclick="showSection('users')">👥 <span id="navUsers">المستخدمين</span></button>
 </nav>
 
 <div class="container">
@@ -59,7 +60,32 @@ button.action:hover{background:#2980b9;}
 <button class="action" onclick="editAgent()">تعديل بيانات مندوب</button>
 <button class="action" onclick="addAgent('employee')">➕ إضافة مندوب</button>
 <button class="action" onclick="addAgent('supervisor')">➕ إضافة مشرف</button>
+<button class="action" onclick="addAgent('admin')">➕ إضافة مدير</button>
 <button class="action" onclick="deleteAgent()">🗑️ حذف مستخدم</button>
+</div>
+
+<!-- إدارة المستخدمين -->
+<div class="card" id="users" style="display:none;">
+<h3 id="usersTitle">إدارة المستخدمين</h3>
+<form id="addUserForm">
+  <input type="text" id="name" placeholder="الاسم" required>
+  <input type="email" id="email" placeholder="البريد الإلكتروني">
+  <input type="text" id="phone" placeholder="رقم الهاتف">
+  <input type="password" id="password" placeholder="كلمة المرور" required>
+  <select id="role" required>
+    <option value="admin">مدير</option>
+    <option value="supervisor">مشرف</option>
+    <option value="employee">مندوب</option>
+  </select>
+  <button type="submit" class="action">➕ إضافة</button>
+</form>
+<hr>
+<table>
+<thead>
+<tr><th>الاسم</th><th>البريد</th><th>الهاتف</th><th>الدور</th></tr>
+</thead>
+<tbody id="usersTable"></tbody>
+</table>
 </div>
 </div>
 
@@ -70,8 +96,8 @@ const supabase=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 let lang="ar";
 const texts={
-ar:{title:"لوحة المدير",nav:{analytics:"التقارير والتحليلات",attendance:"الحضور والانصراف",control:"لوحة التحكم"},analytics:"التقارير والتحليلات",attendance:"الحضور والانصراف",control:"لوحة التحكم"},
-en:{title:"Admin Dashboard",nav:{analytics:"Analytics",attendance:"Attendance",control:"Control Panel"},analytics:"Analytics",attendance:"Attendance",control:"Control Panel"}
+ar:{title:"لوحة المدير",nav:{analytics:"التقارير والتحليلات",attendance:"الحضور والانصراف",control:"لوحة التحكم",users:"المستخدمين"},analytics:"التقارير والتحليلات",attendance:"الحضور والانصراف",control:"لوحة التحكم",users:"إدارة المستخدمين"},
+en:{title:"Admin Dashboard",nav:{analytics:"Analytics",attendance:"Attendance",control:"Control Panel",users:"Users"},analytics:"Analytics",attendance:"Attendance",control:"Control Panel",users:"Users Management"}
 };
 
 function toggleLang(){
@@ -82,9 +108,11 @@ document.getElementById("title").innerText=texts[lang].title;
 document.getElementById("navAnalytics").innerText=texts[lang].nav.analytics;
 document.getElementById("navAttendance").innerText=texts[lang].nav.attendance;
 document.getElementById("navControl").innerText=texts[lang].nav.control;
+document.getElementById("navUsers").innerText=texts[lang].nav.users;
 document.getElementById("analyticsTitle").innerText=texts[lang].analytics;
 document.getElementById("attendanceTitle").innerText=texts[lang].attendance;
 document.getElementById("controlTitle").innerText=texts[lang].control;
+document.getElementById("usersTitle").innerText=texts[lang].users;
 }
 
 function showSection(section){
@@ -151,9 +179,9 @@ loadAnalytics(); loadAttendance();
 }
 }
 
-// لوحة التحكم: إضافة مستخدم (مندوب أو مشرف)
+// لوحة التحكم: إضافة مستخدم
 async function addAgent(role){
-let name=prompt("ادخل اسم " + (role==="employee" ? "المندوب" : "المشرف") + ":");
+let name=prompt("ادخل اسم " + role + ":");
 let email=prompt("ادخل البريد الإلكتروني أو رقم الهاتف:");
 let password=prompt("ادخل كلمة المرور:");
 if(name && email && password){
@@ -161,8 +189,8 @@ const { error } = await supabase.from("users").insert([{ name, email, password, 
 if(error){
 alert("خطأ: " + error.message);
 }else{
-alert(lang==="ar" ? "تم إضافة " + (role==="employee" ? "المندوب!" : "المشرف!") : (role==="employee" ? "Employee added!" : "Supervisor added!"));
-loadAnalytics(); loadAttendance();
+alert(lang==="ar" ? "تم إضافة " + role + "!" : role + " added!");
+loadUsers();
 }
 }
 }
@@ -176,13 +204,41 @@ if(error){
 alert("خطأ: " + error.message);
 }else{
 alert(lang==="ar"?"تم حذف المستخدم!":"User deleted!");
-loadAnalytics(); loadAttendance();
+loadUsers();
 }
 }
 }
 
-// تحميل البيانات عند فتح الصفحة
-loadAnalytics(); loadAttendance();
+// إدارة المستخدمين: تحميل
+async function loadUsers(){
+const {data, error} = await supabase.from("users").select("*");
+const tbody=document.getElementById("usersTable");
+tbody.innerHTML="";
+if(data){
+data.forEach(user=>{
+const tr=document.createElement("tr");
+tr.innerHTML=`<td>${user.name||""}</td><td>${user.email||""}</td><td>${user.phone||""}</td><td>${user.role||""}</td>`;
+tbody.appendChild(tr);
+});
+}
+}
+
+// إدارة المستخدمين: إضافة
+document.getElementById("addUserForm").addEventListener("submit",async(e)=>{
+e.preventDefault();
+const name=document.getElementById("name").value;
+const email=document.getElementById("email").value;
+const phone=document.getElementById("phone").value;
+const password=document.getElementById("password").value;
+const role=document.getElementById("role").value;
+
+const {error}=await supabase.from("users").insert([{name,email,phone,password,role}]);
+if(error){alert("خطأ: "+error.message);}
+else{alert("✅ تمت إضافة المستخدم"); loadUsers(); e.target.reset();}
+});
+
+// تحميل أولي
+loadAnalytics(); loadAttendance(); loadUsers();
 </script>
 </body>
 </html>
