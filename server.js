@@ -45,10 +45,8 @@ app.post("/login", async (req, res) => {
       .or(`email.eq.${emailOrPhone},phone.eq.${emailOrPhone}`);
     if (error) throw error;
     if (!users || users.length === 0) return res.status(401).json({ error: "بيانات غير صحيحة" });
-
     const user = users[0];
     if (user.password !== password) return res.status(401).json({ error: "بيانات غير صحيحة" });
-
     res.json({ user });
   } catch (err) {
     console.log(err);
@@ -90,8 +88,6 @@ app.delete("/users/:id", async (req, res) => {
     const { id } = req.params;
     const { error } = await supabase.from("users").delete().eq("id", id);
     if (error) throw error;
-    // حذف كل مهام المستخدم إذا كان مندوب
-    await supabase.from("tasks").delete().eq("employee_id", id);
     res.json({ message: "تم حذف المستخدم" });
   } catch (err) {
     console.log(err);
@@ -112,19 +108,21 @@ app.post("/tasks", async (req, res) => {
       .insert([{ employee_id, client_name_ar, client_name_en, address_ar, address_en, visit_time, status: "new" }])
       .select();
     if (error) throw error;
-    res.json(data[0]);
+    res.json(data[0]); // ترجع المهمة الجديدة مباشرة
   } catch (err) {
     console.log(err);
     res.status(500).json({ error: "حدث خطأ عند إضافة المهمة" });
   }
 });
 
-// جلب كل المهام أو مهام مندوب معين
-app.get("/tasks", async (req, res) => {
+// جلب المهام (كل المهام أو لمندوب معين)
+app.get("/tasks/:employee_id?", async (req, res) => {
   try {
-    const { employee_id } = req.query;
-    let query = supabase.from("tasks").select("*");
-    if (employee_id) query = query.eq("employee_id", employee_id);
+    const { employee_id } = req.params;
+    let query = supabase.from("tasks").select("*").order("visit_time", { ascending: true });
+    if (employee_id) {
+      query = query.eq("employee_id", employee_id);
+    }
     const { data, error } = await query;
     if (error) throw error;
     res.json(data);
@@ -194,18 +192,30 @@ app.get("/reports", async (req, res) => {
 app.post("/notifications", async (req, res) => {
   try {
     const { user_id, title_ar, title_en, message_ar, message_en, type } = req.body;
-    // دعم الإشعار الجماعي إذا لم يُحدد user_id
-    let insertData = [];
+
+    // إذا لم يُحدد user_id → اشعار جماعي لجميع المستخدمين
     if (!user_id) {
-      const { data: users } = await supabase.from("users").select("id");
-      insertData = users.map(u => ({ user_id: u.id, title_ar, title_en, message_ar, message_en, type }));
-    } else {
-      insertData.push({ user_id, title_ar, title_en, message_ar, message_en, type });
+      const { data: users, error: usersError } = await supabase.from("users").select("id");
+      if (usersError) throw usersError;
+      const notifications = users.map(u => ({
+        user_id: u.id,
+        title_ar,
+        title_en,
+        message_ar,
+        message_en,
+        type
+      }));
+      const { data, error } = await supabase.from("notifications").insert(notifications).select();
+      if (error) throw error;
+      return res.json({ message: "تم إرسال الإشعار للجميع" });
     }
 
-    const { data, error } = await supabase.from("notifications").insert(insertData).select();
+    const { data, error } = await supabase
+      .from("notifications")
+      .insert([{ user_id, title_ar, title_en, message_ar, message_en, type }])
+      .select();
     if (error) throw error;
-    res.json(data);
+    res.json(data[0]);
   } catch (err) {
     console.log(err);
     res.status(500).json({ error: "حدث خطأ عند إرسال الإشعار" });
