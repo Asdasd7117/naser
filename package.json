@@ -1,14 +1,14 @@
 {
-  "name": "field-force-app",
+  "name": "supabase-dashboard-full",
   "version": "1.0.0",
-  "description": "Field Force App as a Static Site",
-  "main": "main.js",
+  "main": "server.js",
   "scripts": {
-    "start": "npx serve public"
+    "start": "node server.js"
   },
-  "author": "",
-  "license": "MIT",
   "dependencies": {
-    "serve": "^14.2.3"
+    "@supabase/supabase-js": "^2.0.0",
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "body-parser": "^1.20.2"
   }
 }
