@@ -29,6 +29,15 @@
       padding: 15px;
       margin: 10px 0;
     }
+    button.delete-btn {
+      background: #f44336;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      margin-left: 10px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
   </style>
 </head>
 <body>
@@ -93,62 +102,6 @@
       document.getElementById(id).classList.add("active");
     }
 
-    // ========== تحميل التقارير ==========
-    async function loadReports() {
-      const res = await fetch("/tasks");
-      const tasks = await res.json();
-
-      // إحصائيات عامة
-      const completed = tasks.filter(t => t.status === "completed").length;
-      const in_progress = tasks.filter(t => t.status === "in_progress").length;
-      const delayed = tasks.filter(t => t.status === "delayed").length;
-
-      new Chart(document.getElementById("generalChart"), {
-        type: "doughnut",
-        data: {
-          labels: ["مكتملة", "قيد التنفيذ", "مؤجلة"],
-          datasets: [{
-            data: [completed, in_progress, delayed],
-            backgroundColor: ["#4caf50", "#2196f3", "#f44336"]
-          }]
-        }
-      });
-
-      // أداء فردي لكل مندوب
-      const perfContainer = document.getElementById("employeesPerformance");
-      perfContainer.innerHTML = "";
-      const grouped = {};
-      tasks.forEach(t => {
-        if (!grouped[t.employee_id]) grouped[t.employee_id] = { completed: 0, total: 0 };
-        grouped[t.employee_id].total++;
-        if (t.status === "completed") grouped[t.employee_id].completed++;
-      });
-      for (let emp in grouped) {
-        const p = Math.round((grouped[emp].completed / grouped[emp].total) * 100);
-        const div = document.createElement("div");
-        div.className = "card";
-        div.innerHTML = `<strong>مندوب ID ${emp}</strong> - نسبة الإنجاز: ${p}%`;
-        perfContainer.appendChild(div);
-      }
-    }
-
-    // ========== الحضور ==========
-    async function loadAttendance() {
-      const res = await fetch("/attendance");
-      const data = await res.json();
-      const container = document.getElementById("attendanceList");
-      container.innerHTML = "";
-      data.forEach(a => {
-        const div = document.createElement("div");
-        div.className = "card";
-        div.innerHTML = `
-          <strong>${a.user_name}</strong><br>
-          دخول: ${a.check_in} - خروج: ${a.check_out || "لم يسجل خروج"}
-        `;
-        container.appendChild(div);
-      });
-    }
-
     // ========== إدارة المستخدمين ==========
     document.getElementById("addUserForm").addEventListener("submit", async e => {
       e.preventDefault();
@@ -173,9 +126,18 @@
       users.forEach(u => {
         const div = document.createElement("div");
         div.className = "card";
-        div.innerHTML = `${u.name_ar} | ${u.role} | ${u.email || u.phone}`;
+        div.innerHTML = `
+          ${u.name_ar} | ${u.role} | ${u.email || u.phone}
+          <button class="delete-btn" onclick="deleteUser(${u.id})">❌ حذف</button>
+        `;
         container.appendChild(div);
       });
+    }
+
+    async function deleteUser(id) {
+      if (!confirm("هل أنت متأكد من حذف المستخدم؟")) return;
+      const res = await fetch(`/users/${id}`, { method: "DELETE" });
+      if (res.ok) { alert("تم حذف المستخدم"); loadUsers(); loadEmployees(); loadTasks(); }
     }
 
     async function loadEmployees() {
@@ -216,22 +178,92 @@
         div.className = "card";
         div.innerHTML = `
           <strong>${t.client_name_ar}</strong> - الحالة: ${t.status || "جديدة"}
+          <button class="delete-btn" onclick="deleteTask(${t.id})">❌ حذف</button>
         `;
         container.appendChild(div);
       });
+    }
+
+    async function deleteTask(id) {
+      if (!confirm("هل تريد حذف المهمة؟")) return;
+      const res = await fetch(`/tasks/${id}`, { method: "DELETE" });
+      if (res.ok) { alert("تم حذف المهمة"); loadTasks(); }
     }
 
     // ========== إرسال إشعارات ==========
     document.getElementById("notifyForm").addEventListener("submit", async e => {
       e.preventDefault();
       const message = document.getElementById("message").value;
+      const payload = {
+        title_ar: "إشعار عام",
+        title_en: "General Notification",
+        message_ar: message,
+        message_en: message,
+        type: "general"
+      };
       const res = await fetch("/notifications", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message })
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
       });
       if (res.ok) alert("✅ تم إرسال الإشعار");
     });
 
-    // تحميل الكل
+    // ========== تحميل التقارير ==========
+    async function loadReports() {
+      const res = await fetch("/tasks");
+      const tasks = await res.json();
+
+      const completed = tasks.filter(t => t.status === "completed").length;
+      const in_progress = tasks.filter(t => t.status === "in_progress").length;
+      const delayed = tasks.filter(t => t.status === "delayed").length;
+
+      new Chart(document.getElementById("generalChart"), {
+        type: "doughnut",
+        data: {
+          labels: ["مكتملة", "قيد التنفيذ", "مؤجلة"],
+          datasets: [{
+            data: [completed, in_progress, delayed],
+            backgroundColor: ["#4caf50", "#2196f3", "#f44336"]
+          }]
+        }
+      });
+
+      const perfContainer = document.getElementById("employeesPerformance");
+      perfContainer.innerHTML = "";
+      const grouped = {};
+      tasks.forEach(t => {
+        if (!grouped[t.employee_id]) grouped[t.employee_id] = { completed: 0, total: 0 };
+        grouped[t.employee_id].total++;
+        if (t.status === "completed") grouped[t.employee_id].completed++;
+      });
+      for (let emp in grouped) {
+        const p = Math.round((grouped[emp].completed / grouped[emp].total) * 100);
+        const div = document.createElement("div");
+        div.className = "card";
+        div.innerHTML = `<strong>مندوب ID ${emp}</strong> - نسبة الإنجاز: ${p}%`;
+        perfContainer.appendChild(div);
+      }
+    }
+
+    // ========== الحضور ==========
+    async function loadAttendance() {
+      const res = await fetch("/attendance");
+      const data = await res.json();
+      const container = document.getElementById("attendanceList");
+      container.innerHTML = "";
+      data.forEach(a => {
+        const div = document.createElement("div");
+        div.className = "card";
+        div.innerHTML = `
+          <strong>${a.user_name}</strong><br>
+          دخول: ${a.check_in} - خروج: ${a.check_out || "لم يسجل خروج"}
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    // ========== تحميل الكل عند فتح الصفحة ==========
     loadReports();
     loadAttendance();
     loadUsers();
