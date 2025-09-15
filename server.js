@@ -51,7 +51,7 @@ app.post("/login", async (req, res) => {
     res.status(500).json({ error: "حدث خطأ في تسجيل الدخول" });            
   }            
 });            
-            
+
 app.post("/add-user", async (req, res) => {            
   try {            
     const { name_ar, name_en, email, phone, password, role } = req.body;            
@@ -66,7 +66,7 @@ app.post("/add-user", async (req, res) => {
     res.status(500).json({ error: "حدث خطأ عند إضافة المستخدم" });            
   }            
 });            
-            
+
 app.get("/users", async (req, res) => {            
   try {            
     const { data, error } = await supabase.from("users").select("*");            
@@ -77,7 +77,7 @@ app.get("/users", async (req, res) => {
     res.status(500).json({ error: "حدث خطأ عند جلب المستخدمين" });            
   }            
 });            
-            
+
 app.delete("/users/:id", async (req, res) => {            
   try {            
     const { id } = req.params;            
@@ -89,7 +89,7 @@ app.delete("/users/:id", async (req, res) => {
     res.status(500).json({ error: "حدث خطأ عند حذف المستخدم" });            
   }            
 });            
-            
+
 // =========================            
 // APIs المهام            
 // =========================            
@@ -107,10 +107,14 @@ app.post("/tasks", async (req, res) => {
     res.status(500).json({ error: "حدث خطأ عند إضافة المهمة" });            
   }            
 });            
-            
+
+// جلب المهام مع دعم فلترة المندوب            
 app.get("/tasks", async (req, res) => {            
   try {            
-    const { data, error } = await supabase.from("tasks").select("*");            
+    const { employee_id } = req.query;            
+    let query = supabase.from("tasks").select("*");            
+    if (employee_id) query = query.eq("employee_id", employee_id);            
+    const { data, error } = await query;            
     if (error) throw error;            
     res.json(data);            
   } catch (err) {            
@@ -118,7 +122,7 @@ app.get("/tasks", async (req, res) => {
     res.status(500).json({ error: "حدث خطأ عند جلب المهام" });            
   }            
 });            
-            
+
 app.post("/tasks/:id/status", async (req, res) => {            
   try {            
     const { id } = req.params;            
@@ -131,7 +135,7 @@ app.post("/tasks/:id/status", async (req, res) => {
     res.status(500).json({ error: "حدث خطأ عند تحديث حالة المهمة" });            
   }            
 });            
-            
+
 app.delete("/tasks/:id", async (req, res) => {            
   try {            
     const { id } = req.params;            
@@ -143,7 +147,7 @@ app.delete("/tasks/:id", async (req, res) => {
     res.status(500).json({ error: "حدث خطأ عند حذف المهمة" });            
   }            
 });            
-            
+
 // =========================            
 // APIs التقارير            
 // =========================            
@@ -159,7 +163,7 @@ app.post("/reports", upload.array("images", 5), async (req, res) => {
     res.status(500).json({ error: "حدث خطأ عند رفع التقرير" });            
   }            
 });            
-            
+
 app.get("/reports", async (req, res) => {            
   try {            
     const { data, error } = await supabase.from("reports").select("*, users(*), tasks(*)");            
@@ -170,13 +174,24 @@ app.get("/reports", async (req, res) => {
     res.status(500).json({ error: "حدث خطأ عند جلب التقارير" });            
   }            
 });            
-            
+
 // =========================            
 // APIs الإشعارات            
 // =========================            
 app.post("/notifications", async (req, res) => {            
   try {            
-    const { user_id, title_ar, title_en, message_ar, message_en, type } = req.body;            
+    let { user_id, title_ar, title_en, message_ar, message_en, type, send_to_all } = req.body;
+
+    // إذا send_to_all = true أرسل لكل المستخدمين
+    if (send_to_all) {
+      const { data: users, error: usersErr } = await supabase.from("users").select("id");
+      if (usersErr) throw usersErr;
+      const notifications = users.map(u => ({ user_id: u.id, title_ar, title_en, message_ar, message_en, type }));
+      const { data, error } = await supabase.from("notifications").insert(notifications).select();
+      if (error) throw error;
+      return res.json({ sent_to: users.length });
+    }
+
     const { data, error } = await supabase            
       .from("notifications")            
       .insert([{ user_id, title_ar, title_en, message_ar, message_en, type }])            
@@ -188,7 +203,7 @@ app.post("/notifications", async (req, res) => {
     res.status(500).json({ error: "حدث خطأ عند إرسال الإشعار" });            
   }            
 });            
-            
+
 app.get("/notifications/:user_id", async (req, res) => {            
   try {            
     const { user_id } = req.params;            
@@ -201,44 +216,12 @@ app.get("/notifications/:user_id", async (req, res) => {
   }            
 });            
 
-// ====== إضافة إشعار جماعي ======
-app.post("/notifications/bulk", async (req, res) => {
-  try {
-    const { role, title_ar, title_en, message_ar, message_en, type } = req.body;
-
-    // جلب كل المستخدمين حسب الدور (أو كل المستخدمين إذا لم يحدد الدور)
-    let query = supabase.from("users").select("id");
-    if (role) query = query.eq("role", role);
-    const { data: users, error: usersError } = await query;
-
-    if (usersError) throw usersError;
-    if (!users || users.length === 0) return res.status(404).json({ error: "لا يوجد مستخدمين لهذا الدور" });
-
-    const notifications = users.map(u => ({
-      user_id: u.id,
-      title_ar,
-      title_en,
-      message_ar,
-      message_en,
-      type
-    }));
-
-    const { data, error } = await supabase.from("notifications").insert(notifications).select();
-    if (error) throw error;
-
-    res.json({ message: "✅ تم إرسال الإشعارات الجماعية", count: data.length });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "❌ حدث خطأ عند إرسال الإشعارات الجماعية" });
-  }
-});
-
 // =========================            
 // APIs الحضور والغياب            
 // =========================            
 app.post("/attendance", async (req, res) => {            
   try {            
-    const { user_id, status } = req.body; // status = present | absent | late            
+    const { user_id, status } = req.body;            
     const { data, error } = await supabase            
       .from("attendance")            
       .insert([{ user_id, status }])            
@@ -250,7 +233,7 @@ app.post("/attendance", async (req, res) => {
     res.status(500).json({ error: "حدث خطأ عند تسجيل الحضور" });            
   }            
 });            
-            
+
 app.get("/attendance/:user_id", async (req, res) => {            
   try {            
     const { user_id } = req.params;            
@@ -262,7 +245,7 @@ app.get("/attendance/:user_id", async (req, res) => {
     res.status(500).json({ error: "حدث خطأ عند جلب الحضور" });            
   }            
 });            
-            
+
 // =========================            
 // APIs المواقع            
 // =========================            
@@ -278,7 +261,7 @@ app.post("/locations", async (req, res) => {
     res.status(500).json({ error: "حدث خطأ عند تحديث الموقع" });            
   }            
 });            
-            
+
 app.get("/locations", async (req, res) => {            
   try {            
     const { data, error } = await supabase.from("employee_locations").select("*").order("recorded_at", { ascending: false });            
@@ -289,7 +272,7 @@ app.get("/locations", async (req, res) => {
     res.status(500).json({ error: "حدث خطأ عند جلب المواقع" });            
   }            
 });            
-            
+
 // =========================            
 // تشغيل السيرفر            
 // =========================            
