@@ -120,10 +120,13 @@ app.post("/tasks", async (req, res) => {
   }
 });
 
-// جلب كل المهام
+// جلب المهام (مع دعم تصفية حسب المندوب)
 app.get("/tasks", async (req, res) => {
   try {
-    const { data, error } = await supabase.from("tasks").select("*");
+    const { user_id } = req.query; // ?user_id=12
+    let query = supabase.from("tasks").select("*, users(*)");
+    if (user_id) query = query.eq("employee_id", user_id); // فقط مهام المندوب
+    const { data, error } = await query;
     if (error) throw error;
     res.json(data);
   } catch (err) {
@@ -205,10 +208,14 @@ app.post("/notifications", async (req, res) => {
   }
 });
 
+// جلب إشعارات مستخدم (فردية + جماعية)
 app.get("/notifications/:user_id", async (req, res) => {
   try {
     const { user_id } = req.params;
-    const { data, error } = await supabase.from("notifications").select("*").eq("user_id", user_id);
+    const { data, error } = await supabase
+      .from("notifications")
+      .select("*")
+      .or(`user_id.eq.${user_id},type.eq.all`); // يشمل الإشعارات الجماعية
     if (error) throw error;
     res.json(data);
   } catch (err) {
