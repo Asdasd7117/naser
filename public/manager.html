@@ -57,12 +57,15 @@ button.action:hover{background:#2980b9;}
 <h3 id="controlTitle">لوحة التحكم</h3>
 <button class="action" onclick="addTask()">إضافة مهمة</button>
 <button class="action" onclick="editAgent()">تعديل بيانات مندوب</button>
+<button class="action" onclick="addAgent('employee')">➕ إضافة مندوب</button>
+<button class="action" onclick="addAgent('supervisor')">➕ إضافة مشرف</button>
+<button class="action" onclick="deleteAgent()">🗑️ حذف مستخدم</button>
 </div>
 </div>
 
 <script>
 const SUPABASE_URL="https://ncjxqfqwswwikedaffif.supabase.co";
-const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NDEwNzQsImV4cCI6MjA3MzQxNzA3NH0.4G54968qAHyePjq9_ufSCSA1fHzx5XHFzOAqGKmVW18";
+const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NDEwNzQsImV4cCI6MjA3MzQxNzA3NH0.4G54968qAHyePjq9_ufSCSA1fHzx5XHFzOAqGKmVW18";
 const supabase=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 let lang="ar";
@@ -92,7 +95,7 @@ document.getElementById(section).style.display="block";
 // تحميل التقارير والتحليلات
 async function loadAnalytics(){
 const {data: tasks}=await supabase.from("tasks").select("*");
-const {data: users}=await supabase.from("users").select("*").eq("role","agent");
+const {data: users}=await supabase.from("users").select("*").eq("role","employee");
 const tbody=document.getElementById("analyticsList");
 tbody.innerHTML="";
 if(tasks && users){
@@ -109,7 +112,7 @@ tbody.appendChild(tr);
 // تحميل الحضور والانصراف
 async function loadAttendance(){
 const {data: attendances}=await supabase.from("attendance").select("*");
-const {data: users}=await supabase.from("users").select("*").eq("role","agent");
+const {data: users}=await supabase.from("users").select("*").eq("role","employee");
 const tbody=document.getElementById("attendanceList");
 tbody.innerHTML="";
 if(attendances && users){
@@ -145,6 +148,36 @@ if(agentId){
 await supabase.from("users").update({name,location}).eq("id",parseInt(agentId));
 alert(lang==="ar"?"تم تعديل بيانات المندوب!":"Agent updated!");
 loadAnalytics(); loadAttendance();
+}
+}
+
+// لوحة التحكم: إضافة مستخدم (مندوب أو مشرف)
+async function addAgent(role){
+let name=prompt("ادخل اسم " + (role==="employee" ? "المندوب" : "المشرف") + ":");
+let email=prompt("ادخل البريد الإلكتروني أو رقم الهاتف:");
+let password=prompt("ادخل كلمة المرور:");
+if(name && email && password){
+const { error } = await supabase.from("users").insert([{ name, email, password, role }]);
+if(error){
+alert("خطأ: " + error.message);
+}else{
+alert(lang==="ar" ? "تم إضافة " + (role==="employee" ? "المندوب!" : "المشرف!") : (role==="employee" ? "Employee added!" : "Supervisor added!"));
+loadAnalytics(); loadAttendance();
+}
+}
+}
+
+// لوحة التحكم: حذف مستخدم
+async function deleteAgent(){
+let email=prompt("ادخل البريد الإلكتروني أو رقم الهاتف للمستخدم المراد حذفه:");
+if(email){
+const { error } = await supabase.from("users").delete().eq("email",email);
+if(error){
+alert("خطأ: " + error.message);
+}else{
+alert(lang==="ar"?"تم حذف المستخدم!":"User deleted!");
+loadAnalytics(); loadAttendance();
+}
 }
 }
 
