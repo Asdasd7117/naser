@@ -29,6 +29,7 @@
       padding: 15px;
       margin: 10px 0;
     }
+    .delete-btn { color: red; cursor: pointer; margin-left: 10px; }
   </style>
 </head>
 <body>
@@ -93,12 +94,11 @@
       document.getElementById(id).classList.add("active");
     }
 
-    // ========== تحميل التقارير ==========
+    // ===== التقارير =====
     async function loadReports() {
       const res = await fetch("/tasks");
       const tasks = await res.json();
 
-      // إحصائيات عامة
       const completed = tasks.filter(t => t.status === "completed").length;
       const in_progress = tasks.filter(t => t.status === "in_progress").length;
       const delayed = tasks.filter(t => t.status === "delayed").length;
@@ -114,7 +114,6 @@
         }
       });
 
-      // أداء فردي لكل مندوب
       const perfContainer = document.getElementById("employeesPerformance");
       perfContainer.innerHTML = "";
       const grouped = {};
@@ -132,7 +131,7 @@
       }
     }
 
-    // ========== الحضور ==========
+    // ===== الحضور =====
     async function loadAttendance() {
       const res = await fetch("/attendance");
       const data = await res.json();
@@ -149,7 +148,7 @@
       });
     }
 
-    // ========== إدارة المستخدمين ==========
+    // ===== إدارة المستخدمين =====
     document.getElementById("addUserForm").addEventListener("submit", async e => {
       e.preventDefault();
       const payload = {
@@ -173,9 +172,18 @@
       users.forEach(u => {
         const div = document.createElement("div");
         div.className = "card";
-        div.innerHTML = `${u.name_ar} | ${u.role} | ${u.email || u.phone}`;
+        div.innerHTML = `
+          ${u.name_ar} | ${u.role} | ${u.email || u.phone}
+          <span class="delete-btn" onclick="deleteUser(${u.id})">🗑 حذف</span>
+        `;
         container.appendChild(div);
       });
+    }
+
+    async function deleteUser(id) {
+      if (!confirm("هل تريد حذف هذا المستخدم؟")) return;
+      const res = await fetch(`/users/${id}`, { method: "DELETE" });
+      if (res.ok) { alert("تم حذف المستخدم"); loadUsers(); loadEmployees(); loadTasks(); }
     }
 
     async function loadEmployees() {
@@ -191,7 +199,7 @@
       });
     }
 
-    // ========== إدارة المهام ==========
+    // ===== إدارة المهام =====
     document.getElementById("addTaskForm").addEventListener("submit", async e => {
       e.preventDefault();
       const payload = {
@@ -216,22 +224,43 @@
         div.className = "card";
         div.innerHTML = `
           <strong>${t.client_name_ar}</strong> - الحالة: ${t.status || "جديدة"}
+          <span class="delete-btn" onclick="deleteTask(${t.id})">🗑 حذف</span>
         `;
         container.appendChild(div);
       });
     }
 
-    // ========== إرسال إشعارات ==========
+    async function deleteTask(id) {
+      if (!confirm("هل تريد حذف هذه المهمة؟")) return;
+      const res = await fetch(`/tasks/${id}`, { method: "DELETE" });
+      if (res.ok) { alert("تم حذف المهمة"); loadTasks(); loadReports(); }
+    }
+
+    // ===== إرسال إشعارات =====
     document.getElementById("notifyForm").addEventListener("submit", async e => {
       e.preventDefault();
       const message = document.getElementById("message").value;
-      const res = await fetch("/notifications", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message })
-      });
-      if (res.ok) alert("✅ تم إرسال الإشعار");
+      // جلب كل المستخدمين لإرسال الإشعار لهم
+      const resUsers = await fetch("/users");
+      const users = await resUsers.json();
+      for (let u of users) {
+        await fetch("/notifications", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: u.id,
+            title_ar: "إشعار من المدير",
+            title_en: "Manager Notification",
+            message_ar: message,
+            message_en: message,
+            type: "individual"
+          })
+        });
+      }
+      alert("✅ تم إرسال الإشعارات لجميع المستخدمين");
     });
 
-    // تحميل الكل
+    // ===== تحميل الكل =====
     loadReports();
     loadAttendance();
     loadUsers();
