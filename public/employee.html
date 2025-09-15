@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <title>المندوب</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 <body>
   <h1>👷 لوحة المندوب</h1>
@@ -27,6 +29,12 @@
     </form>
   </section>
 
+  <!-- الخريطة -->
+  <section>
+    <h2>🗺️ موقعك الحالي</h2>
+    <div id="map" style="height:300px;"></div>
+  </section>
+
   <!-- الإشعارات -->
   <section>
     <h2>🔔 الإشعارات</h2>
@@ -37,6 +45,8 @@
   <script>
     const USER_ID = 3; // ضع هنا معرف المندوب بعد تسجيل الدخول
 
+    let map, marker;
+
     // ===== تحميل المهام =====
     async function loadTasks() {
       const res = await fetch("/tasks");
@@ -44,6 +54,7 @@
       const container = document.getElementById("tasks");
       container.innerHTML = "";
 
+      // فلترة المهام فقط حسب المندوب الحالي
       tasks.filter(t => t.employee_id === USER_ID).forEach(t => {
         const div = document.createElement("div");
         div.style.border = "1px solid #ccc";
@@ -102,6 +113,18 @@
       }
     });
 
+    // ===== الخريطة =====
+    function initMap() {
+      const cairoLat = 30.0444;
+      const cairoLon = 31.2357;
+      map = L.map('map').setView([cairoLat, cairoLon], 12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+
+      marker = L.marker([cairoLat, cairoLon]).addTo(map).bindPopup("موقعك الحالي");
+    }
+
     // ===== الإشعارات =====
     async function loadNotifications() {
       const res = await fetch(`/notifications/${USER_ID}`);
@@ -119,8 +142,11 @@
     }
 
     // ===== بدء الصفحة =====
-    loadTasks();
-    loadNotifications();
+    window.onload = () => {
+      loadTasks();        // تحميل المهام الحالية فقط
+      loadNotifications(); // تحميل الإشعارات الحالية فقط
+      initMap();          // الخريطة ثابتة على القاهرة
+    };
   </script>
 </body>
 </html>
