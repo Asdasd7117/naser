@@ -1,90 +1,115 @@
-/* ===== إعدادات عامة ===== */
-body {
-  font-family: Arial, sans-serif;
+/* =========================
+   style.css - مشترك لجميع الصفحات
+   ========================= */
+
+/* ===== Reset أساسي ===== */
+* {
   margin: 0;
   padding: 0;
-  background-color: #f4f6f8;
-  color: #333;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
+  box-sizing: border-box;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* ===== النموذج ===== */
-form {
-  width: 100%;
-  max-width: 400px;
-  background-color: #fff;
-  padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+/* ===== Body ===== */
+body {
+  background-color: #f4f7f9;
+  color: #333;
+  line-height: 1.6;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  padding: 20px;
 }
 
-form label {
-  margin-top: 15px;
-  font-weight: bold;
-}
-
-form input, form select {
-  margin-top: 5px;
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-form button {
-  margin-top: 20px;
-  padding: 12px;
-  background-color: #10b981;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-form button:hover {
-  background-color: #059669;
-}
-
-/* ===== زر اللغة ===== */
-#langToggle {
-  position: fixed;
-  top: 10px;
-  right: 10px;
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: none;
-  background-color: #3b82f6;
-  color: #fff;
-  cursor: pointer;
-}
-
-/* ===== رابط نسيت كلمة المرور ===== */
-#forgotPassword {
-  margin-top: 10px;
+/* ===== عناوين ===== */
+h1, h2, h3 {
+  margin-bottom: 10px;
+  color: #2a6ebb;
   text-align: center;
+}
+
+/* ===== الحاويات ===== */
+.login-container, .container, section {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  width: 100%;
+  max-width: 500px;
+  margin-bottom: 20px;
+}
+
+/* ===== النماذج ===== */
+form label {
   display: block;
-  color: #3b82f6;
+  margin: 10px 0 5px;
+}
+
+form input, form textarea, form select {
+  width: 100%;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+form textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* ===== الأزرار ===== */
+button {
+  background-color: #2a6ebb;
+  color: #fff;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-right: 5px;
+}
+
+button:hover {
+  background-color: #1e4f8b;
+}
+
+/* ===== الروابط ===== */
+a {
+  color: #2a6ebb;
   text-decoration: none;
 }
 
-#forgotPassword:hover {
+a:hover {
   text-decoration: underline;
 }
 
-/* ===== RTL support ===== */
-body[dir="rtl"] {
-  direction: rtl;
-  text-align: right;
+/* ===== المهام والإشعارات ===== */
+#tasks div, #notifications div, #reports div {
+  background-color: #eaf1fc;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 8px;
 }
 
-body[dir="rtl"] form {
-  text-align: right;
+/* ===== الخريطة ===== */
+#map {
+  width: 100%;
+  border-radius: 10px;
+  margin-top: 10px;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 600px) {
+  .login-container, .container, section {
+    width: 90%;
+    padding: 15px;
+  }
+
+  button {
+    width: 100%;
+    margin-bottom: 5px;
+  }
 }
