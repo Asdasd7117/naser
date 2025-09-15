@@ -40,26 +40,31 @@ app.post("/login", async (req, res) => {
   try {
     const { emailOrPhone, password } = req.body;
 
-    // البحث بالبريد
+    // البحث أولاً عن طريق البريد
     let { data: user, error } = await supabase
       .from("users")
       .select("*")
-      .match({ email: emailOrPhone, password })
+      .eq("email", emailOrPhone)
+      .eq("password", password)
       .maybeSingle();
 
-    // إذا لم يوجد، البحث بالهاتف
+    // إذا لم يتم العثور، البحث عن طريق الهاتف
     if (!user) {
       ({ data: user, error } = await supabase
         .from("users")
         .select("*")
-        .match({ phone: emailOrPhone, password })
+        .eq("phone", emailOrPhone)
+        .eq("password", password)
         .maybeSingle());
     }
 
     if (error) throw error;
-    if (!user) return res.status(401).json({ error: "بيانات غير صحيحة" });
 
-    res.json(user); // ترجع مباشرة بيانات المستخدم
+    if (!user) {
+      return res.status(401).json({ error: "بيانات غير صحيحة" });
+    }
+
+    res.json(user); // ترجع بيانات المستخدم مباشرة
   } catch (err) {
     console.log(err);
     res.status(500).json({ error: "حدث خطأ في تسجيل الدخول" });
@@ -276,7 +281,6 @@ app.get("/locations", async (req, res) => {
       .from("employee_locations")
       .select("*")
       .order("recorded_at", { ascending: false });
-
     if (error) throw error;
     res.json(data);
   } catch (err) {
