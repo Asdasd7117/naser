@@ -21,15 +21,13 @@ app.use(bodyParser.json());
 
 // ===== Supabase Client =====
 const SUPABASE_URL = "https://ncjxqfqwswwikedaffif.supabase.co";
-const SUPABASE_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Nzg0MTA3NCwiZXhwIjoyMDczNDE3MDc0fQ.ZX7giBBgWRScW6usplziAWjNYn9yCVeLVAQz7YUBjvA";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Nzg0MTA3NCwiZXhwIjoyMDczNDE3MDc0fQ.ZX7giBBgWRScW6usplziAWjNYn9yCVeLVAQz7YUBjvA";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ===== Multer للرفع =====
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "uploads/"),
-  filename: (req, file, cb) =>
-    cb(null, Date.now() + path.extname(file.originalname)),
+  filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
 });
 const upload = multer({ storage });
 
@@ -41,18 +39,18 @@ const upload = multer({ storage });
 app.post("/login", async (req, res) => {
   try {
     const { emailOrPhone, password } = req.body;
+    
+    // جلب المستخدم عن طريق البريد أو الهاتف
     const { data: users, error } = await supabase
       .from("users")
       .select("*")
       .or(`email.eq.${emailOrPhone},phone.eq.${emailOrPhone}`);
 
     if (error) throw error;
-    if (!users || users.length === 0)
-      return res.status(401).json({ error: "بيانات غير صحيحة" });
+    if (!users || users.length === 0) return res.status(401).json({ error: "بيانات غير صحيحة" });
 
-    const user = users[0];
-    if (user.password !== password)
-      return res.status(401).json({ error: "بيانات غير صحيحة" });
+    const user = users[0]; // نأخذ أول مستخدم متطابق
+    if (user.password !== password) return res.status(401).json({ error: "بيانات غير صحيحة" });
 
     res.json({ user });
   } catch (err) {
@@ -68,7 +66,7 @@ app.post("/add-user", async (req, res) => {
     const { data, error } = await supabase
       .from("users")
       .insert([{ name_ar, name_en, email, phone, password, role }])
-      .select();
+      .select(); // نرجع البيانات المضافة
     if (error) throw error;
     res.json(data[0]);
   } catch (err) {
@@ -110,10 +108,6 @@ app.delete("/users/:id", async (req, res) => {
 app.post("/tasks", async (req, res) => {
   try {
     const { employee_id, client_name_ar, client_name_en, address_ar, address_en, visit_time } = req.body;
-
-    // التحقق من وجود employee_id
-    if (!employee_id) return res.status(400).json({ error: "يجب اختيار المندوب" });
-
     const { data, error } = await supabase
       .from("tasks")
       .insert([{ employee_id, client_name_ar, client_name_en, address_ar, address_en, visit_time }])
@@ -129,7 +123,7 @@ app.post("/tasks", async (req, res) => {
 // جلب كل المهام
 app.get("/tasks", async (req, res) => {
   try {
-    const { data, error } = await supabase.from("tasks").select("*").order("visit_time", { ascending: true });
+    const { data, error } = await supabase.from("tasks").select("*");
     if (error) throw error;
     res.json(data);
   } catch (err) {
@@ -138,33 +132,12 @@ app.get("/tasks", async (req, res) => {
   }
 });
 
-// جلب المهام الخاصة بمندوب معين
-app.get("/tasks/:employee_id", async (req, res) => {
-  try {
-    const { employee_id } = req.params;
-    const { data, error } = await supabase
-      .from("tasks")
-      .select("*")
-      .eq("employee_id", employee_id)
-      .order("visit_time", { ascending: true });
-    if (error) throw error;
-    res.json(data);
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ error: "حدث خطأ عند جلب المهام للمندوب" });
-  }
-});
-
 // تحديث حالة المهمة
 app.post("/tasks/:id/status", async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const { data, error } = await supabase
-      .from("tasks")
-      .update({ status })
-      .eq("id", id)
-      .select();
+    const { data, error } = await supabase.from("tasks").update({ status }).eq("id", id).select();
     if (error) throw error;
     res.json(data[0]);
   } catch (err) {
@@ -202,6 +175,7 @@ app.post("/reports", upload.array("images", 5), async (req, res) => {
   }
 });
 
+// جلب كل التقارير
 app.get("/reports", async (req, res) => {
   try {
     const { data, error } = await supabase.from("reports").select("*, users(*), tasks(*)");
@@ -240,33 +214,6 @@ app.get("/notifications/:user_id", async (req, res) => {
   } catch (err) {
     console.log(err);
     res.status(500).json({ error: "حدث خطأ عند جلب الإشعارات" });
-  }
-});
-
-// =========================
-// APIs الحضور والغياب
-// =========================
-app.post("/attendance", async (req, res) => {
-  try {
-    const { user_id, status } = req.body; // status = present | absent | late
-    const { data, error } = await supabase.from("attendance").insert([{ user_id, status }]).select();
-    if (error) throw error;
-    res.json(data[0]);
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ error: "حدث خطأ عند تسجيل الحضور" });
-  }
-});
-
-app.get("/attendance/:user_id", async (req, res) => {
-  try {
-    const { user_id } = req.params;
-    const { data, error } = await supabase.from("attendance").select("*").eq("user_id", user_id);
-    if (error) throw error;
-    res.json(data);
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ error: "حدث خطأ عند جلب الحضور" });
   }
 });
 
