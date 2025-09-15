@@ -12,7 +12,7 @@ const { createClient } = require("@supabase/supabase-js");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ملفات ثابتة من مجلد public
+// ملفات ثابتة من مجلد public وuploads
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
@@ -39,32 +39,19 @@ const upload = multer({ storage });
 app.post("/login", async (req, res) => {
   try {
     const { emailOrPhone, password } = req.body;
-
-    // البحث بالبريد
-    let { data: user, error } = await supabase
+    let { data: user } = await supabase
       .from("users")
       .select("*")
-      .eq("email", emailOrPhone)
+      .or(`email.eq.${emailOrPhone},phone.eq.${emailOrPhone}`)
       .eq("password", password)
       .maybeSingle();
 
-    // إذا لم يوجد، البحث بالهاتف
-    if (!user) {
-      ({ data: user, error } = await supabase
-        .from("users")
-        .select("*")
-        .eq("phone", emailOrPhone)
-        .eq("password", password)
-        .maybeSingle());
-    }
+    if (!user) return res.status(401).json({ success: false, error: "بيانات غير صحيحة" });
 
-    if (error) throw error;
-    if (!user) return res.status(401).json({ error: "بيانات غير صحيحة" });
-
-    res.json({ user });
+    res.json({ success: true, user });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ error: "حدث خطأ في تسجيل الدخول" });
+    res.status(500).json({ success: false, error: "حدث خطأ في تسجيل الدخول" });
   }
 });
 
@@ -74,12 +61,14 @@ app.post("/add-user", async (req, res) => {
     const { name_ar, name_en, email, phone, password, role } = req.body;
     const { data, error } = await supabase
       .from("users")
-      .insert([{ name_ar, name_en, email, phone, password, role }]);
-    if (error) throw error;
-    res.json(data[0]);
+      .insert([{ name_ar, name_en, email, phone, password, role }])
+      .select();
+    if (error) return res.status(500).json({ success: false, error: error.message });
+
+    res.json({ success: true, user: data[0] });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ error: "حدث خطأ عند إضافة المستخدم" });
+    res.status(500).json({ success: false, error: "حدث خطأ عند إضافة المستخدم" });
   }
 });
 
@@ -87,11 +76,11 @@ app.post("/add-user", async (req, res) => {
 app.get("/users", async (req, res) => {
   try {
     const { data, error } = await supabase.from("users").select("*");
-    if (error) throw error;
-    res.json(data);
+    if (error) return res.status(500).json({ success: false, error: error.message });
+    res.json({ success: true, users: data });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ error: "حدث خطأ عند جلب المستخدمين" });
+    res.status(500).json({ success: false, error: "حدث خطأ عند جلب المستخدمين" });
   }
 });
 
@@ -100,11 +89,11 @@ app.delete("/users/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const { error } = await supabase.from("users").delete().eq("id", id);
-    if (error) throw error;
-    res.json({ message: "تم حذف المستخدم" });
+    if (error) return res.status(500).json({ success: false, error: error.message });
+    res.json({ success: true, message: "تم حذف المستخدم" });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ error: "حدث خطأ عند حذف المستخدم" });
+    res.status(500).json({ success: false, error: "حدث خطأ عند حذف المستخدم" });
   }
 });
 
@@ -118,12 +107,14 @@ app.post("/tasks", async (req, res) => {
     const { employee_id, client_name_ar, client_name_en, address_ar, address_en, visit_time } = req.body;
     const { data, error } = await supabase
       .from("tasks")
-      .insert([{ employee_id, client_name_ar, client_name_en, address_ar, address_en, visit_time }]);
-    if (error) throw error;
-    res.json(data[0]);
+      .insert([{ employee_id, client_name_ar, client_name_en, address_ar, address_en, visit_time }])
+      .select();
+    if (error) return res.status(500).json({ success: false, error: error.message });
+
+    res.json({ success: true, task: data[0] });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ error: "حدث خطأ عند إضافة المهمة" });
+    res.status(500).json({ success: false, error: "حدث خطأ عند إضافة المهمة" });
   }
 });
 
@@ -131,11 +122,11 @@ app.post("/tasks", async (req, res) => {
 app.get("/tasks", async (req, res) => {
   try {
     const { data, error } = await supabase.from("tasks").select("*");
-    if (error) throw error;
-    res.json(data);
+    if (error) return res.status(500).json({ success: false, error: error.message });
+    res.json({ success: true, tasks: data });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ error: "حدث خطأ عند جلب المهام" });
+    res.status(500).json({ success: false, error: "حدث خطأ عند جلب المهام" });
   }
 });
 
@@ -144,12 +135,12 @@ app.post("/tasks/:id/status", async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const { data, error } = await supabase.from("tasks").update({ status }).eq("id", id);
-    if (error) throw error;
-    res.json(data[0]);
+    const { data, error } = await supabase.from("tasks").update({ status }).eq("id", id).select();
+    if (error) return res.status(500).json({ success: false, error: error.message });
+    res.json({ success: true, task: data[0] });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ error: "حدث خطأ عند تحديث حالة المهمة" });
+    res.status(500).json({ success: false, error: "حدث خطأ عند تحديث حالة المهمة" });
   }
 });
 
@@ -158,11 +149,11 @@ app.delete("/tasks/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const { error } = await supabase.from("tasks").delete().eq("id", id);
-    if (error) throw error;
-    res.json({ message: "تم حذف المهمة" });
+    if (error) return res.status(500).json({ success: false, error: error.message });
+    res.json({ success: true, message: "تم حذف المهمة" });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ error: "حدث خطأ عند حذف المهمة" });
+    res.status(500).json({ success: false, error: "حدث خطأ عند حذف المهمة" });
   }
 });
 
@@ -175,14 +166,12 @@ app.post("/reports", upload.array("images", 5), async (req, res) => {
   try {
     const { task_id, user_id, notes } = req.body;
     const images = req.files.map(f => `/uploads/${f.filename}`).join(",");
-    const { data, error } = await supabase
-      .from("reports")
-      .insert([{ task_id, user_id, notes, images }]);
-    if (error) throw error;
-    res.json(data[0]);
+    const { data, error } = await supabase.from("reports").insert([{ task_id, user_id, notes, images }]).select();
+    if (error) return res.status(500).json({ success: false, error: error.message });
+    res.json({ success: true, report: data[0] });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ error: "حدث خطأ عند رفع التقرير" });
+    res.status(500).json({ success: false, error: "حدث خطأ عند رفع التقرير" });
   }
 });
 
@@ -190,11 +179,11 @@ app.post("/reports", upload.array("images", 5), async (req, res) => {
 app.get("/reports", async (req, res) => {
   try {
     const { data, error } = await supabase.from("reports").select("*, users(*), tasks(*)");
-    if (error) throw error;
-    res.json(data);
+    if (error) return res.status(500).json({ success: false, error: error.message });
+    res.json({ success: true, reports: data });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ error: "حدث خطأ عند جلب التقارير" });
+    res.status(500).json({ success: false, error: "حدث خطأ عند جلب التقارير" });
   }
 });
 
@@ -206,14 +195,12 @@ app.get("/reports", async (req, res) => {
 app.post("/notifications", async (req, res) => {
   try {
     const { user_id, title_ar, title_en, message_ar, message_en, type } = req.body;
-    const { data, error } = await supabase
-      .from("notifications")
-      .insert([{ user_id, title_ar, title_en, message_ar, message_en, type }]);
-    if (error) throw error;
-    res.json(data[0]);
+    const { data, error } = await supabase.from("notifications").insert([{ user_id, title_ar, title_en, message_ar, message_en, type }]).select();
+    if (error) return res.status(500).json({ success: false, error: error.message });
+    res.json({ success: true, notification: data[0] });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ error: "حدث خطأ عند إرسال الإشعار" });
+    res.status(500).json({ success: false, error: "حدث خطأ عند إرسال الإشعار" });
   }
 });
 
@@ -222,11 +209,11 @@ app.get("/notifications/:user_id", async (req, res) => {
   try {
     const { user_id } = req.params;
     const { data, error } = await supabase.from("notifications").select("*").eq("user_id", user_id);
-    if (error) throw error;
-    res.json(data);
+    if (error) return res.status(500).json({ success: false, error: error.message });
+    res.json({ success: true, notifications: data });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ error: "حدث خطأ عند جلب الإشعارات" });
+    res.status(500).json({ success: false, error: "حدث خطأ عند جلب الإشعارات" });
   }
 });
 
@@ -238,30 +225,25 @@ app.get("/notifications/:user_id", async (req, res) => {
 app.post("/locations", async (req, res) => {
   try {
     const { employee_id, latitude, longitude } = req.body;
-    const { data, error } = await supabase
-      .from("employee_locations")
-      .insert([{ employee_id, latitude, longitude }]);
-    if (error) throw error;
+    const { data, error } = await supabase.from("employee_locations").insert([{ employee_id, latitude, longitude }]).select();
+    if (error) return res.status(500).json({ success: false, error: error.message });
     await supabase.from("users").update({ latitude, longitude }).eq("id", employee_id);
-    res.json(data[0]);
+    res.json({ success: true, location: data[0] });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ error: "حدث خطأ عند تحديث الموقع" });
+    res.status(500).json({ success: false, error: "حدث خطأ عند تحديث الموقع" });
   }
 });
 
 // جلب آخر موقع لكل مندوب
 app.get("/locations", async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from("employee_locations")
-      .select("*")
-      .order("recorded_at", { ascending: false });
-    if (error) throw error;
-    res.json(data);
+    const { data, error } = await supabase.from("employee_locations").select("*").order("recorded_at", { ascending: false });
+    if (error) return res.status(500).json({ success: false, error: error.message });
+    res.json({ success: true, locations: data });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ error: "حدث خطأ عند جلب المواقع" });
+    res.status(500).json({ success: false, error: "حدث خطأ عند جلب المواقع" });
   }
 });
 
