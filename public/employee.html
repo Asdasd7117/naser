@@ -1,17 +1,11 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar">
 <head>
   <meta charset="UTF-8">
   <title>المندوب</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 10px; }
-    section { margin-bottom: 20px; }
-    #tasks .card, #notifications .card { border: 1px solid #ccc; padding: 10px; margin-bottom: 5px; border-radius: 5px; }
-    button { margin: 2px; }
-  </style>
 </head>
 <body>
   <h1>👷 لوحة المندوب</h1>
@@ -47,25 +41,28 @@
   </section>
 
   <script>
-    const USER_ID = 3; // ضع هنا معرف المندوب الحالي بعد تسجيل الدخول
+    const USER_ID = 3; // ضع معرف المندوب بعد تسجيل الدخول
 
     let map, marker;
 
-    // ===== تحميل المهام الخاصة بالمندوب =====
+    // ===== تحميل المهام =====
     async function loadTasks() {
-      const res = await fetch(`/tasks/${USER_ID}`); // API خاص بالمندوب
+      const res = await fetch(`/tasks/${USER_ID}`); // جلب المهام المخصصة لهذا المندوب فقط
       const tasks = await res.json();
       const container = document.getElementById("tasks");
       container.innerHTML = "";
 
       tasks.forEach(t => {
         const div = document.createElement("div");
-        div.className = "card";
+        div.style.border = "1px solid #ccc";
+        div.style.padding = "5px";
+        div.style.marginBottom = "5px";
+
         div.innerHTML = `
           <p><strong>العميل:</strong> ${t.client_name_ar}</p>
           <p><strong>العنوان:</strong> ${t.address_ar}</p>
           <p><strong>وقت الزيارة:</strong> ${new Date(t.visit_time).toLocaleString()}</p>
-          <p><strong>الحالة:</strong> <span id="status-${t.id}">${t.status || "جديدة"}</span></p>
+          <p><strong>الحالة:</strong> <span id="status-${t.id}">${t.status || 'جديدة'}</span></p>
           <button onclick="updateStatus(${t.id}, 'in_progress')">قيد التنفيذ</button>
           <button onclick="updateStatus(${t.id}, 'completed')">مكتملة</button>
           <button onclick="updateStatus(${t.id}, 'delayed')">مؤجلة</button>
@@ -76,16 +73,12 @@
     }
 
     async function updateStatus(taskId, status) {
-      const res = await fetch(`/tasks/${taskId}/status`, {
+      await fetch(`/tasks/${taskId}/status`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status })
       });
-      if (res.ok) {
-        document.getElementById(`status-${taskId}`).innerText = status;
-      } else {
-        alert("❌ حدث خطأ عند تحديث الحالة");
-      }
+      document.getElementById(`status-${taskId}`).innerText = status;
     }
 
     function selectTask(taskId) {
@@ -96,9 +89,8 @@
     document.getElementById("reportForm").addEventListener("submit", async e => {
       e.preventDefault();
       const task_id = document.getElementById("task_id").value;
-      if (!task_id) return alert("اختر مهمة أولاً");
-
       const notes = document.getElementById("notes").value;
+
       const imagesFiles = document.getElementById("images").files;
       const signatureFile = document.getElementById("signature").files[0];
 
@@ -109,11 +101,14 @@
       for (let i = 0; i < imagesFiles.length; i++) formData.append("images", imagesFiles[i]);
       if (signatureFile) formData.append("images", signatureFile);
 
-      const res = await fetch("/reports", { method: "POST", body: formData });
+      const res = await fetch("/reports", {
+        method: "POST",
+        body: formData
+      });
+
       if (res.ok) {
         alert("✅ تم إرسال التقرير");
         document.getElementById("reportForm").reset();
-        loadTasks(); // تحديث المهام بعد رفع التقرير
       } else {
         alert("❌ خطأ في إرسال التقرير");
       }
@@ -157,7 +152,9 @@
       container.innerHTML = "";
       notifs.forEach(n => {
         const div = document.createElement("div");
-        div.className = "card";
+        div.style.border = "1px solid #ccc";
+        div.style.padding = "5px";
+        div.style.marginBottom = "5px";
         div.innerHTML = `<strong>${n.title_ar}</strong>: ${n.message_ar}`;
         container.appendChild(div);
       });
@@ -168,8 +165,8 @@
       await loadTasks();
       await initMap();
       await loadNotifications();
-      setInterval(loadNotifications, 10000); // تحديث الإشعارات كل 10 ثواني
-      setInterval(loadTasks, 15000); // تحديث المهام كل 15 ثانية
+      setInterval(loadTasks, 10000);       // تحديث المهام تلقائياً
+      setInterval(loadNotifications, 10000); // تحديث الإشعارات تلقائياً
     })();
   </script>
 </body>
