@@ -1,52 +1,66 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar">
 <head>
-<meta charset="UTF-8">
-<title>تسجيل الدخول</title>
-<link rel="stylesheet" href="assets/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تسجيل الدخول</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="login-container">
-  <h2>تسجيل الدخول</h2>
-  <label>اختر الدور</label>
-  <select id="role">
-    <option value="manager">المدير</option>
-    <option value="supervisor">المشرف</option>
-    <option value="employee">المندوب</option>
-  </select>
-  <label>البريد الإلكتروني / رقم الهاتف</label>
-  <input type="text" id="email">
-  <label>كلمة المرور</label>
-  <input type="password" id="password">
-  <button id="loginBtn">تسجيل الدخول</button>
-  <div id="forgot">نسيت كلمة المرور؟</div>
-</div>
+  <div class="login-container">
+    <h1>🔐 تسجيل الدخول</h1>
 
-<script src="https://unpkg.com/@supabase/supabase-js"></script>
-<script>
-const SUPABASE_URL = 'https://ncjxqfqwswwikedaffif.supabase.co';
-const SUPABASE_KEY = 'ZX7giBBgWRScW6usplziAWjNYn9yCVeLVAQz7YUBjvA';
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    <form id="loginForm">
+      <label for="emailOrPhone">البريد الإلكتروني / رقم الهاتف</label>
+      <input type="text" id="emailOrPhone" required placeholder="أدخل البريد أو الهاتف">
 
-document.getElementById('loginBtn').addEventListener('click', async ()=>{
-  const role = document.getElementById('role').value;
-  const email = document.getElementById('email').value.trim();
-  const password = document.getElementById('password').value.trim();
-  if(!email || !password){ alert('يرجى إدخال جميع البيانات'); return; }
+      <label for="password">كلمة المرور</label>
+      <input type="password" id="password" required placeholder="أدخل كلمة المرور">
 
-  // المدير ثابت
-  if(role==='manager' && email==='7123456789' && password==='123456'){
-    window.location.href='manager.html'; return;
-  }
+      <button type="submit">تسجيل الدخول</button>
+    </form>
 
-  const { data: users, error } = await supabase.from('users').select('*').eq('role',role).eq('email',email);
-  if(error || users.length===0){ alert('بيانات الدخول غير صحيحة'); return; }
+    <p><a href="#" id="forgotPassword">نسيت كلمة المرور؟</a></p>
 
-  if(users[0].password === password){
-    if(role==='supervisor') window.location.href='supervisor.html';
-    else window.location.href='employee.html';
-  } else alert('بيانات الدخول غير صحيحة');
-});
-</script>
+    <div id="message" style="color:red; margin-top:10px;"></div>
+  </div>
+
+  <script>
+    const loginForm = document.getElementById("loginForm");
+    const messageDiv = document.getElementById("message");
+
+    loginForm.addEventListener("submit", async e => {
+      e.preventDefault();
+      const emailOrPhone = document.getElementById("emailOrPhone").value;
+      const password = document.getElementById("password").value;
+
+      try {
+        const res = await fetch("/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ emailOrPhone, password })
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.user) {
+          const role = data.user.role;
+          // إعادة توجيه حسب الدور
+          if (role === "employee") window.location.href = "employee.html";
+          else if (role === "supervisor") window.location.href = "supervisor.html";
+          else if (role === "manager") window.location.href = "manager.html";
+        } else {
+          messageDiv.innerText = data.error || "خطأ في تسجيل الدخول";
+        }
+      } catch (err) {
+        console.error(err);
+        messageDiv.innerText = "حدث خطأ، حاول مرة أخرى";
+      }
+    });
+
+    document.getElementById("forgotPassword").addEventListener("click", () => {
+      alert("سيتم إضافة ميزة استعادة كلمة المرور لاحقاً.");
+    });
+  </script>
 </body>
 </html>
