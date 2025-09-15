@@ -23,9 +23,9 @@ button:hover { background-color: #0056b3; }
 
   <label id="label-role" for="role">اختر الدور</label>
   <select id="role">
-    <option value="admin">المدير</option>
+    <option value="manager">المدير</option>
     <option value="supervisor">المشرف</option>
-    <option value="delegate">المندوب</option>
+    <option value="employee">المندوب</option>
   </select>
 
   <label id="label-email" for="email">البريد الإلكتروني / رقم الهاتف</label>
@@ -42,27 +42,29 @@ button:hover { background-color: #0056b3; }
 <script>
 document.addEventListener("DOMContentLoaded", () => {
     const SUPABASE_URL = "https://ncjxqfqwswwikedaffif.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NDEwNzQsImV4cCI6MjA3MzQxNzA3NH0.4G54968qAHyePjq9_ufSCSA1fHzx5XHFzOAqGKmVW18";
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3d3aWtlZGFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NDEwNzQsImV4cCI6MjA3MzQxNzA3NH0.4G54968qAHyePjq9_ufSCSA1fHzx5XHFzOAqGKmVW18";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let isArabic = true;
     const langSwitch = document.getElementById('langSwitch');
 
     const texts = {
-      ar: {title:'تسجيل الدخول',role:'اختر الدور',email:'البريد الإلكتروني / رقم الهاتف',password:'كلمة المرور',login:'تسجيل الدخول',forgot:'نسيت كلمة المرور؟',switch:'English',enterAll:'يرجى إدخال جميع البيانات',invalid:'بيانات الدخول غير صحيحة',error:'حدث خطأ في تسجيل الدخول'},
-      en: {title:'Login',role:'Select Role',email:'Email / Phone',password:'Password',login:'Login',forgot:'Forgot Password?',switch:'عربي',enterAll:'Please enter all fields',invalid:'Invalid credentials',error:'Login error'}
+      ar: {title:'تسجيل الدخول', role:'اختر الدور', email:'البريد الإلكتروني / رقم الهاتف', password:'كلمة المرور', login:'تسجيل الدخول', forgot:'نسيت كلمة المرور؟', switch:'English', enterAll:'يرجى إدخال جميع البيانات', invalid:'بيانات الدخول غير صحيحة', error:'حدث خطأ في تسجيل الدخول'},
+      en: {title:'Login', role:'Select Role', email:'Email / Phone', password:'Password', login:'Login', forgot:'Forgot Password?', switch:'عربي', enterAll:'Please enter all fields', invalid:'Invalid credentials', error:'Login error'}
     };
 
     function updateLanguage(){
-      const lang = isArabic ? 'ar' : 'en';
+      const lang = isArabic ? 'ar':'en';
       document.documentElement.lang = lang;
-      document.body.style.direction = isArabic ? 'rtl' : 'ltr';
+      document.body.style.direction = isArabic ? 'rtl':'ltr';
       document.getElementById('title').innerText = texts[lang].title;
       document.getElementById('label-role').innerText = texts[lang].role;
       document.getElementById('label-email').innerText = texts[lang].email;
       document.getElementById('label-password').innerText = texts[lang].password;
       document.getElementById('loginBtn').innerText = texts[lang].login;
       document.getElementById('forgot').innerText = texts[lang].forgot;
+      document.getElementById('email').placeholder = texts[lang].email;
+      document.getElementById('password').placeholder = texts[lang].password;
       langSwitch.innerText = texts[lang].switch;
     }
 
@@ -70,54 +72,45 @@ document.addEventListener("DOMContentLoaded", () => {
       isArabic = !isArabic;
       updateLanguage();
     });
-
     updateLanguage();
 
-    document.getElementById('loginBtn').addEventListener('click', async () => {
-        const role = document.getElementById('role').value;
-        const email = document.getElementById('email').value.trim();
-        const password = document.getElementById('password').value.trim();
+    const loginBtn = document.getElementById('loginBtn');
+    loginBtn.addEventListener('click', async () => {
+      const role = document.getElementById('role').value;
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
 
-        if(!email || !password){
-            alert(isArabic ? texts.ar.enterAll : texts.en.enterAll);
-            return;
+      if(!email || !password){
+        alert(isArabic ? texts.ar.enterAll : texts.en.enterAll);
+        return;
+      }
+
+      try {
+        // البحث حسب البريد أو الهاتف والدور (بدون تشفير الباسورد لاختبار)
+        const { data: users, error } = await supabaseClient
+          .from('users')
+          .select('*')
+          .eq('role', role)
+          .or(`email.eq.${email},phone.eq.${email}`)
+          .eq('password', password);
+
+        if(error) throw error;
+        console.log("Users found:", users);
+
+        if(users.length === 0){
+          alert(isArabic ? texts.ar.invalid : texts.en.invalid);
+          return;
         }
 
-        try {
-            // استعلام المستخدم حسب البريد/الهاتف والدور
-            const { data, error } = await supabase
-              .from('users')
-              .select('id, name, email, password, role')
-              .eq('role', role)
-              .eq('email', email);
+        // توجيه حسب الدور
+        if(role === 'manager') window.location.href = 'manager.html';
+        else if(role === 'supervisor') window.location.href = 'supervisor.html';
+        else if(role === 'employee') window.location.href = 'employee.html';
 
-            if(error) throw error;
-
-            if(!data || data.length === 0){
-                alert(isArabic ? texts.ar.invalid : texts.en.invalid);
-                return;
-            }
-
-            // تحقق من كلمة المرور المشفرة
-            const user = data[0];
-            const hashedPassword = user.password;
-
-            // باستخدام bcrypt.js للتحقق من الباسورد المشفر
-            const isMatch = (password === hashedPassword); // مؤقتًا إذا الباسورد نص عادي
-            if(!isMatch){
-                alert(isArabic ? texts.ar.invalid : texts.en.invalid);
-                return;
-            }
-
-            // إعادة التوجيه حسب الدور
-            if(role === 'admin') window.location.href = 'manager.html';
-            else if(role === 'supervisor') window.location.href = 'supervisor.html';
-            else if(role === 'delegate') window.location.href = 'employee.html';
-
-        } catch(err){
-            console.error(err);
-            alert(isArabic ? texts.ar.error : texts.en.error);
-        }
+      } catch(err) {
+        console.error(err);
+        alert(isArabic ? texts.ar.error : texts.en.error);
+      }
     });
 });
 </script>
