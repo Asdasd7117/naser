@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>المدير</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h2>📊 إحصائيات المهام</h2>
+  <canvas id="statsChart" width="400" height="200"></canvas>
+
+  <h2>👥 إضافة مستخدم جديد</h2>
+  <form id="addUserForm">
+    <input type="text" id="name" placeholder="الاسم الكامل" required>
+    <input type="text" id="email" placeholder="البريد الإلكتروني">
+    <input type="text" id="phone" placeholder="رقم الهاتف">
+    <input type="password" id="password" placeholder="كلمة المرور" required>
+    <select id="role" required>
+      <option value="">اختر الدور</option>
+      <option value="employee">مندوب</option>
+      <option value="supervisor">مشرف</option>
+    </select>
+    <button type="submit">➕ إضافة مستخدم</button>
+  </form>
+
+  <h3>قائمة المستخدمين</h3>
+  <div id="usersList"></div>
+
+  <h2>➕ إضافة مهمة جديدة</h2>
+  <form id="addTaskForm">
+    <select id="employeeSelect" required>
+      <option value="">اختر المندوب</option>
+    </select>
+    <input type="text" id="client_name" placeholder="اسم العميل" required>
+    <input type="text" id="address" placeholder="العنوان" required>
+    <input type="datetime-local" id="visit_time" required>
+    <button type="submit">إضافة مهمة</button>
+  </form>
+
+  <h3>قائمة المهام</h3>
+  <div id="tasksList"></div>
+
+  <script>
+    // ===== تحميل الإحصائيات =====
+    async function loadStats() {
+      const res = await fetch("/tasks/3"); // مثال: مهام مندوب محدد
+      const tasks = await res.json();
+
+      const completed = tasks.filter(t => t.status === "completed").length;
+      const in_progress = tasks.filter(t => t.status === "in_progress").length;
+      const delayed = tasks.filter(t => t.status === "delayed").length;
+
+      new Chart(document.getElementById("statsChart"), {
+        type: "doughnut",
+        data: {
+          labels: ["مكتملة", "قيد التنفيذ", "مؤجلة"],
+          datasets: [{
+            data: [completed, in_progress, delayed],
+            backgroundColor: ["#4caf50", "#2196f3", "#f44336"]
+          }]
+        }
+      });
+    }
+
+    // ===== إضافة مستخدم =====
+    document.getElementById("addUserForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const name = document.getElementById("name").value;
+      const email = document.getElementById("email").value;
+      const phone = document.getElementById("phone").value;
+      const password = document.getElementById("password").value;
+      const role = document.getElementById("role").value;
+
+      const res = await fetch("/add-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, phone, password, role })
+      });
+
+      if (res.ok) {
+        alert("✅ تم إضافة المستخدم بنجاح");
+        loadUsers();
+        loadEmployees();
+      } else {
+        const data = await res.json();
+        alert("❌ خطأ: " + (data.error || "حدث خطأ"));
+      }
+    });
+
+    // ===== عرض المستخدمين =====
+    async function loadUsers() {
+      const res = await fetch("/users");
+      if (!res.ok) return;
+      const users = await res.json();
+      const container = document.getElementById("usersList");
+      container.innerHTML = "";
+
+      users.forEach(u => {
+        const div = document.createElement("div");
+        div.style.border = "1px solid #ccc";
+        div.style.padding = "8px";
+        div.style.marginBottom = "5px";
+        div.innerHTML = `
+          <strong>${u.name}</strong> | ${u.role} | ${u.email || u.phone}
+          <button onclick="deleteUser(${u.id})" style="margin-left:10px;color:red;">حذف</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    async function deleteUser(userId) {
+      if (!confirm("هل أنت متأكد من حذف هذا المستخدم؟")) return;
+      const res = await fetch(`/users/${userId}`, { method: "DELETE" });
+      if (res.ok) loadUsers();
+      else alert("حدث خطأ عند الحذف");
+    }
+
+    // ===== تحميل المندوبين للقائمة =====
+    async function loadEmployees() {
+      const res = await fetch("/users");
+      const users = await res.json();
+      const select = document.getElementById("employeeSelect");
+      select.innerHTML = '<option value="">اختر المندوب</option>';
+      users.filter(u => u.role === "employee").forEach(u => {
+        const opt = document.createElement("option");
+        opt.value = u.id;
+        opt.textContent = u.name;
+        select.appendChild(opt);
+      });
+    }
+
+    // ===== إضافة مهمة جديدة =====
+    document.getElementById("addTaskForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const employee_id = document.getElementById("employeeSelect").value;
+      const client_name = document.getElementById("client_name").value;
+      const address = document.getElementById("address").value;
+      const visit_time = document.getElementById("visit_time").value;
+
+      const res = await fetch("/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employee_id, client_name, address, visit_time })
+      });
+
+      if (res.ok) {
+        alert("✅ تم إضافة المهمة");
+        loadTasks();
+      } else {
+        alert("❌ خطأ عند إضافة المهمة");
+      }
+    });
+
+    // ===== عرض المهام =====
+    async function loadTasks() {
+      const res = await fetch("/tasks");
+      const tasks = await res.json();
+      const container = document.getElementById("tasksList");
+      container.innerHTML = "";
+
+      tasks.forEach(task => {
+        const div = document.createElement("div");
+        div.style.border = "1px solid #ccc";
+        div.style.padding = "8px";
+        div.style.marginBottom = "5px";
+        div.innerHTML = `
+          <strong>مندوب:</strong> ${task.employee_id} |
+          <strong>العميل:</strong> ${task.client_name} |
+          <strong>الحالة:</strong> ${task.status}
+          <button onclick="deleteTask(${task.id})" style="color:red;">حذف</button>
+          <button onclick="updateTaskStatus(${task.id}, 'completed')">تمت</button>
+          <button onclick="updateTaskStatus(${task.id}, 'in_progress')">قيد التنفيذ</button>
+          <button onclick="updateTaskStatus(${task.id}, 'delayed')">مؤجلة</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    async function deleteTask(taskId) {
+      if (!confirm("هل تريد حذف هذه المهمة؟")) return;
+      const res = await fetch(`/tasks/${taskId}`, { method: "DELETE" });
+      if (res.ok) loadTasks();
+      else alert("خطأ عند الحذف");
+    }
+
+    async function updateTaskStatus(taskId, status) {
+      await fetch(`/tasks/${taskId}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status })
+      });
+      loadTasks();
+    }
+
+    // ===== تحميل كل شيء عند فتح الصفحة =====
+    loadStats();
+    loadUsers();
+    loadEmployees();
+    loadTasks();
+  </script>
+</body>
+</html>
