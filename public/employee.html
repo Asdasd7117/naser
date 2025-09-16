@@ -10,10 +10,10 @@
   h1 { text-align:center; color:#333; }
   section { margin-bottom:20px; }
   .card { padding:10px; margin:10px 0; border-radius:8px; color:white; }
-  .status-new { background:#90caf9; }          /* منفصلة */
-  .status-in_progress { background:#ffb74d; }  /* قيد التنفيذ */
-  .status-completed { background:#81c784; }    /* تم التنفيذ */
-  .status-delayed { background:#e57373; }      /* قيد الانتظار */
+  .status-new { background:#90caf9; }
+  .status-in_progress { background:#ffb74d; }
+  .status-completed { background:#81c784; }
+  .status-delayed { background:#e57373; }
   button { margin:2px; padding:5px 10px; border:none; border-radius:5px; cursor:pointer; }
   form input, form textarea { width:100%; padding:8px; margin:5px 0; border-radius:5px; border:1px solid #ccc; }
   #map { height:300px; border-radius:8px; margin-top:10px; }
@@ -53,44 +53,53 @@
 </section>
 
 <script>
-const USER_ID = 3; // ضع معرف المندوب بعد تسجيل الدخول
+const SERVER_URL = "https://naser700.onrender.com"; // رابط السيرفر الكامل
+const USER_ID = 3; // معرف المندوب بعد تسجيل الدخول
 let map, marker;
 
 // ===== تحميل المهام =====
 async function loadTasks() {
-  const res = await fetch("/tasks");
-  const tasks = await res.json();
-  const container = document.getElementById("tasks");
-  container.innerHTML = "";
+  try {
+    const res = await fetch(`${SERVER_URL}/tasks`);
+    const tasks = await res.json();
+    const container = document.getElementById("tasks");
+    container.innerHTML = "";
 
-  tasks.forEach(t => {
-    const statusClass = "status-" + (t.status || "new");
-    const div = document.createElement("div");
-    div.className = "card " + statusClass;
-    div.innerHTML = `
-      <p><strong>المندوب ID:</strong> ${t.employee_id || "-"}</p>
-      <p><strong>العميل:</strong> ${t.client_name_ar || "-"}</p>
-      <p><strong>العنوان:</strong> ${t.address_ar || "-"}</p>
-      <p><strong>وقت الزيارة:</strong> ${t.visit_time ? new Date(t.visit_time).toLocaleString() : "-"}</p>
-      <p><strong>الحالة:</strong> <span id="status-${t.id}">${t.status || "منفصلة"}</span></p>
-      <button onclick="updateStatus(${t.id}, 'in_progress')">قيد التنفيذ</button>
-      <button onclick="updateStatus(${t.id}, 'completed')">تم التنفيذ</button>
-      <button onclick="updateStatus(${t.id}, 'delayed')">قيد الانتظار</button>
-      <button onclick="selectTask(${t.id})">رفع تقرير</button>
-    `;
-    container.appendChild(div);
-  });
+    tasks.forEach(t => {
+      const statusClass = "status-" + (t.status || "new");
+      const div = document.createElement("div");
+      div.className = "card " + statusClass;
+      div.innerHTML = `
+        <p><strong>المندوب ID:</strong> ${t.employee_id || "-"}</p>
+        <p><strong>العميل:</strong> ${t.client_name_ar || "-"}</p>
+        <p><strong>العنوان:</strong> ${t.address_ar || "-"}</p>
+        <p><strong>وقت الزيارة:</strong> ${t.visit_time ? new Date(t.visit_time).toLocaleString() : "-"}</p>
+        <p><strong>الحالة:</strong> <span id="status-${t.id}">${t.status || "منفصلة"}</span></p>
+        <button onclick="updateStatus(${t.id}, 'in_progress')">قيد التنفيذ</button>
+        <button onclick="updateStatus(${t.id}, 'completed')">تم التنفيذ</button>
+        <button onclick="updateStatus(${t.id}, 'delayed')">قيد الانتظار</button>
+        <button onclick="selectTask(${t.id})">رفع تقرير</button>
+      `;
+      container.appendChild(div);
+    });
+  } catch(e) {
+    console.error("خطأ في تحميل المهام:", e);
+  }
 }
 
 // ===== تحديث حالة المهمة =====
 async function updateStatus(taskId, status) {
-  await fetch(`/tasks/${taskId}/status`, {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ status })
-  });
-  document.getElementById(`status-${taskId}`).innerText = status;
-  loadTasks();
+  try {
+    await fetch(`${SERVER_URL}/tasks/${taskId}/status`, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ status })
+    });
+    document.getElementById(`status-${taskId}`).innerText = status;
+    loadTasks();
+  } catch(e) {
+    console.error("خطأ في تحديث الحالة:", e);
+  }
 }
 
 // ===== اختيار مهمة للتقرير =====
@@ -98,7 +107,7 @@ function selectTask(taskId) {
   document.getElementById("task_id").value = taskId;
 }
 
-// ===== رفع التقرير بدون توقيع =====
+// ===== رفع التقرير =====
 document.getElementById("reportForm").addEventListener("submit", async e => {
   e.preventDefault();
   const task_id = document.getElementById("task_id").value;
@@ -114,16 +123,22 @@ document.getElementById("reportForm").addEventListener("submit", async e => {
     formData.append("images", imagesFiles[i]);
   }
 
-  const res = await fetch("/reports", { method:"POST", body:formData });
-  if(res.ok){
-    alert("✅ تم إرسال التقرير بنجاح");
-    document.getElementById("reportForm").reset();
-  } else {
-    alert("❌ خطأ في إرسال التقرير");
+  try {
+    const res = await fetch(`${SERVER_URL}/reports`, { method:"POST", body:formData });
+    if(res.ok){
+      alert("✅ تم إرسال التقرير بنجاح");
+      document.getElementById("reportForm").reset();
+    } else {
+      const text = await res.text();
+      console.error("❌ خطأ في إرسال التقرير:", text);
+      alert("❌ حدث خطأ لكن التقرير جرب أن يرسل مع الملفات المتاحة");
+    }
+  } catch(e){
+    console.error("خطأ في إرسال التقرير:", e);
   }
 });
 
-// ===== الخريطة بالقاهرة =====
+// ===== الخريطة =====
 async function initMap() {
   map = L.map('map').setView([30.0444,31.2357], 12);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -134,11 +149,14 @@ async function initMap() {
     setInterval(()=>{
       navigator.geolocation.getCurrentPosition(async pos=>{
         const lat=pos.coords.latitude, lon=pos.coords.longitude;
-        await fetch("/locations", {
-          method:"POST",
-          headers:{ "Content-Type":"application/json" },
-          body:JSON.stringify({ employee_id:USER_ID, latitude:lat, longitude:lon })
-        });
+        try {
+          await fetch(`${SERVER_URL}/locations`, {
+            method:"POST",
+            headers:{ "Content-Type":"application/json" },
+            body:JSON.stringify({ employee_id:USER_ID, latitude:lat, longitude:lon })
+          });
+        } catch(e) { console.error("خطأ في تحديث الموقع:", e); }
+
         if(!marker){
           marker = L.marker([lat,lon]).addTo(map).bindPopup("موقعك الحالي");
         } else { marker.setLatLng([lat,lon]); }
@@ -150,16 +168,21 @@ async function initMap() {
 
 // ===== تحميل الإشعارات =====
 async function loadNotifications() {
-  const res = await fetch(`/notifications/${USER_ID}`);
-  const notifs = await res.json();
-  const container = document.getElementById("notifications");
-  container.innerHTML = "";
-  notifs.forEach(n=>{
-    const div = document.createElement("div");
-    div.className = "card";
-    div.innerHTML = `<strong>${n.title_ar}</strong>: ${n.message_ar}`;
-    container.appendChild(div);
-  });
+  try {
+    const res = await fetch(`${SERVER_URL}/notifications/${USER_ID}`);
+    if(!res.ok) throw new Error("404 - لم يتم العثور على الإشعارات");
+    const notifs = await res.json();
+    const container = document.getElementById("notifications");
+    container.innerHTML = "";
+    notifs.forEach(n=>{
+      const div = document.createElement("div");
+      div.className = "card";
+      div.innerHTML = `<strong>${n.title_ar}</strong>: ${n.message_ar}`;
+      container.appendChild(div);
+    });
+  } catch(e){
+    console.error("خطأ في تحميل الإشعارات:", e);
+  }
 }
 
 // ===== بدء الصفحة =====
@@ -167,7 +190,7 @@ async function loadNotifications() {
   await loadTasks();
   await initMap();
   await loadNotifications();
-  setInterval(loadNotifications,10000); // تحديث كل 10 ثواني
+  setInterval(loadNotifications,10000);
 })();
 </script>
 </body>
