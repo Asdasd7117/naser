@@ -29,7 +29,7 @@ const SUPABASE_URL = "https://ncjxqfqwswwikedaffif.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Nzg0MTA3NCwiZXhwIjoyMDczNDE3MDc0fQ.ZX7giBBgWRScW6usplziAWjNYn9yCVeLVAQz7YUBjvA";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ===== Multer =====
+// ===== Multer للرفع =====
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadsDir),
   filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname)
@@ -78,7 +78,7 @@ app.post("/add-user", async (req, res) => {
 
 app.get("/users", async (req, res) => {
   try {
-    const { data, error } = await supabase.from("users").select("*").order("id", { ascending: true });
+    const { data, error } = await supabase.from("users").select("*").order("id");
     if (error) throw error;
     res.json(data);
   } catch (err) {
@@ -109,7 +109,7 @@ app.post("/tasks", async (req, res) => {
 app.get("/tasks", async (req, res) => {
   try {
     const { employee_id } = req.query;
-    let query = supabase.from("tasks").select("*").order("visit_time", { ascending: true });
+    let query = supabase.from("tasks").select("*").order("visit_time");
     if (employee_id) query = query.eq("employee_id", employee_id);
     const { data, error } = await query;
     if (error) throw error;
@@ -140,22 +140,22 @@ app.post("/reports", upload.fields([{ name: "images", maxCount: 5 }, { name: "si
   try {
     const { task_id, user_id, notes } = req.body;
 
-    const images = req.files?.images ? req.files.images.map(f => `/uploads/${f.filename}`).join(",") : "";
-    const signature = req.files?.signature ? `/uploads/${req.files.signature[0].filename}` : null;
+    const images = req.files?.images?.map(f => `/uploads/${f.filename}`).join(",") || "";
+    const signature = req.files?.signature?.[0]?.filename ? `/uploads/${req.files.signature[0].filename}` : null;
 
     const { data: report, error: reportErr } = await supabase
       .from("reports")
-      .insert([{ task_id: task_id || null, user_id: user_id || null, notes: notes || "", images, signature }])
+      .insert([{ task_id, user_id, notes, images, signature }])
       .select()
       .single();
+
     if (reportErr) throw reportErr;
 
-    // إشعارات للمدراء والمشرفين
-    const { data: managers, error: mgrErr } = await supabase
+    // إشعارات جماعية للمديرين والمشرفين
+    const { data: managers } = await supabase
       .from("users")
-      .select("id, role")
+      .select("id")
       .in("role", ["manager", "supervisor"]);
-    if (mgrErr) console.warn("خطأ عند جلب المشرفين/المدراء:", mgrErr);
 
     if (managers?.length) {
       const notifications = managers.map(m => ({
@@ -166,8 +166,7 @@ app.post("/reports", upload.fields([{ name: "images", maxCount: 5 }, { name: "si
         message_en: `A report was submitted for task #${task_id}`,
         type: "report"
       }));
-      const { error: notifErr } = await supabase.from("notifications").insert(notifications);
-      if (notifErr) console.warn("خطأ عند إدخال الإشعارات:", notifErr);
+      await supabase.from("notifications").insert(notifications);
     }
 
     res.json(report);
@@ -178,34 +177,20 @@ app.post("/reports", upload.fields([{ name: "images", maxCount: 5 }, { name: "si
 });
 
 // =========================
-// إشعار جماعي من المدير
+// APIs الإشعارات
 // =========================
-app.post("/notifications/broadcast", async (req, res) => {
+app.get("/notifications/:user_id", async (req, res) => {
   try {
-    const { title_ar, title_en, message_ar, message_en, type } = req.body;
-
-    // جلب كل المندوبين
-    const { data: employees, error: empErr } = await supabase
-      .from("users")
-      .select("id")
-      .eq("role", "employee");
-    if (empErr) throw empErr;
-
-    const notifications = employees.map(e => ({
-      user_id: e.id,
-      title_ar,
-      title_en,
-      message_ar,
-      message_en,
-      type
-    }));
-
-    const { data, error } = await supabase.from("notifications").insert(notifications).select();
+    const { user_id } = req.params;
+    const { data, error } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", user_id)
+      .order("created_at", { ascending: false });
     if (error) throw error;
-
-    res.json({ message: "تم إرسال الإشعار الجماعي بنجاح", data });
+    res.json(data);
   } catch (err) {
-    console.error("POST /notifications/broadcast error:", err);
+    console.error("GET /notifications/:user_id error:", err);
     res.status(500).json({ error: err.message, stack: err.stack });
   }
 });
@@ -222,7 +207,6 @@ app.post("/locations", async (req, res) => {
       .select()
       .single();
     if (error) throw error;
-
     await supabase.from("users").update({ latitude, longitude }).eq("id", employee_id);
     res.json(data);
   } catch (err) {
