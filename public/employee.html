@@ -41,13 +41,8 @@
   </section>
 
   <script>
-    // 🟢 اجلب معرف المستخدم من تسجيل الدخول
-    const USER_ID = localStorage.getItem("user_id");
-
-    if (!USER_ID) {
-      alert("⚠️ لم يتم تسجيل الدخول");
-      window.location.href = "login.html"; // يرجع لصفحة تسجيل الدخول
-    }
+    // ===== استخدم معرف المندوب من تسجيل الدخول =====
+    const USER_ID = localStorage.getItem("user_id"); 
 
     let map, marker;
 
@@ -58,26 +53,25 @@
       const container = document.getElementById("tasks");
       container.innerHTML = "";
 
-      tasks
-        .filter(t => String(t.employee_id) === String(USER_ID))
-        .forEach(t => {
-          const div = document.createElement("div");
-          div.style.border = "1px solid #ccc";
-          div.style.padding = "5px";
-          div.style.marginBottom = "5px";
+      // فلترة المهام مع تحويل كلا القيم إلى نص لتجنب التعارض بين رقم ونص
+      tasks.filter(t => String(t.employee_id) === String(USER_ID)).forEach(t => {
+        const div = document.createElement("div");
+        div.style.border = "1px solid #ccc";
+        div.style.padding = "5px";
+        div.style.marginBottom = "5px";
 
-          div.innerHTML = `
-            <p><strong>العميل:</strong> ${t.client_name_ar}</p>
-            <p><strong>العنوان:</strong> ${t.address_ar}</p>
-            <p><strong>وقت الزيارة:</strong> ${new Date(t.visit_time).toLocaleString()}</p>
-            <p><strong>الحالة:</strong> <span id="status-${t.id}">${t.status}</span></p>
-            <button onclick="updateStatus(${t.id}, 'in_progress')">قيد التنفيذ</button>
-            <button onclick="updateStatus(${t.id}, 'completed')">مكتملة</button>
-            <button onclick="updateStatus(${t.id}, 'delayed')">مؤجلة</button>
-            <button onclick="selectTask(${t.id})">رفع تقرير</button>
-          `;
-          container.appendChild(div);
-        });
+        div.innerHTML = `
+          <p><strong>العميل:</strong> ${t.client_name_ar}</p>
+          <p><strong>العنوان:</strong> ${t.address_ar}</p>
+          <p><strong>وقت الزيارة:</strong> ${new Date(t.visit_time).toLocaleString()}</p>
+          <p><strong>الحالة:</strong> <span id="status-${t.id}">${t.status || 'جديدة'}</span></p>
+          <button onclick="updateStatus(${t.id}, 'in_progress')">قيد التنفيذ</button>
+          <button onclick="updateStatus(${t.id}, 'completed')">مكتملة</button>
+          <button onclick="updateStatus(${t.id}, 'delayed')">مؤجلة</button>
+          <button onclick="selectTask(${t.id})">رفع تقرير</button>
+        `;
+        container.appendChild(div);
+      });
     }
 
     async function updateStatus(taskId, status) {
@@ -109,10 +103,7 @@
       for (let i = 0; i < imagesFiles.length; i++) formData.append("images", imagesFiles[i]);
       if (signatureFile) formData.append("images", signatureFile);
 
-      const res = await fetch("/reports", {
-        method: "POST",
-        body: formData
-      });
+      const res = await fetch("/reports", { method: "POST", body: formData });
 
       if (res.ok) {
         alert("✅ تم إرسال التقرير");
@@ -124,12 +115,11 @@
 
     // ===== الخريطة =====
     async function initMap() {
-      map = L.map('map').setView([24.7136, 46.6753], 10); // مثال: الرياض
+      map = L.map('map').setView([24.7136, 46.6753], 10);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors'
       }).addTo(map);
 
-      // تحديث الموقع كل 15 ثانية
       if (navigator.geolocation) {
         setInterval(async () => {
           navigator.geolocation.getCurrentPosition(async pos => {
@@ -174,7 +164,7 @@
       await loadTasks();
       await initMap();
       await loadNotifications();
-      setInterval(loadNotifications, 10000); // كل 10 ثواني
+      setInterval(loadNotifications, 10000);
     })();
   </script>
 </body>
