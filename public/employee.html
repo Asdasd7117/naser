@@ -6,6 +6,11 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <style>
+    section { margin-bottom: 20px; }
+    .card { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 8px; }
+    button { margin: 2px; }
+  </style>
 </head>
 <body>
   <h1>👷 لوحة المندوب</h1>
@@ -28,6 +33,12 @@
     </form>
   </section>
 
+  <!-- عرض التقارير السابقة -->
+  <section>
+    <h2>📂 التقارير السابقة</h2>
+    <div id="reports"></div>
+  </section>
+
   <!-- الخريطة -->
   <section>
     <h2>🗺️ موقعك الحالي</h2>
@@ -40,135 +51,144 @@
     <div id="notifications"></div>
   </section>
 
-  <script>
-    const USER_ID = 3; // ضع هنا معرف المندوب الحالي بعد تسجيل الدخول
+<script>
+  const USER_ID = 3; // ضع معرف المندوب بعد تسجيل الدخول
 
-    let map, marker;
+  let map, marker;
 
-    // ===== تحميل المهام =====
-    async function loadTasks() {
-      const res = await fetch("/tasks");
-      const tasks = await res.json();
-      const container = document.getElementById("tasks");
-      container.innerHTML = "";
+  // ===== تحميل المهام الخاصة بالمندوب =====
+  async function loadTasks() {
+    const res = await fetch("/tasks");
+    const tasks = await res.json();
+    const container = document.getElementById("tasks");
+    container.innerHTML = "";
 
-      tasks.forEach(t => {
-        const div = document.createElement("div");
-        div.style.border = "1px solid #ccc";
-        div.style.padding = "5px";
-        div.style.marginBottom = "5px";
-
-        div.innerHTML = `
-          <p><strong>المندوب ID:</strong> ${t.employee_id}</p>
-          <p><strong>العميل:</strong> ${t.client_name_ar}</p>
-          <p><strong>العنوان:</strong> ${t.address_ar}</p>
-          <p><strong>وقت الزيارة:</strong> ${new Date(t.visit_time).toLocaleString()}</p>
-          <p><strong>الحالة:</strong> <span id="status-${t.id}">${t.status || "جديدة"}</span></p>
-          <button onclick="updateStatus(${t.id}, 'in_progress')">قيد التنفيذ</button>
-          <button onclick="updateStatus(${t.id}, 'completed')">مكتملة</button>
-          <button onclick="updateStatus(${t.id}, 'delayed')">مؤجلة</button>
-          <button onclick="selectTask(${t.id})">رفع تقرير</button>
-        `;
-        container.appendChild(div);
-      });
-    }
-
-    async function updateStatus(taskId, status) {
-      await fetch(`/tasks/${taskId}/status`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status })
-      });
-      document.getElementById(`status-${taskId}`).innerText = status;
-    }
-
-    function selectTask(taskId) {
-      document.getElementById("task_id").value = taskId;
-    }
-
-    // ===== رفع التقرير =====
-    document.getElementById("reportForm").addEventListener("submit", async e => {
-      e.preventDefault();
-      const task_id = document.getElementById("task_id").value;
-      const notes = document.getElementById("notes").value;
-
-      const imagesFiles = document.getElementById("images").files;
-      const signatureFile = document.getElementById("signature").files[0];
-
-      const formData = new FormData();
-      formData.append("task_id", task_id);
-      formData.append("user_id", USER_ID);
-      formData.append("notes", notes);
-      for (let i = 0; i < imagesFiles.length; i++) formData.append("images", imagesFiles[i]);
-      if (signatureFile) formData.append("images", signatureFile);
-
-      const res = await fetch("/reports", {
-        method: "POST",
-        body: formData
-      });
-
-      if (res.ok) {
-        alert("✅ تم إرسال التقرير");
-        document.getElementById("reportForm").reset();
-      } else {
-        alert("❌ خطأ في إرسال التقرير");
-      }
+    tasks.filter(t => t.employee_id == USER_ID).forEach(t => {
+      const div = document.createElement("div");
+      div.className = "card";
+      div.innerHTML = `
+        <p><strong>العميل:</strong> ${t.client_name_ar}</p>
+        <p><strong>العنوان:</strong> ${t.address_ar}</p>
+        <p><strong>وقت الزيارة:</strong> ${new Date(t.visit_time).toLocaleString()}</p>
+        <p><strong>الحالة:</strong> <span id="status-${t.id}">${t.status || "جديدة"}</span></p>
+        <button onclick="updateStatus(${t.id}, 'in_progress')">قيد التنفيذ</button>
+        <button onclick="updateStatus(${t.id}, 'completed')">مكتملة</button>
+        <button onclick="updateStatus(${t.id}, 'delayed')">مؤجلة</button>
+        <button onclick="selectTask(${t.id})">رفع تقرير</button>
+      `;
+      container.appendChild(div);
     });
+  }
 
-    // ===== الخريطة =====
-    async function initMap() {
-      map = L.map('map').setView([24.7136, 46.6753], 10); // مثال الرياض
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-      }).addTo(map);
+  async function updateStatus(taskId, status) {
+    await fetch(`/tasks/${taskId}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status })
+    });
+    document.getElementById(`status-${taskId}`).innerText = status;
+  }
 
-      // تحديث الموقع الحالي كل 15 ثانية
-      if (navigator.geolocation) {
-        setInterval(async () => {
-          navigator.geolocation.getCurrentPosition(async pos => {
-            const lat = pos.coords.latitude;
-            const lon = pos.coords.longitude;
+  function selectTask(taskId) {
+    document.getElementById("task_id").value = taskId;
+  }
 
-            await fetch("/locations", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ employee_id: USER_ID, latitude: lat, longitude: lon })
-            });
+  // ===== رفع التقرير =====
+  document.getElementById("reportForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const task_id = document.getElementById("task_id").value;
+    const notes = document.getElementById("notes").value;
+    if (!task_id) return alert("اختر مهمة أولاً");
 
-            if (!marker) {
-              marker = L.marker([lat, lon]).addTo(map).bindPopup("موقعك الحالي");
-            } else {
-              marker.setLatLng([lat, lon]);
-            }
-            map.setView([lat, lon], 13);
+    const imagesFiles = document.getElementById("images").files;
+    const signatureFile = document.getElementById("signature").files[0];
+
+    const formData = new FormData();
+    formData.append("task_id", task_id);
+    formData.append("user_id", USER_ID);
+    formData.append("notes", notes);
+    for (let i = 0; i < imagesFiles.length; i++) formData.append("images", imagesFiles[i]);
+    if (signatureFile) formData.append("signature", signatureFile);
+
+    const res = await fetch("/reports", { method: "POST", body: formData });
+    if (res.ok) {
+      alert("✅ تم إرسال التقرير");
+      document.getElementById("reportForm").reset();
+      loadReports(); // تحديث قائمة التقارير
+    } else {
+      alert("❌ خطأ في إرسال التقرير");
+    }
+  });
+
+  // ===== عرض التقارير السابقة =====
+  async function loadReports() {
+    const res = await fetch("/reports");
+    const reports = await res.json();
+    const container = document.getElementById("reports");
+    container.innerHTML = "";
+
+    reports.filter(r => r.user_id == USER_ID).forEach(r => {
+      const div = document.createElement("div");
+      div.className = "card";
+      div.innerHTML = `
+        <p><strong>مهمة ID:</strong> ${r.task_id}</p>
+        <p><strong>ملاحظات:</strong> ${r.notes}</p>
+        <p><strong>صور:</strong> ${r.images ? r.images.split(",").map(img => `<img src="${img}" style="width:50px; margin:2px;">`).join("") : "لا توجد"}</p>
+        <p><strong>توقيع:</strong> ${r.signature ? `<img src="${r.signature}" style="width:50px;">` : "لا يوجد"}</p>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  // ===== الخريطة =====
+  async function initMap() {
+    map = L.map('map').setView([24.7136, 46.6753], 10); //القاهرة
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    if (navigator.geolocation) {
+      setInterval(async () => {
+        navigator.geolocation.getCurrentPosition(async pos => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+
+          await fetch("/locations", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ employee_id: USER_ID, latitude: lat, longitude: lon })
           });
-        }, 15000);
-      }
-    }
 
-    // ===== الإشعارات =====
-    async function loadNotifications() {
-      const res = await fetch(`/notifications/${USER_ID}`);
-      const notifs = await res.json();
-      const container = document.getElementById("notifications");
-      container.innerHTML = "";
-      notifs.forEach(n => {
-        const div = document.createElement("div");
-        div.style.border = "1px solid #ccc";
-        div.style.padding = "5px";
-        div.style.marginBottom = "5px";
-        div.innerHTML = `<strong>${n.title_ar}</strong>: ${n.message_ar}`;
-        container.appendChild(div);
-      });
+          if (!marker) marker = L.marker([lat, lon]).addTo(map).bindPopup("موقعك الحالي");
+          else marker.setLatLng([lat, lon]);
+          map.setView([lat, lon], 13);
+        });
+      }, 15000);
     }
+  }
 
-    // ===== بدء الصفحة =====
-    (async () => {
-      await loadTasks();
-      await initMap();
-      await loadNotifications();
-      setInterval(loadNotifications, 10000); // تحديث الإشعارات كل 10 ثواني
-    })();
-  </script>
+  // ===== الإشعارات =====
+  async function loadNotifications() {
+    const res = await fetch(`/notifications/${USER_ID}`);
+    const notifs = await res.json();
+    const container = document.getElementById("notifications");
+    container.innerHTML = "";
+    notifs.forEach(n => {
+      const div = document.createElement("div");
+      div.className = "card";
+      div.innerHTML = `<strong>${n.title_ar}</strong>: ${n.message_ar}`;
+      container.appendChild(div);
+    });
+  }
+
+  // ===== بدء الصفحة =====
+  (async () => {
+    await loadTasks();
+    await initMap();
+    await loadNotifications();
+    await loadReports();
+    setInterval(loadNotifications, 10000); // تحديث الإشعارات
+  })();
+</script>
 </body>
 </html>
