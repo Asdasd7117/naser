@@ -47,12 +47,12 @@
 
     <section>
         <h2>🔔 الإشعارات</h2>
-        <div id="notifications">لا يوجد إشعارات حالياً</div>
+        <div id="notifications">جاري تحميل الإشعارات...</div>
     </section>
 
     <script>
         const BASE_URL = "https://naser700.onrender.com";
-        const USER_ID = 3;
+        const USER_ID = 3; // يمكنك تغييره إذا كان مختلفاً
 
         let map, marker;
 
@@ -68,6 +68,7 @@
                     throw new Error(`HTTP error! status: ${res.status}, response: ${errorText}`);
                 }
                 const tasks = await res.json();
+                console.log("Tasks received:", tasks); // تسجيل البيانات للتحقق
                 const container = document.getElementById("tasks");
                 container.innerHTML = "";
                 if (!tasks || tasks.length === 0) {
@@ -77,7 +78,6 @@
                 tasks.forEach(task => {
                     const div = document.createElement("div");
                     div.className = "card";
-                    // عرض جميع الحقول المتاحة ديناميكياً
                     let content = "<ul>";
                     for (let key in task) {
                         if (task.hasOwnProperty(key)) {
@@ -86,8 +86,7 @@
                     }
                     content += "</ul>";
                     div.innerHTML = content;
-                    // إضافة زر لتحديث الحالة إذا كان هناك حالة
-                    if (task.status) {
+                    if (task.id && task.hasOwnProperty("status")) {
                         div.innerHTML += `
                             <p><strong>الحالة:</strong> <span id="status-${task.id}">${task.status || "منفصلة"}</span></p>
                             <button onclick="updateStatus(${task.id}, 'in_progress')">قيد التنفيذ</button>
@@ -100,7 +99,7 @@
                 });
             } catch (e) {
                 console.error("خطأ في تحميل المهام:", e);
-                document.getElementById("tasks").innerHTML = `فشل تحميل المهام، تحقق من الاتصال بالخادم. التفاصيل: ${e.message}`;
+                document.getElementById("tasks").innerHTML = `فشل تحميل المهام. التفاصيل: ${e.message}`;
             }
         }
 
@@ -126,7 +125,7 @@
         // ===== رفع التقرير =====
         document.getElementById("reportForm").addEventListener("submit", async e => {
             e.preventDefault();
-            const task_id = document.getElementById("task_id").value || null; // قبول null إذا لم يتم اختيار مهمة
+            const task_id = document.getElementById("task_id").value || null;
             const notes = document.getElementById("notes").value || "";
 
             const imagesFiles = document.getElementById("images").files;
@@ -147,7 +146,10 @@
                     method: "POST",
                     body: formData
                 });
-                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    throw new Error(`HTTP error! status: ${res.status}, response: ${errorText}`);
+                }
                 alert("✅ تم إرسال التقرير بنجاح");
                 document.getElementById("reportForm").reset();
                 loadNotifications();
@@ -159,7 +161,7 @@
 
         // ===== الخريطة =====
         async function initMap() {
-            map = L.map('map').setView([30.0444, 31.2357], 12); // القاهرة
+            map = L.map('map').setView([30.0444, 31.2357], 12);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; OpenStreetMap contributors'
             }).addTo(map);
@@ -199,12 +201,16 @@
         // ===== الإشعارات =====
         async function loadNotifications() {
             try {
-                const res = await fetch(`${BASE_URL}/notifications/${USER_ID}`);
+                const res = await fetch(`${BASE_URL}/notifications/${USER_ID}`, {
+                    method: "GET",
+                    headers: { "Content-Type": "application/json" }
+                });
                 if (!res.ok) {
                     const errorText = await res.text();
                     throw new Error(`HTTP error! status: ${res.status}, response: ${errorText}`);
                 }
                 const notifs = await res.json();
+                console.log("Notifications received:", notifs); // تسجيل البيانات للتحقق
                 const container = document.getElementById("notifications");
                 container.innerHTML = "";
                 if (!notifs || notifs.length === 0) {
@@ -215,7 +221,6 @@
                     const div = document.createElement("div");
                     div.className = "card";
                     div.style.background = "#2196f3";
-                    // عرض جميع الحقول المتاحة ديناميكياً
                     let content = "<ul>";
                     for (let key in notif) {
                         if (notif.hasOwnProperty(key)) {
@@ -228,7 +233,7 @@
                 });
             } catch (e) {
                 console.error("خطأ في تحميل الإشعارات:", e);
-                document.getElementById("notifications").innerHTML = `فشل تحميل الإشعارات، تحقق من الاتصال بالخادم. التفاصيل: ${e.message}`;
+                document.getElementById("notifications").innerHTML = `فشل تحميل الإشعارات. التفاصيل: ${e.message}`;
             }
         }
 
