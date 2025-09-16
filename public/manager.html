@@ -39,7 +39,7 @@
     <button onclick="showTab('control')">⚙️ لوحة التحكم</button>
   </nav>
 
-  <!-- التقارير -->
+  <!-- ===== التقارير ===== -->
   <section id="reports" class="active">
     <h2>📊 التقارير والتحليلات</h2>
     <canvas id="generalChart" width="400" height="200"></canvas>
@@ -48,13 +48,13 @@
     <div id="employeesPerformance"></div>
   </section>
 
-  <!-- الحضور والانصراف -->
+  <!-- ===== الحضور والانصراف ===== -->
   <section id="attendance">
     <h2>⏰ الحضور والانصراف</h2>
     <div id="attendanceList"></div>
   </section>
 
-  <!-- لوحة التحكم -->
+  <!-- ===== لوحة التحكم ===== -->
   <section id="control">
     <h2>👥 إدارة المستخدمين</h2>
     <form id="addUserForm">
@@ -103,10 +103,7 @@
       const in_progress = tasks.filter(t => t.status === "in_progress").length;
       const delayed = tasks.filter(t => t.status === "delayed").length;
 
-      // إذا كان الرسم موجود بالفعل، امسحه قبل إنشاء جديد
-      if (window.generalChart) window.generalChart.destroy();
-
-      window.generalChart = new Chart(document.getElementById("generalChart"), {
+      new Chart(document.getElementById("generalChart"), {
         type: "doughnut",
         data: {
           labels: ["مكتملة", "قيد التنفيذ", "مؤجلة"],
@@ -168,6 +165,15 @@
       });
     }
 
+    async function deleteUser(id) {
+      if (!confirm("هل تريد حذف هذا المستخدم؟")) return;
+      const res = await fetch(`/users/${id}`, { method: "DELETE" });
+      if (res.ok) { 
+        alert("تم حذف المستخدم"); 
+        await refreshAll();
+      }
+    }
+
     async function loadEmployees() {
       const res = await fetch("/users");
       const users = await res.json();
@@ -179,40 +185,6 @@
         opt.textContent = u.name_ar;
         select.appendChild(opt);
       });
-    }
-
-    document.getElementById("addUserForm").addEventListener("submit", async e => {
-      e.preventDefault();
-      const payload = {
-        name_ar: document.getElementById("name").value,
-        email: document.getElementById("email").value,
-        phone: document.getElementById("phone").value,
-        password: document.getElementById("password").value,
-        role: document.getElementById("role").value
-      };
-      const res = await fetch("/add-user", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
-      });
-      if (res.ok) {
-        alert("تم إضافة المستخدم");
-        document.getElementById("addUserForm").reset();
-        await loadUsers();
-        await loadEmployees();
-        await loadReports();
-        await loadAttendance();
-      }
-    });
-
-    async function deleteUser(id) {
-      if (!confirm("هل تريد حذف هذا المستخدم؟")) return;
-      const res = await fetch(`/users/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        alert("تم حذف المستخدم");
-        await loadUsers();
-        await loadEmployees();
-        await loadTasks();
-        await loadReports();
-      }
     }
 
     // ===== إدارة المهام =====
@@ -232,6 +204,35 @@
       });
     }
 
+    async function deleteTask(id) {
+      if (!confirm("هل تريد حذف هذه المهمة؟")) return;
+      const res = await fetch(`/tasks/${id}`, { method: "DELETE" });
+      if (res.ok) { 
+        alert("تم حذف المهمة"); 
+        await refreshAll();
+      }
+    }
+
+    // ===== إضافة المستخدم =====
+    document.getElementById("addUserForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const payload = {
+        name_ar: document.getElementById("name").value,
+        email: document.getElementById("email").value,
+        phone: document.getElementById("phone").value,
+        password: document.getElementById("password").value,
+        role: document.getElementById("role").value
+      };
+      const res = await fetch("/add-user", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
+      });
+      if (res.ok) { 
+        alert("تم إضافة المستخدم"); 
+        await refreshAll();
+      }
+    });
+
+    // ===== إضافة مهمة =====
     document.getElementById("addTaskForm").addEventListener("submit", async e => {
       e.preventDefault();
       const payload = {
@@ -243,25 +244,13 @@
       const res = await fetch("/tasks", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
       });
-      if (res.ok) {
-        alert("تمت إضافة المهمة");
-        document.getElementById("addTaskForm").reset();
-        await loadTasks();
-        await loadReports();
+      if (res.ok) { 
+        alert("تمت إضافة المهمة"); 
+        await refreshAll();
       }
     });
 
-    async function deleteTask(id) {
-      if (!confirm("هل تريد حذف هذه المهمة؟")) return;
-      const res = await fetch(`/tasks/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        alert("تم حذف المهمة");
-        await loadTasks();
-        await loadReports();
-      }
-    }
-
-    // ===== إشعارات جماعية =====
+    // ===== إرسال إشعارات =====
     document.getElementById("notifyForm").addEventListener("submit", async e => {
       e.preventDefault();
       const message = document.getElementById("message").value;
@@ -282,17 +271,20 @@
         });
       }
       alert("✅ تم إرسال الإشعارات لجميع المستخدمين");
-      document.getElementById("notifyForm").reset();
+      await loadReports();
     });
 
-    // ===== تحميل الكل عند بدء الصفحة =====
-    (async () => {
-      await loadReports();
-      await loadAttendance();
+    // ===== تحديث كل شيء =====
+    async function refreshAll() {
       await loadUsers();
       await loadEmployees();
       await loadTasks();
-    })();
+      await loadReports();
+      await loadAttendance();
+    }
+
+    // ===== بدء الصفحة =====
+    refreshAll();
   </script>
 </body>
 </html>
