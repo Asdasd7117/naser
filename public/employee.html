@@ -5,6 +5,7 @@
 <title>لوحة المندوب</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
 <style>
   body { font-family: Arial, sans-serif; margin:20px; background:#f5f5f5; }
   h1 { text-align:center; color:#333; }
@@ -23,47 +24,53 @@
 <body>
 <h1>👷 لوحة المندوب</h1>
 
+<!-- المهام اليومية -->
 <section>
   <h2>📋 المهام اليومية</h2>
   <div id="tasks"></div>
 </section>
 
+<!-- رفع التقرير -->
 <section>
   <h2>📝 رفع التقرير</h2>
   <form id="reportForm">
     <input type="hidden" id="task_id">
     <textarea id="notes" placeholder="اكتب ملاحظاتك هنا..." required></textarea>
-    <input type="file" id="images" multiple>
+    <input type="file" id="images" multiple required>
     <button type="submit">إرسال التقرير</button>
   </form>
 </section>
 
+<!-- الخريطة -->
 <section>
   <h2>🗺️ موقعك الحالي</h2>
   <div id="map"></div>
 </section>
 
+<!-- الإشعارات -->
 <section>
   <h2>🔔 الإشعارات</h2>
   <div id="notifications"></div>
 </section>
 
-<script type="module">
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-
+<script>
+/* ===== إعداد Supabase ===== */
 const SUPABASE_URL = "https://ncjxqfqwswwikedaffif.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Nzg0MTA3NCwiZXhwIjoyMDczNDE3MDc0fQ.ZX7giBBgWRScW6usplziAWjNYn9yCVeLVAQz7YUBjvA";
+const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-const USER_ID = 3; // معرف المندوب
+/* ===== المتغيرات ===== */
+const USER_ID = 3; // معرف المندوب بعد تسجيل الدخول
+let map, marker;
 
-// ===== تحميل المهام =====
+/* ===== تحميل المهام ===== */
 async function loadTasks() {
   const { data: tasks, error } = await supabase
     .from("tasks")
     .select("*")
-    .eq("employee_id", USER_ID);
-  if(error) return console.log(error);
+    .eq("employee_id", USER_ID)
+    .order("id", { ascending: true });
+  if(error) return console.log("خطأ في جلب المهام:", error);
 
   const container = document.getElementById("tasks");
   container.innerHTML = "";
@@ -85,13 +92,10 @@ async function loadTasks() {
   });
 }
 
-// ===== تحديث الحالة =====
+/* ===== تحديث الحالة ===== */
 async function updateStatus(taskId, status) {
-  const { data, error } = await supabase
-    .from("tasks")
-    .update({ status })
-    .eq("id", taskId);
-  if(error) return console.log(error);
+  const { error } = await supabase.from("tasks").update({ status }).eq("id", taskId);
+  if(error) return console.log("خطأ في تحديث الحالة:", error);
   document.getElementById(`status-${taskId}`).innerText = status;
   loadTasks();
 }
@@ -100,7 +104,7 @@ function selectTask(taskId) {
   document.getElementById("task_id").value = taskId;
 }
 
-// ===== رفع التقرير مع الصور بدون امتداد =====
+/* ===== رفع التقرير ===== */
 document.getElementById("reportForm").addEventListener("submit", async e => {
   e.preventDefault();
   const task_id = document.getElementById("task_id").value;
@@ -108,56 +112,55 @@ document.getElementById("reportForm").addEventListener("submit", async e => {
   const imagesFiles = document.getElementById("images").files;
 
   const uploadedFiles = [];
-  for (let file of imagesFiles) {
-    const filename = `${Date.now()}_${Math.random().toString(36).substr(2,5)}`;
+  for(let file of imagesFiles){
+    const ext = file.name.split('.').pop();
+    const filename = `${Date.now()}_${Math.random().toString(36).substr(2,5)}.${ext}`;
     const { data, error } = await supabase.storage
       .from("reports")
-      .upload(filename, file); // بدون امتداد
-    if(error) console.log(error);
-    else uploadedFiles.push(data.path);
+      .upload(filename, file);
+    if(error) return console.log("خطأ رفع الصورة:", error);
+    uploadedFiles.push(data.path.split('.').slice(0,-1).join('')); // حفظ بدون امتداد
   }
 
   const { data, error } = await supabase
     .from("reports")
     .insert([{ task_id, user_id: USER_ID, notes, images: uploadedFiles.join(",") }]);
-  if(error) console.log(error);
-  else {
-    alert("✅ تم إرسال التقرير");
-    document.getElementById("reportForm").reset();
-  }
+  if(error) return alert("❌ خطأ في إرسال التقرير: " + error.message);
+
+  alert("✅ تم إرسال التقرير");
+  document.getElementById("reportForm").reset();
 });
 
-// ===== الخريطة =====
-let map, marker;
+/* ===== الخريطة ===== */
 async function initMap() {
   map = L.map('map').setView([30.0444,31.2357], 12);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    attribution:'&copy; OpenStreetMap contributors'
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
 
   if(navigator.geolocation){
     setInterval(async ()=>{
       navigator.geolocation.getCurrentPosition(async pos=>{
-        const lat = pos.coords.latitude, lon = pos.coords.longitude;
-        await supabase
-          .from("employee_locations")
+        const lat=pos.coords.latitude, lon=pos.coords.longitude;
+        await supabase.from("employee_locations")
           .insert([{ employee_id: USER_ID, latitude: lat, longitude: lon }]);
-        if(!marker) marker = L.marker([lat,lon]).addTo(map).bindPopup("موقعك الحالي");
-        else marker.setLatLng([lat,lon]);
+        if(!marker){
+          marker = L.marker([lat,lon]).addTo(map).bindPopup("موقعك الحالي");
+        } else marker.setLatLng([lat,lon]);
         map.setView([lat,lon],13);
       });
     },15000);
   }
 }
 
-// ===== الإشعارات =====
+/* ===== الإشعارات ===== */
 async function loadNotifications() {
   const { data: notifs, error } = await supabase
     .from("notifications")
     .select("*")
     .eq("user_id", USER_ID)
-    .order("id", {ascending:false});
-  if(error) return console.log(error);
+    .order("id", { ascending: false });
+  if(error) return console.log("خطأ في جلب الإشعارات:", error);
 
   const container = document.getElementById("notifications");
   container.innerHTML = "";
@@ -170,8 +173,8 @@ async function loadNotifications() {
   });
 }
 
-// ===== بدء الصفحة =====
-(async()=>{
+/* ===== بدء الصفحة ===== */
+(async ()=>{
   await loadTasks();
   await initMap();
   await loadNotifications();
