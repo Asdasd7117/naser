@@ -1,146 +1,195 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <title>المشرف</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<meta charset="UTF-8">
+<title>لوحة المشرف / مدير المبيعات</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+body { font-family: Arial; margin:0; background:#f4f6f8; }
+header { background:#007bff; color:white; padding:15px; text-align:center; font-size:1.5em; }
+nav { display:flex; justify-content:space-around; background:#fff; border-bottom:1px solid #ddd; }
+nav button { background:none; border:none; padding:15px 20px; cursor:pointer; font-size:1em; }
+nav button.active { border-bottom:3px solid #007bff; color:#007bff; font-weight:bold; }
+.container { padding:20px; }
+.cards-container { display:flex; flex-wrap:wrap; gap:15px; }
+.card { background:#fff; border-radius:10px; padding:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); flex:1 1 300px; position:relative; }
+.card h3 { margin:0 0 10px 0; }
+.status { display:inline-block; padding:5px 10px; border-radius:15px; color:white; font-size:0.9em; }
+.status.active { background:#28a745; }
+.status.inactive { background:#6c757d; }
+.status.break { background:#ffc107; color:#333; }
+.card button { position:absolute; top:15px; right:15px; background:#007bff; border:none; color:white; padding:5px 10px; border-radius:5px; cursor:pointer; }
+.map-container, .reports-container, .notifications-container { display:none; margin-top:20px; }
+#map { width:100%; height:400px; border-radius:10px; }
+.report-card { background:#fff; border-radius:10px; padding:15px; margin-bottom:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+.report-card img { max-width:100px; margin-right:10px; }
+.notification { background:#fff; padding:10px; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+.notification.unread { border-left:5px solid #dc3545; }
+textarea { width:100%; margin-top:5px; }
+</style>
 </head>
 <body>
-  <h2>📑 مراجعة التقارير</h2>
-  <div id="reports"></div>
+<header>لوحة المشرف / مدير المبيعات</header>
+<nav>
+  <button class="active" onclick="showTab('overview', event)">متابعة المندوبين</button>
+  <button onclick="showTab('map', event)">الخريطة</button>
+  <button onclick="showTab('reports', event)">التقارير</button>
+  <button onclick="showTab('notifications', event)">الإشعارات</button>
+</nav>
+<div class="container">
+  <div id="overview" class="cards-container"></div>
+  <div id="map" class="map-container"><div id="map"></div></div>
+  <div id="reports" class="reports-container"></div>
+  <div id="notifications" class="notifications-container"></div>
+</div>
 
-  <h2>👥 متابعة المندوبين</h2>
-  <div id="employeesList"></div>
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+<script>
+// تهيئة Supabase
+const supabase = supabase.createClient(
+  'https://ncjxqfqwswwikedaffif.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Nzg0MTA3NCwiZXhwIjoyMDczNDE3MDc0fQ.ZX7giBBgWRScW6usplziAWjNYn9yCVeLVAQz7YUBjvA'
+);
+</script>
 
-  <h2>🗺️ خريطة المندوبين - تتبع الوقت الحقيقي</h2>
-  <div id="map" style="height:500px;"></div>
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY"></script>
+<script>
+let map;
+let markers = [];
 
-  <h2>🔔 إرسال إشعار</h2>
-  <form id="notifyForm">
-    <select id="notifyEmployee" required>
-      <option value="">اختر المندوب</option>
-    </select>
-    <input type="text" id="notifyTitle" placeholder="عنوان الإشعار" required>
-    <input type="text" id="notifyMessage" placeholder="نص الإشعار" required>
-    <button type="submit">إرسال</button>
-  </form>
+// التبديل بين الأقسام
+function showTab(tab, event) {
+  document.querySelectorAll('.cards-container, .map-container, .reports-container, .notifications-container')
+    .forEach(el => el.style.display='none');
+  document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
+  if(tab==='overview') document.getElementById('overview').style.display='flex';
+  if(tab==='map') document.getElementById('map').style.display='block';
+  if(tab==='reports') document.getElementById('reports').style.display='block';
+  if(tab==='notifications') document.getElementById('notifications').style.display='block';
+  event.currentTarget.classList.add('active');
+}
 
-  <script>
-    let map;
-    let markers = {};
+// جلب المندوبين
+async function loadEmployees() {
+  const { data: employees, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('role', 'employee')
+    .limit(1000);
 
-    // ===== تحميل التقارير =====
-    async function loadReports() {
-      const res = await fetch("/reports");
-      const reports = await res.json();
-      const container = document.getElementById("reports");
-      container.innerHTML = "";
+  if(error){ console.error(error); alert('فشل جلب المندوبين'); return; }
 
-      reports.forEach(r => {
-        const div = document.createElement("div");
-        div.style.border = "1px solid #ccc";
-        div.style.padding = "5px";
-        div.style.marginBottom = "5px";
-        div.innerHTML = `
-          <p><strong>مندوب:</strong> ${r.users?.name}</p>
-          <p><strong>مهمة:</strong> ${r.tasks?.client_name}</p>
-          <p><strong>ملاحظات:</strong> ${r.notes}</p>
-          <p><strong>توقيع:</strong> ${r.client_signature || 'غير موجود'}</p>
-        `;
-        container.appendChild(div);
-      });
-    }
+  const container = document.getElementById('overview');
+  container.innerHTML = '';
+  employees.forEach(emp => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <h3>${emp.name_ar}</h3>
+      <span class="status ${emp.status === 'نشط' ? 'active' : emp.status === 'في استراحة' ? 'break' : 'inactive'}">
+        ${emp.status || 'غير معروف'}
+      </span>
+      ${emp.latitude && emp.longitude ? `<button onclick="showEmployeePath(${emp.id}, '${emp.name_ar}')"><i class="fas fa-map-marker-alt"></i></button>` : ''}
+    `;
+    container.appendChild(card);
+  });
+}
 
-    // ===== تحميل المندوبين =====
-    async function loadEmployees() {
-      const res = await fetch("/users");
-      const users = await res.json();
-      const list = document.getElementById("employeesList");
-      const select = document.getElementById("notifyEmployee");
-      list.innerHTML = "";
-      select.innerHTML = '<option value="">اختر المندوب</option>';
+// عرض مسار المندوب على الخريطة
+async function showEmployeePath(empId, name) {
+  const { data: locations, error } = await supabase
+    .from('employee_locations')
+    .select('*')
+    .eq('employee_id', empId)
+    .order('recorded_at', { ascending: true })
+    .limit(1000);
 
-      users.filter(u => u.role === "employee").forEach(u => {
-        // عرض حالة المهام
-        const div = document.createElement("div");
-        div.style.border = "1px solid #ccc";
-        div.style.padding = "8px";
-        div.style.marginBottom = "5px";
-        div.innerHTML = `<strong>${u.name}</strong> | ID: ${u.id} | حالة: ${u.status || 'غير محددة'}`;
-        list.appendChild(div);
+  if(error || !locations.length){ alert('لا توجد بيانات موقع لهذا المندوب'); return; }
 
-        // خيار الإشعار
-        const opt = document.createElement("option");
-        opt.value = u.id;
-        opt.textContent = u.name;
-        select.appendChild(opt);
-      });
+  const center = { lat: parseFloat(locations[0].latitude), lng: parseFloat(locations[0].longitude) };
+  map = new google.maps.Map(document.getElementById('map'), { zoom: 12, center });
+  markers.forEach(m => m.setMap(null)); 
+  markers = [];
 
-      return users.filter(u => u.role === "employee");
-    }
+  const pathCoordinates = [];
+  locations.forEach(loc => {
+    const latlng = { lat: parseFloat(loc.latitude), lng: parseFloat(loc.longitude) };
+    pathCoordinates.push(latlng);
+    const marker = new google.maps.Marker({ position: latlng, map, title: name });
+    markers.push(marker);
+  });
 
-    // ===== تحميل الخريطة =====
-    async function initMap() {
-      map = L.map('map').setView([24.7136, 46.6753], 5); // السعودية كمثال
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-      }).addTo(map);
-    }
+  const pathLine = new google.maps.Polyline({
+    path: pathCoordinates,
+    geodesic: true,
+    strokeColor: "#FF0000",
+    strokeOpacity: 1.0,
+    strokeWeight: 2
+  });
+  pathLine.setMap(map);
 
-    async function updateMap() {
-      const employees = await loadEmployees();
+  showTab('map', document.querySelector('nav button:nth-child(2)'));
+}
 
-      employees.forEach(emp => {
-        if(emp.latitude && emp.longitude){
-          // تحديث العلامة إذا موجودة
-          if(markers[emp.id]) {
-            markers[emp.id].setLatLng([emp.latitude, emp.longitude]);
-            markers[emp.id].bindPopup(`<strong>${emp.name}</strong><br>حالة: ${emp.status || 'غير محددة'}`);
-          } else {
-            // إنشاء علامة جديدة
-            const marker = L.marker([emp.latitude, emp.longitude]).addTo(map)
-              .bindPopup(`<strong>${emp.name}</strong><br>حالة: ${emp.status || 'غير محددة'}`);
-            markers[emp.id] = marker;
-          }
-        }
-      });
-    }
+// جلب التقارير
+async function loadReports() {
+  const { data: reports, error } = await supabase
+    .from('reports')
+    .select(`
+      id,
+      user_id,
+      notes,
+      images,
+      client_signature,
+      task:tasks(client_name_ar),
+      user:users(name_ar)
+    `)
+    .limit(1000);
 
-    // ===== إرسال إشعار =====
-    document.getElementById("notifyForm").addEventListener("submit", async e => {
-      e.preventDefault();
-      const user_id = document.getElementById("notifyEmployee").value;
-      const title = document.getElementById("notifyTitle").value;
-      const message = document.getElementById("notifyMessage").value;
+  if(error){ console.error(error); return; }
 
-      const res = await fetch("/notifications", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id, title, message, type: "manual" })
-      });
+  const container = document.getElementById('reports');
+  container.innerHTML = '';
+  reports.forEach(r => {
+    const card = document.createElement('div');
+    card.className = 'report-card';
+    const imagesHTML = r.images ? r.images.split(',').map(i=>`<img src="${i}" alt="صورة">`).join('') : '';
+    card.innerHTML = `
+      <strong>المندوب:</strong> ${r.user.name_ar}<br>
+      <strong>العميل:</strong> ${r.task.client_name_ar}<br>
+      <strong>ملاحظات:</strong> ${r.notes || 'لا يوجد'}<br>
+      <strong>صور:</strong> ${imagesHTML}<br>
+      <strong>توقيع العميل:</strong> ${r.client_signature ? `<img src="${r.client_signature}" alt="توقيع">` : 'لا يوجد'}<br>
+      <textarea placeholder="إضافة ملاحظات / تعليمات"></textarea>
+    `;
+    container.appendChild(card);
+  });
+}
 
-      if(res.ok) alert("✅ تم إرسال الإشعار");
-      else alert("❌ خطأ في إرسال الإشعار");
-    });
+// جلب الإشعارات
+async function loadNotifications() {
+  const { data: notifs, error } = await supabase
+    .from('notifications')
+    .select('id, user_id, title_ar, message_ar, read_status, user:users(name_ar)')
+    .limit(1000);
 
-    // ===== التحديث التلقائي =====
-    async function refreshData() {
-      await loadReports();
-      await updateMap();
-    }
+  if(error){ console.error(error); return; }
 
-    async function startAutoRefresh(interval = 10000) {
-      await refreshData();
-      setInterval(refreshData, interval);
-    }
+  const container = document.getElementById('notifications');
+  container.innerHTML = '';
+  notifs.forEach(n => {
+    const div = document.createElement('div');
+    div.className = 'notification ' + (n.read_status ? '' : 'unread');
+    div.innerHTML = `<span>${n.user.name_ar}: ${n.message_ar}</span> <i class="fas fa-bell"></i>`;
+    container.appendChild(div);
+  });
+}
 
-    // ===== بدء الصفحة =====
-    (async () => {
-      await initMap();
-      startAutoRefresh(10000); // تحديث كل 10 ثواني
-    })();
-  </script>
+// تحميل البيانات عند فتح الصفحة
+loadEmployees();
+loadReports();
+loadNotifications();
+</script>
 </body>
 </html>
