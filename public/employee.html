@@ -6,18 +6,17 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <style>
-body { font-family: Tahoma, sans-serif; background:#f5f7fa; margin:20px; }
-h1 { text-align:center; color:#333; margin-bottom:25px; }
-section { margin-bottom:25px; }
-.card { padding:12px; margin:10px 0; border-radius:10px; color:white; box-shadow:0 2px 6px rgba(0,0,0,0.1); }
-.status-new { background:#42a5f5; }
-.status-in_progress { background:#ff9800; }
-.status-completed { background:#4caf50; }
-.status-delayed { background:#e53935; }
-button { margin:3px; padding:7px 12px; border:none; border-radius:6px; cursor:pointer; background:#607d8b; color:white; }
-button:hover { opacity:0.9; }
-form input, form textarea { width:100%; padding:8px; margin:6px 0; border-radius:6px; border:1px solid #ccc; }
-#map { height:300px; border-radius:10px; margin-top:10px; }
+body { font-family: Arial; background:#f5f5f5; margin:20px; }
+h1 { text-align:center; color:#333; }
+section { margin-bottom:20px; }
+.card { padding:10px; margin:10px 0; border-radius:8px; color:white; }
+.status-new { background:#90caf9; }
+.status-in_progress { background:#ffb74d; }
+.status-completed { background:#81c784; }
+.status-delayed { background:#e57373; }
+button { margin:2px; padding:5px 10px; border:none; border-radius:5px; cursor:pointer; }
+form input, form textarea { width:100%; padding:8px; margin:5px 0; border-radius:5px; border:1px solid #ccc; }
+#map { height:300px; border-radius:8px; margin-top:10px; }
 #notifications .card { background:#2196f3; }
 </style>
 </head>
@@ -26,17 +25,17 @@ form input, form textarea { width:100%; padding:8px; margin:6px 0; border-radius
 
 <section>
 <h2>📋 المهام اليومية</h2>
-<div id="tasks">جاري تحميل المهام...</div>
+<div id="tasks"></div>
 </section>
 
 <section>
 <h2>📝 رفع التقرير</h2>
 <form id="reportForm">
-  <input type="hidden" id="task_id">
-  <textarea id="notes" placeholder="اكتب ملاحظاتك هنا..."></textarea>
-  <input type="file" id="images" multiple>
-  <input type="file" id="signature" accept="image/*">
-  <button type="submit">إرسال التقرير</button>
+<input type="hidden" id="task_id">
+<textarea id="notes" placeholder="اكتب ملاحظاتك هنا..."></textarea>
+<input type="file" id="images" multiple>
+<input type="file" id="signature" accept="image/*">
+<button type="submit">إرسال التقرير</button>
 </form>
 </section>
 
@@ -47,32 +46,31 @@ form input, form textarea { width:100%; padding:8px; margin:6px 0; border-radius
 
 <section>
 <h2>🔔 الإشعارات</h2>
-<div id="notifications">لا يوجد إشعارات حالياً</div>
+<div id="notifications"></div>
 </section>
 
 <script>
-const USER_ID = 3; // معرف المندوب بعد تسجيل الدخول
+const USER_ID = 3; // معرف المندوب
+const SERVER = "https://naser700.onrender.com"; // رابط السيرفر على Render
 let map, marker;
 
 // ===== المهام =====
 async function loadTasks(){
   try{
-    const res = await fetch("/tasks");
+    const res = await fetch(`${SERVER}/tasks?employee_id=${USER_ID}`);
     const tasks = await res.json();
     const container = document.getElementById("tasks");
     container.innerHTML = "";
-    if(tasks.length===0){ container.innerHTML="لا توجد مهام حالياً"; return; }
-
     tasks.forEach(t=>{
       const div = document.createElement("div");
       const statusClass = "status-" + (t.status||"new");
       div.className = "card "+statusClass;
       div.innerHTML = `
-        <p><strong>المندوب:</strong> ${t.employee_id||"-"}</p>
+        <p><strong>المندوب ID:</strong> ${t.employee_id||"-"}</p>
         <p><strong>العميل:</strong> ${t.client_name_ar||"-"}</p>
         <p><strong>العنوان:</strong> ${t.address_ar||"-"}</p>
         <p><strong>وقت الزيارة:</strong> ${t.visit_time?new Date(t.visit_time).toLocaleString():"-"}</p>
-        <p><strong>الحالة:</strong> <span id="status-${t.id}">${t.status||"منفصلة"}</span></p>
+        <p><strong>الحالة:</strong> <span id="status-${t.id}">${t.status||"جديد"}</span></p>
         <button onclick="updateStatus(${t.id},'in_progress')">قيد التنفيذ</button>
         <button onclick="updateStatus(${t.id},'completed')">تم التنفيذ</button>
         <button onclick="updateStatus(${t.id},'delayed')">قيد الانتظار</button>
@@ -87,7 +85,7 @@ function selectTask(taskId){ document.getElementById("task_id").value = taskId; 
 
 async function updateStatus(taskId,status){
   try{
-    await fetch(`/tasks/${taskId}/status`,{
+    await fetch(`${SERVER}/tasks/${taskId}/status`,{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({status})
@@ -100,7 +98,7 @@ async function updateStatus(taskId,status){
 // ===== رفع التقرير =====
 document.getElementById("reportForm").addEventListener("submit", async e=>{
   e.preventDefault();
-  const task_id = document.getElementById("task_id").value || 1; 
+  const task_id = document.getElementById("task_id").value || 1;
   const notes = document.getElementById("notes").value || "لا توجد ملاحظات";
 
   const imagesFiles = document.getElementById("images").files;
@@ -112,24 +110,26 @@ document.getElementById("reportForm").addEventListener("submit", async e=>{
   formData.append("notes", notes);
 
   for(let i=0;i<imagesFiles.length;i++) formData.append("images", imagesFiles[i]);
-  if(signatureFile) formData.append("images", signatureFile); // يعوض التوقيع بالصورة
+  if(signatureFile) formData.append("signature", signatureFile);
 
   try{
-    const res = await fetch("/reports",{method:"POST", body:formData});
-    const text = await res.text();
+    const res = await fetch(`${SERVER}/reports`,{method:"POST", body:formData});
+    const data = await res.json();
     if(res.ok){
-      alert("✅ تم إرسال التقرير بنجاح");
+      alert("✅ تم إرسال التقرير");
       document.getElementById("reportForm").reset();
+      loadTasks(); // إعادة تحميل المهام
+      loadNotifications(); // تحميل إشعارات جديدة
     } else {
-      console.error("❌ خطأ في إرسال التقرير:", text);
-      alert("❌ حدث خطأ في إرسال التقرير (تفاصيل بالكونسول)");
+      console.error("خطأ في إرسال التقرير:", data);
+      alert("❌ حدث خطأ لكن التقرير جرب أن يرسل مع الملفات المتاحة");
     }
   }catch(e){ console.error("خطأ في إرسال التقرير:", e); }
 });
 
 // ===== الخريطة =====
 async function initMap(){
-  map = L.map('map').setView([30.0444,31.2357],12); // القاهرة
+  map = L.map('map').setView([30.0444,31.2357],12);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
     attribution:'&copy; OpenStreetMap contributors'
   }).addTo(map);
@@ -139,7 +139,7 @@ async function initMap(){
       navigator.geolocation.getCurrentPosition(async pos=>{
         const lat=pos.coords.latitude, lon=pos.coords.longitude;
         try{
-          await fetch("/locations",{
+          await fetch(`${SERVER}/locations`,{
             method:"POST",
             headers:{"Content-Type":"application/json"},
             body:JSON.stringify({employee_id:USER_ID,latitude:lat,longitude:lon})
@@ -157,12 +157,11 @@ async function initMap(){
 // ===== الإشعارات =====
 async function loadNotifications(){
   try{
-    const res = await fetch(`/notifications/${USER_ID}`);
+    const res = await fetch(`${SERVER}/notifications/${USER_ID}`);
+    if(!res.ok) throw new Error("فشل جلب الإشعارات");
     const notifs = await res.json();
     const container = document.getElementById("notifications");
     container.innerHTML = "";
-    if(notifs.length===0){ container.innerHTML="لا يوجد إشعارات حالياً"; return; }
-
     notifs.forEach(n=>{
       const div = document.createElement("div");
       div.className="card";
