@@ -1,6 +1,3 @@
-// =========================
-// server.js
-// =========================
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
@@ -17,7 +14,7 @@ const PORT = process.env.PORT || 3000;
 const uploadsDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
-// ملفات ثابتة من مجلد public + uploads
+// ملفات ثابتة
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/uploads", express.static(uploadsDir));
 
@@ -26,19 +23,19 @@ app.use(bodyParser.json());
 
 // ===== Supabase Client =====
 const SUPABASE_URL = "https://ncjxqfqwswwikedaffif.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Nzg0MTA3NCwiZXhwIjoyMDczNDE3MDc0fQ.ZX7giBBgWRScW6usplziAWjNYn9yCVeLVAQz7YUBjvA";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Nzg0MTA3NCwiZXhwIjoyMDczNDE3MDc0fQ.ZX7giBBgWRScW6usplziAWjNYnYcVeLVAQz7YUBjvA";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ===== إعداد Multer للرفع =====
+// ===== Multer =====
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadsDir),
   filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname)
 });
 const upload = multer({ storage });
 
-// =========================
-// APIs المستخدمين
-// =========================
+// ===== APIs =====
+
+// تسجيل دخول
 app.post("/login", async (req, res) => {
   try {
     const { emailOrPhone, password } = req.body;
@@ -64,94 +61,16 @@ app.post("/login", async (req, res) => {
 
     res.json({ user });
   } catch (err) {
-    console.error("POST /login error:", err);
-    res.status(500).json({ error: err.message, stack: err.stack });
+    console.error(err);
+    res.status(500).json({ error: "حدث خطأ في تسجيل الدخول" });
   }
 });
 
-// إضافة مستخدم
-app.post("/add-user", async (req, res) => {
-  try {
-    const { name_ar, name_en, email, phone, password, role } = req.body;
-    const { data, error } = await supabase
-      .from("users")
-      .insert([{ name_ar, name_en, email, phone, password, role }])
-      .select()
-      .single();
-    if (error) throw error;
-    res.json(data);
-  } catch (err) {
-    console.error("POST /add-user error:", err);
-    res.status(500).json({ error: err.message, stack: err.stack });
-  }
-});
-
-// جلب المستخدمين
-app.get("/users", async (req, res) => {
-  try {
-    const { data, error } = await supabase.from("users").select("*").order("id", { ascending: true });
-    if (error) throw error;
-    res.json(data);
-  } catch (err) {
-    console.error("GET /users error:", err);
-    res.status(500).json({ error: err.message, stack: err.stack });
-  }
-});
-
-// =========================
-// APIs المهام
-// =========================
-app.post("/tasks", async (req, res) => {
-  try {
-    const { employee_id, client_name_ar, client_name_en, address_ar, address_en, visit_time } = req.body;
-    const { data, error } = await supabase
-      .from("tasks")
-      .insert([{ employee_id, client_name_ar, client_name_en, address_ar, address_en, visit_time }])
-      .select()
-      .single();
-    if (error) throw error;
-    res.json(data);
-  } catch (err) {
-    console.error("POST /tasks error:", err);
-    res.status(500).json({ error: err.message, stack: err.stack });
-  }
-});
-
-app.get("/tasks", async (req, res) => {
-  try {
-    const { employee_id } = req.query;
-    let query = supabase.from("tasks").select("*").order("visit_time", { ascending: true });
-    if (employee_id) query = query.eq("employee_id", employee_id);
-    const { data, error } = await query;
-    if (error) throw error;
-    res.json(data);
-  } catch (err) {
-    console.error("GET /tasks error:", err);
-    res.status(500).json({ error: err.message, stack: err.stack });
-  }
-});
-
-app.post("/tasks/:id/status", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { status } = req.body;
-    const { data, error } = await supabase.from("tasks").update({ status }).eq("id", id).select().single();
-    if (error) throw error;
-    res.json(data);
-  } catch (err) {
-    console.error("POST /tasks/:id/status error:", err);
-    res.status(500).json({ error: err.message, stack: err.stack });
-  }
-});
-
-// =========================
-// APIs التقارير + إشعارات
-// =========================
+// رفع تقرير
 app.post("/reports", upload.fields([{ name: "images", maxCount: 5 }, { name: "signature", maxCount: 1 }]), async (req, res) => {
   try {
     const { task_id, user_id, notes } = req.body;
 
-    // الفصل بين الصور والتوقيع
     const images = req.files && req.files["images"]
       ? req.files["images"].map(f => `/uploads/${f.filename}`).join(",")
       : "";
@@ -168,7 +87,7 @@ app.post("/reports", upload.fields([{ name: "images", maxCount: 5 }, { name: "si
 
     if (reportErr) throw reportErr;
 
-    // إنشاء إشعارات للمدراء والمشرفين
+    // إشعارات للمدير/المشرف
     const { data: managers, error: mgrErr } = await supabase
       .from("users")
       .select("id, role")
@@ -192,33 +111,43 @@ app.post("/reports", upload.fields([{ name: "images", maxCount: 5 }, { name: "si
     res.json(report);
   } catch (err) {
     console.error("POST /reports error:", err);
-    res.status(500).json({ error: err.message, stack: err.stack });
+    res.status(500).json({ error: "حدث خطأ عند رفع التقرير" });
   }
 });
 
-// =========================
-// APIs المواقع
-// =========================
-app.post("/locations", async (req, res) => {
+// جلب المهام
+app.get("/tasks", async (req, res) => {
   try {
-    const { employee_id, latitude, longitude } = req.body;
-    const { data, error } = await supabase
-      .from("employee_locations")
-      .insert([{ employee_id, latitude, longitude }])
-      .select()
-      .single();
+    const { employee_id } = req.query;
+    let query = supabase.from("tasks").select("*").order("visit_time", { ascending: true });
+    if (employee_id) query = query.eq("employee_id", employee_id);
+    const { data, error } = await query;
     if (error) throw error;
-    await supabase.from("users").update({ latitude, longitude }).eq("id", employee_id);
     res.json(data);
   } catch (err) {
-    console.error("POST /locations error:", err);
-    res.status(500).json({ error: err.message, stack: err.stack });
+    console.error(err);
+    res.status(500).json({ error: "حدث خطأ عند جلب المهام" });
   }
 });
 
-// =========================
+// جلب الإشعارات
+app.get("/notifications/:user_id", async (req, res) => {
+  try {
+    const { user_id } = req.params;
+    const { data, error } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", user_id)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "حدث خطأ عند جلب الإشعارات" });
+  }
+});
+
 // تشغيل السيرفر
-// =========================
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
