@@ -41,12 +41,13 @@
   </section>
 
   <script>
-    const USER_ID = 3; // ضع هنا معرف المندوب الحالي بعد تسجيل الدخول
+    const USER_ID = 3; // معرف المندوب الحالي
+
     let map, marker;
 
-    // ===== تحميل المهام الخاصة بالمندوب =====
+    // ===== تحميل المهام =====
     async function loadTasks() {
-      const res = await fetch(`/tasks?employee_id=${USER_ID}`);
+      const res = await fetch(`/tasks?employee_id=${USER_ID}`); // فلترة حسب المندوب
       const tasks = await res.json();
       const container = document.getElementById("tasks");
       container.innerHTML = "";
@@ -58,9 +59,10 @@
         div.style.marginBottom = "5px";
 
         div.innerHTML = `
-          <p><strong>العميل:</strong> ${t.client_name_ar || "غير محدد"}</p>
-          <p><strong>العنوان:</strong> ${t.address_ar || "غير محدد"}</p>
-          <p><strong>وقت الزيارة:</strong> ${t.visit_time ? new Date(t.visit_time).toLocaleString() : "غير محدد"}</p>
+          <p><strong>المندوب ID:</strong> ${t.employee_id || "-"}</p>
+          <p><strong>العميل:</strong> ${t.client_name_ar || "-"}</p>
+          <p><strong>العنوان:</strong> ${t.address_ar || "-"}</p>
+          <p><strong>وقت الزيارة:</strong> ${t.visit_time ? new Date(t.visit_time).toLocaleString() : "-"}</p>
           <p><strong>الحالة:</strong> <span id="status-${t.id}">${t.status || "جديدة"}</span></p>
           <button onclick="updateStatus(${t.id}, 'in_progress')">قيد التنفيذ</button>
           <button onclick="updateStatus(${t.id}, 'completed')">مكتملة</button>
@@ -77,8 +79,8 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status })
       });
-      const statusElem = document.getElementById(`status-${taskId}`);
-      if (statusElem) statusElem.innerText = status;
+      const span = document.getElementById(`status-${taskId}`);
+      if(span) span.innerText = status;
     }
 
     function selectTask(taskId) {
@@ -101,11 +103,7 @@
       for (let i = 0; i < imagesFiles.length; i++) formData.append("images", imagesFiles[i]);
       if (signatureFile) formData.append("images", signatureFile);
 
-      const res = await fetch("/reports", {
-        method: "POST",
-        body: formData
-      });
-
+      const res = await fetch("/reports", { method: "POST", body: formData });
       if (res.ok) {
         alert("✅ تم إرسال التقرير");
         document.getElementById("reportForm").reset();
@@ -122,7 +120,7 @@
       }).addTo(map);
 
       if (navigator.geolocation) {
-        setInterval(() => {
+        setInterval(async () => {
           navigator.geolocation.getCurrentPosition(async pos => {
             const lat = pos.coords.latitude;
             const lon = pos.coords.longitude;
@@ -155,7 +153,7 @@
         div.style.border = "1px solid #ccc";
         div.style.padding = "5px";
         div.style.marginBottom = "5px";
-        div.innerHTML = `<strong>${n.title_ar}</strong>: ${n.message_ar}`;
+        div.innerHTML = `<strong>${n.title_ar || "-"}</strong>: ${n.message_ar || "-"}`;
         container.appendChild(div);
       });
     }
@@ -165,7 +163,7 @@
       await loadTasks();
       await initMap();
       await loadNotifications();
-      setInterval(loadNotifications, 10000);
+      setInterval(loadNotifications, 10000); // تحديث الإشعارات كل 10 ثواني
     })();
   </script>
 </body>
