@@ -51,7 +51,7 @@
     </section>
 
     <script>
-        const BASE_URL = "https://naser700.onrender.com"; // تم تحديثه ليتوافق مع موقعك
+        const BASE_URL = "https://naser700.onrender.com";
         const USER_ID = 3;
 
         let map, marker;
@@ -70,25 +70,32 @@
                 const tasks = await res.json();
                 const container = document.getElementById("tasks");
                 container.innerHTML = "";
-                if (tasks.length === 0) {
+                if (!tasks || tasks.length === 0) {
                     container.innerHTML = "لا توجد مهام حالياً";
                     return;
                 }
-                tasks.forEach(t => {
+                tasks.forEach(task => {
                     const div = document.createElement("div");
-                    const statusClass = "status-" + (t.status || "new");
-                    div.className = "card " + statusClass;
-                    div.innerHTML = `
-                        <p><strong>المندوب:</strong> ${t.employee_id || "-"}</p>
-                        <p><strong>العميل:</strong> ${t.client_name_ar || "-"}</p>
-                        <p><strong>العنوان:</strong> ${t.address_ar || "-"}</p>
-                        <p><strong>وقت الزيارة:</strong> ${t.visit_time ? new Date(t.visit_time).toLocaleString() : "-"}</p>
-                        <p><strong>الحالة:</strong> <span id="status-${t.id}">${t.status || "منفصلة"}</span></p>
-                        <button onclick="updateStatus(${t.id}, 'in_progress')">قيد التنفيذ</button>
-                        <button onclick="updateStatus(${t.id}, 'completed')">تم التنفيذ</button>
-                        <button onclick="updateStatus(${t.id}, 'delayed')">قيد الانتظار</button>
-                        <button onclick="selectTask(${t.id})">رفع تقرير</button>
-                    `;
+                    div.className = "card";
+                    // عرض جميع الحقول المتاحة ديناميكياً
+                    let content = "<ul>";
+                    for (let key in task) {
+                        if (task.hasOwnProperty(key)) {
+                            content += `<li><strong>${key}:</strong> ${task[key] || "-"}</li>`;
+                        }
+                    }
+                    content += "</ul>";
+                    div.innerHTML = content;
+                    // إضافة زر لتحديث الحالة إذا كان هناك حالة
+                    if (task.status) {
+                        div.innerHTML += `
+                            <p><strong>الحالة:</strong> <span id="status-${task.id}">${task.status || "منفصلة"}</span></p>
+                            <button onclick="updateStatus(${task.id}, 'in_progress')">قيد التنفيذ</button>
+                            <button onclick="updateStatus(${task.id}, 'completed')">تم التنفيذ</button>
+                            <button onclick="updateStatus(${task.id}, 'delayed')">قيد الانتظار</button>
+                            <button onclick="selectTask(${task.id})">رفع تقرير</button>
+                        `;
+                    }
                     container.appendChild(div);
                 });
             } catch (e) {
@@ -119,16 +126,16 @@
         // ===== رفع التقرير =====
         document.getElementById("reportForm").addEventListener("submit", async e => {
             e.preventDefault();
-            const task_id = document.getElementById("task_id").value || 1;
-            const notes = document.getElementById("notes").value || "لا توجد ملاحظات";
+            const task_id = document.getElementById("task_id").value || null; // قبول null إذا لم يتم اختيار مهمة
+            const notes = document.getElementById("notes").value || "";
 
             const imagesFiles = document.getElementById("images").files;
             const signatureFile = document.getElementById("signature").files[0];
 
             const formData = new FormData();
-            formData.append("task_id", task_id);
+            if (task_id) formData.append("task_id", task_id);
             formData.append("user_id", USER_ID);
-            formData.append("notes", notes);
+            if (notes) formData.append("notes", notes);
 
             for (let i = 0; i < imagesFiles.length; i++) {
                 formData.append("images", imagesFiles[i]);
@@ -200,15 +207,23 @@
                 const notifs = await res.json();
                 const container = document.getElementById("notifications");
                 container.innerHTML = "";
-                if (notifs.length === 0) {
+                if (!notifs || notifs.length === 0) {
                     container.innerHTML = "لا يوجد إشعارات حالياً";
                     return;
                 }
-                notifs.forEach(n => {
+                notifs.forEach(notif => {
                     const div = document.createElement("div");
                     div.className = "card";
                     div.style.background = "#2196f3";
-                    div.innerHTML = `<strong>${n.title_ar || "تنبيه"}</strong>: ${n.message_ar || "-"}`;
+                    // عرض جميع الحقول المتاحة ديناميكياً
+                    let content = "<ul>";
+                    for (let key in notif) {
+                        if (notif.hasOwnProperty(key)) {
+                            content += `<li><strong>${key}:</strong> ${notif[key] || "-"}</li>`;
+                        }
+                    }
+                    content += "</ul>";
+                    div.innerHTML = content;
                     container.appendChild(div);
                 });
             } catch (e) {
