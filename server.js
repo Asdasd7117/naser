@@ -34,26 +34,22 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // =========================
-// APIs المستخدمين (بقي كما هو)
-// =========================
-// [اترك الكود كما هو، لأنه ليس متعلقاً بالمهام/الإشعارات/التقارير]
-
-// =========================
 // APIs المهام
 // =========================
 app.post("/tasks", async (req, res) => {
     try {
-        const { employee_id, ...rest } = req.body; // قبول أي حقول إضافية
+        const { employee_id, ...rest } = req.body;
         if (!employee_id) throw new Error("employee_id is required");
         const { data, error } = await supabase
             .from("tasks")
-            .insert([{ employee_id, ...rest }]) // إدراج جميع الحقول المرسلة
+            .insert([{ employee_id, ...rest }])
             .select()
             .single();
         if (error) throw error;
+        console.log("Task inserted:", data); // تسجيل البيانات المُدرجة
         res.json(data);
     } catch (err) {
-        console.error(err);
+        console.error("Error inserting task:", err);
         res.status(500).json({ error: "حدث خطأ عند إضافة المهمة" });
     }
 });
@@ -61,13 +57,18 @@ app.post("/tasks", async (req, res) => {
 app.get("/tasks", async (req, res) => {
     try {
         const { employee_id } = req.query;
+        console.log("Fetching tasks for employee_id:", employee_id); // تسجيل الطلب
         let query = supabase.from("tasks").select("*").order("visit_time", { ascending: true });
         if (employee_id) query = query.eq("employee_id", employee_id);
         const { data, error } = await query;
-        if (error) throw error;
+        if (error) {
+            console.error("Supabase error:", error);
+            throw error;
+        }
+        console.log("Tasks fetched:", data); // تسجيل البيانات المستلمة
         res.json(data);
     } catch (err) {
-        console.error(err);
+        console.error("Error in /tasks endpoint:", err);
         res.status(500).json({ error: "حدث خطأ عند جلب المهام" });
     }
 });
@@ -75,7 +76,7 @@ app.get("/tasks", async (req, res) => {
 app.post("/tasks/:id/status", async (req, res) => {
     try {
         const { id } = req.params;
-        const { status, ...rest } = req.body; // قبول أي حقول إضافية
+        const { status, ...rest } = req.body;
         if (!status) throw new Error("status is required");
         const { data, error } = await supabase.from("tasks").update({ status, ...rest }).eq("id", id).select().single();
         if (error) throw error;
@@ -103,7 +104,7 @@ app.delete("/tasks/:id", async (req, res) => {
 // =========================
 app.post("/reports", upload.fields([{ name: "images", maxCount: 5 }, { name: "signature", maxCount: 1 }]), async (req, res) => {
     try {
-        const { task_id, user_id, ...rest } = req.body; // قبول أي حقول إضافية
+        const { task_id, user_id, ...rest } = req.body;
         const images = req.files && req.files["images"]
             ? req.files["images"].map(f => `/uploads/${f.filename}`).join(",")
             : "";
@@ -112,7 +113,7 @@ app.post("/reports", upload.fields([{ name: "images", maxCount: 5 }, { name: "si
             : null;
 
         const reportData = { task_id: task_id || null, user_id: user_id || null, images, signature, ...rest };
-        if (images || signature) reportData.images = images; // تحديث images إذا كانت موجودة
+        if (images) reportData.images = images;
         if (signature) reportData.signature = signature;
 
         const { data: report, error: reportErr } = await supabase
@@ -122,6 +123,7 @@ app.post("/reports", upload.fields([{ name: "images", maxCount: 5 }, { name: "si
             .single();
 
         if (reportErr) throw reportErr;
+        console.log("Report inserted:", report); // تسجيل البيانات المُدرجة
 
         // إنشاء إشعارات للمشرفين والمديرين
         const { data: managers, error: mgrErr } = await supabase
@@ -129,12 +131,12 @@ app.post("/reports", upload.fields([{ name: "images", maxCount: 5 }, { name: "si
             .select("id, role")
             .in("role", ["manager", "supervisor"]);
 
-        if (mgrErr) console.warn("خطأ عند جلب المشرفين/المدراء:", mgrErr);
+        if (mgrErr) console.warn("Error fetching managers:", mgrErr);
 
         if (managers && managers.length > 0) {
             const notifications = managers.map(m => ({
                 user_id: m.id,
-                ...rest, // إدراج أي حقول إضافية من التقرير
+                ...rest,
                 title_ar: "📑 تقرير جديد",
                 title_en: "New Report",
                 message_ar: `تم رفع تقرير للمهمة #${task_id || "غير محدد"}`,
@@ -142,7 +144,7 @@ app.post("/reports", upload.fields([{ name: "images", maxCount: 5 }, { name: "si
                 type: "report"
             }));
             const { error: notifErr } = await supabase.from("notifications").insert(notifications);
-            if (notifErr) console.warn("خطأ عند إدخال الإشعارات:", notifErr);
+            if (notifErr) console.warn("Error inserting notifications:", notifErr);
         }
 
         res.json(report);
@@ -166,7 +168,7 @@ app.get("/reports", async (req, res) => {
 app.post("/reports/:id/note", async (req, res) => {
     try {
         const { id } = req.params;
-        const { note, ...rest } = req.body; // قبول أي حقول إضافية
+        const { note, ...rest } = req.body;
         if (!note) throw new Error("note is required");
 
         const tryComment = await supabase.from("report_comments").insert([{ report_id: id, note, ...rest }]).select().maybeSingle();
@@ -194,7 +196,7 @@ app.post("/reports/:id/note", async (req, res) => {
 // =========================
 app.post("/notifications", async (req, res) => {
     try {
-        const { user_id, ...rest } = req.body; // قبول أي حقول إضافية
+        const { user_id, ...rest } = req.body;
         if (!user_id) throw new Error("user_id is required");
         const { data, error } = await supabase
             .from("notifications")
@@ -202,9 +204,10 @@ app.post("/notifications", async (req, res) => {
             .select()
             .single();
         if (error) throw error;
+        console.log("Notification inserted:", data); // تسجيل البيانات المُدرجة
         res.json(data);
     } catch (err) {
-        console.error(err);
+        console.error("Error inserting notification:", err);
         res.status(500).json({ error: "حدث خطأ عند إرسال الإشعار" });
     }
 });
@@ -212,15 +215,20 @@ app.post("/notifications", async (req, res) => {
 app.get("/notifications/:user_id", async (req, res) => {
     try {
         const { user_id } = req.params;
+        console.log("Fetching notifications for user_id:", user_id); // تسجيل الطلب
         const { data, error } = await supabase
             .from("notifications")
             .select("*")
             .eq("user_id", user_id)
             .order("created_at", { ascending: false });
-        if (error) throw error;
+        if (error) {
+            console.error("Supabase error:", error);
+            throw error;
+        }
+        console.log("Notifications fetched:", data); // تسجيل البيانات المستلمة
         res.json(data);
     } catch (err) {
-        console.error(err);
+        console.error("Error in /notifications endpoint:", err);
         res.status(500).json({ error: "حدث خطأ عند جلب الإشعارات" });
     }
 });
@@ -239,7 +247,7 @@ app.get("/notifications", async (req, res) => {
 // =========================
 // APIs الحضور و المواقع (بقي كما هو)
 // =========================
-// [اترك الكود كما هو، لأنه ليس متعلقاً بالمهام/الإشعارات/التقارير]
+// [اترك الكود كما هو]
 
 // =========================
 // تشغيل السيرفر
