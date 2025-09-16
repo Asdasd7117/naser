@@ -1,198 +1,117 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <title>لوحة المشرف / مدير المبيعات</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      background-color: #f4f6f8;
-      color: #333;
-    }
-    header {
-      background-color: #007bff;
-      color: white;
-      padding: 15px 20px;
-      text-align: center;
-      font-size: 1.5em;
-    }
-    nav {
-      display: flex;
-      justify-content: space-around;
-      background-color: #fff;
-      border-bottom: 1px solid #ddd;
-    }
-    nav button {
-      background: none;
-      border: none;
-      padding: 15px 20px;
-      cursor: pointer;
-      font-size: 1em;
-    }
-    nav button.active {
-      border-bottom: 3px solid #007bff;
-      color: #007bff;
-      font-weight: bold;
-    }
-    .container {
-      padding: 20px;
-    }
-    .cards-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-    }
-    .card {
-      background-color: #fff;
-      border-radius: 10px;
-      padding: 15px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      flex: 1 1 300px;
-      position: relative;
-    }
-    .card h3 {
-      margin: 0 0 10px 0;
-    }
-    .status {
-      display: inline-block;
-      padding: 5px 10px;
-      border-radius: 15px;
-      color: white;
-      font-size: 0.9em;
-    }
-    .status.active { background-color: #28a745; }
-    .status.inactive { background-color: #6c757d; }
-    .status.break { background-color: #ffc107; color: #333; }
-    .task-stats {
-      margin-top: 10px;
-      font-size: 0.9em;
-    }
-    .card button {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      background-color: #007bff;
-      border: none;
-      color: white;
-      padding: 5px 10px;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .map-container, .reports-container, .notifications-container {
-      display: none;
-    }
-    #map {
-      width: 100%;
-      height: 400px;
-      border-radius: 10px;
-      background-color: #ddd;
-    }
-    .report-card {
-      background-color: #fff;
-      border-radius: 10px;
-      padding: 15px;
-      margin-bottom: 15px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    .report-card img {
-      max-width: 100px;
-      margin-right: 10px;
-    }
-    .notification {
-      background-color: #fff;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    .notification.unread {
-      border-left: 5px solid #dc3545;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>لوحة المشرف / مدير المبيعات</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+body { font-family: Arial; margin:0; background:#f4f6f8; }
+header { background:#007bff; color:white; padding:15px; text-align:center; font-size:1.5em; }
+nav { display:flex; justify-content:space-around; background:#fff; border-bottom:1px solid #ddd; }
+nav button { background:none; border:none; padding:15px 20px; cursor:pointer; font-size:1em; }
+nav button.active { border-bottom:3px solid #007bff; color:#007bff; font-weight:bold; }
+.container { padding:20px; }
+.cards-container { display:flex; flex-wrap:wrap; gap:15px; }
+.card { background:#fff; border-radius:10px; padding:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); flex:1 1 300px; position:relative; }
+.card h3 { margin:0 0 10px 0; }
+.status { display:inline-block; padding:5px 10px; border-radius:15px; color:white; font-size:0.9em; }
+.status.active { background:#28a745; }
+.status.inactive { background:#6c757d; }
+.status.break { background:#ffc107; color:#333; }
+.task-stats { margin-top:10px; font-size:0.9em; }
+.card button { position:absolute; top:15px; right:15px; background:#007bff; border:none; color:white; padding:5px 10px; border-radius:5px; cursor:pointer; }
+.map-container, .reports-container, .notifications-container { display:none; margin-top:20px; }
+#map { width:100%; height:400px; border-radius:10px; }
+.report-card { background:#fff; border-radius:10px; padding:15px; margin-bottom:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+.report-card img { max-width:100px; margin-right:10px; }
+.notification { background:#fff; padding:10px; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+.notification.unread { border-left:5px solid #dc3545; }
+</style>
 </head>
 <body>
-  <header>لوحة المشرف / مدير المبيعات</header>
-  
-  <nav>
-    <button class="active" onclick="showTab('overview')">متابعة المندوبين</button>
-    <button onclick="showTab('map')">الخريطة</button>
-    <button onclick="showTab('reports')">التقارير</button>
-    <button onclick="showTab('notifications')">الإشعارات</button>
-  </nav>
-  
-  <div class="container">
-    <!-- متابعة المندوبين -->
-    <div id="overview" class="cards-container">
-      <div class="card">
-        <h3>مندوب أحمد</h3>
-        <span class="status active">نشط</span>
-        <button onclick="alert('عرض الموقع على الخريطة')"><i class="fas fa-map-marker-alt"></i></button>
-        <div class="task-stats">
-          مهام: مكتملة (2) / قيد التنفيذ (1) / مؤجلة (0)
-        </div>
-      </div>
-      <div class="card">
-        <h3>مندوب علي</h3>
-        <span class="status break">في استراحة</span>
-        <button onclick="alert('عرض الموقع على الخريطة')"><i class="fas fa-map-marker-alt"></i></button>
-        <div class="task-stats">
-          مهام: مكتملة (1) / قيد التنفيذ (2) / مؤجلة (1)
-        </div>
-      </div>
-    </div>
-    
-    <!-- الخريطة -->
-    <div id="map" class="map-container">
-      <div id="map">هنا سيتم عرض الخريطة</div>
-    </div>
-    
-    <!-- التقارير -->
-    <div id="reports" class="reports-container">
-      <div class="report-card">
-        <strong>المندوب:</strong> أحمد<br>
-        <strong>العميل:</strong> عميل 1<br>
-        <strong>ملاحظات:</strong> زيارة ناجحة<br>
-        <strong>صور:</strong> <img src="https://via.placeholder.com/100" alt="صورة"><img src="https://via.placeholder.com/100" alt="صورة">
-        <br>
-        <strong>التوقيع:</strong> <img src="https://via.placeholder.com/100x50" alt="توقيع"><br>
-        <textarea placeholder="إضافة ملاحظات / تعليمات"></textarea>
-      </div>
-    </div>
-    
-    <!-- الإشعارات -->
-    <div id="notifications" class="notifications-container">
-      <div class="notification unread">
-        <span>المندوب أحمد تأخر عن المهمة بـ 20 دقيقة</span>
-        <i class="fas fa-clock"></i>
-      </div>
-      <div class="notification">
-        <span>المندوب علي أكمل جميع مهامه اليوم</span>
-        <i class="fas fa-check-circle"></i>
-      </div>
-    </div>
-  </div>
-  
-  <script>
-    function showTab(tab) {
-      // إخفاء كل الأقسام
-      document.querySelectorAll('.cards-container, .map-container, .reports-container, .notifications-container').forEach(el => el.style.display = 'none');
-      // إزالة active من الأزرار
-      document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
-      
-      // عرض القسم المحدد
-      if(tab === 'overview') document.getElementById('overview').style.display = 'flex';
-      if(tab === 'map') document.getElementById('map').style.display = 'block';
-      if(tab === 'reports') document.getElementById('reports').style.display = 'block';
-      if(tab === 'notifications') document.getElementById('notifications').style.display = 'block';
-      
-      // تفعيل الزر
-      event.currentTarget.classList.add('active');
-    }
-  </script>
+<header>لوحة المشرف / مدير المبيعات</header>
+<nav>
+  <button class="active" onclick="showTab('overview', event)">متابعة المندوبين</button>
+  <button onclick="showTab('map', event)">الخريطة</button>
+  <button onclick="showTab('reports', event)">التقارير</button>
+  <button onclick="showTab('notifications', event)">الإشعارات</button>
+</nav>
+<div class="container">
+  <div id="overview" class="cards-container"></div>
+  <div id="map" class="map-container"></div>
+  <div id="reports" class="reports-container">هنا سيتم عرض التقارير</div>
+  <div id="notifications" class="notifications-container">هنا سيتم عرض الإشعارات</div>
+</div>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY"></script>
+<script>
+let map;
+let markers = [];
+
+// التبديل بين الأقسام
+function showTab(tab, event) {
+  document.querySelectorAll('.cards-container, .map-container, .reports-container, .notifications-container').forEach(el => el.style.display='none');
+  document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
+  if(tab==='overview') document.getElementById('overview').style.display='flex';
+  if(tab==='map') document.getElementById('map').style.display='block';
+  if(tab==='reports') document.getElementById('reports').style.display='block';
+  if(tab==='notifications') document.getElementById('notifications').style.display='block';
+  event.currentTarget.classList.add('active');
+}
+
+// جلب المندوبين وعرضهم
+async function loadEmployees() {
+  const res = await fetch('http://localhost:3000/api/employees');
+  const employees = await res.json();
+  const container = document.getElementById('overview');
+  container.innerHTML = '';
+  employees.forEach(emp => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <h3>${emp.name_ar}</h3>
+      <span class="status ${emp.status === 'نشط' ? 'active' : emp.status === 'في استراحة' ? 'break' : 'inactive'}">${emp.status}</span>
+      <button onclick="showEmployeePath(${emp.id}, '${emp.name_ar}')"><i class="fas fa-map-marker-alt"></i></button>
+    `;
+    container.appendChild(card);
+  });
+}
+
+// عرض موقع ومسار المندوب على الخريطة
+async function showEmployeePath(empId, name) {
+  const res = await fetch(`http://localhost:3000/api/employee/${empId}/locations`);
+  const locations = await res.json();
+  if(!locations.length) { alert('لا توجد بيانات موقع'); return; }
+
+  const center = { lat: parseFloat(locations[0].latitude), lng: parseFloat(locations[0].longitude) };
+  map = new google.maps.Map(document.getElementById('map'), { zoom: 12, center });
+  markers.forEach(m=>m.setMap(null)); markers=[];
+
+  // إضافة نقاط المسار
+  const pathCoordinates = [];
+  locations.forEach(loc => {
+    const latlng = { lat: parseFloat(loc.latitude), lng: parseFloat(loc.longitude) };
+    pathCoordinates.push(latlng);
+    const marker = new google.maps.Marker({ position: latlng, map, title: name });
+    markers.push(marker);
+  });
+
+  // رسم الخط
+  const pathLine = new google.maps.Polyline({
+    path: pathCoordinates,
+    geodesic: true,
+    strokeColor: "#FF0000",
+    strokeOpacity: 1.0,
+    strokeWeight: 2
+  });
+  pathLine.setMap(map);
+
+  // التبديل تلقائيًا إلى الخريطة
+  showTab('map', document.querySelector('nav button:nth-child(2)'));
+}
+
+// تحميل البيانات عند فتح الصفحة
+loadEmployees();
+</script>
 </body>
 </html>
