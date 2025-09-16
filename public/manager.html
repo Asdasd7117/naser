@@ -6,20 +6,24 @@
 <title>صفحة المدير</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-  body { font-family: Arial, sans-serif; margin:20px; background:#f5f5f5; }
-  h1 { text-align:center; color:#333; }
-  nav { display:flex; justify-content:center; gap:10px; margin-bottom:20px; }
-  nav button { padding:8px 15px; border:none; border-radius:5px; cursor:pointer; background:#2196f3; color:white; font-weight:bold; }
-  section { display:none; padding:10px; border-radius:8px; background:white; margin-bottom:20px; }
-  section.active { display:block; }
-  .card { padding:10px; margin:10px 0; border-radius:8px; color:white; }
-  .status-new { background:#90caf9; }
-  .status-in_progress { background:#ffb74d; }
-  .status-completed { background:#81c784; }
-  .status-delayed { background:#e57373; }
-  .delete-btn { color:red; cursor:pointer; margin-left:10px; }
-  table { width:100%; border-collapse:collapse; margin-top:10px; }
-  th, td { padding:8px; border:1px solid #ccc; text-align:center; }
+body { font-family: Arial, sans-serif; margin:20px; background:#f5f5f5; }
+h1 { text-align:center; color:#333; }
+nav { display:flex; justify-content:center; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
+nav button { padding:8px 15px; border:none; border-radius:5px; cursor:pointer; background:#2196f3; color:white; font-weight:bold; }
+section { display:none; padding:10px; border-radius:8px; background:white; margin-bottom:20px; }
+section.active { display:block; }
+.card { padding:10px; margin:10px 0; border-radius:8px; color:#333; background:#e3f2fd; }
+.status-new { background:#90caf9; }
+.status-in_progress { background:#ffb74d; }
+.status-completed { background:#81c784; }
+.status-delayed { background:#e57373; }
+.delete-btn { color:red; cursor:pointer; margin-left:10px; }
+table { width:100%; border-collapse:collapse; margin-top:10px; }
+th, td { padding:8px; border:1px solid #ccc; text-align:center; }
+img { border-radius:5px; margin:2px; }
+textarea, input, select, button { font-size:14px; }
+form input, form select, form textarea { width:100%; padding:6px; margin:4px 0; border-radius:5px; border:1px solid #ccc; }
+form button { background:#2196f3; color:white; padding:8px 12px; border:none; border-radius:5px; cursor:pointer; margin-top:5px; }
 </style>
 </head>
 <body>
@@ -37,6 +41,8 @@
   <canvas id="generalChart" width="400" height="200"></canvas>
   <h3>📈 أداء المندوبين</h3>
   <div id="employeesPerformance"></div>
+  <h3>📝 تفاصيل التقارير</h3>
+  <div id="reportsList"></div>
 </section>
 
 <!-- الحضور -->
@@ -97,8 +103,8 @@ function showTab(id){
 
 // ===== التقارير =====
 async function loadReports(){
-  const res = await fetch("/tasks");
-  const tasks = await res.json();
+  const resTasks = await fetch("/tasks");
+  const tasks = await resTasks.json();
 
   const completed = tasks.filter(t=>t.status==="completed").length;
   const in_progress = tasks.filter(t=>t.status==="in_progress").length;
@@ -124,6 +130,29 @@ async function loadReports(){
     div.innerHTML=`<strong>مندوب ID ${emp}</strong> - نسبة الإنجاز: ${p}%`;
     perfContainer.appendChild(div);
   }
+
+  // ===== جلب التقارير =====
+  const resReports = await fetch("/reports");
+  const reports = await resReports.json();
+  const reportsContainer = document.getElementById("reportsList");
+  reportsContainer.innerHTML="";
+
+  reports.forEach(r=>{
+    const div=document.createElement("div");
+    div.className="card";
+    const images = r.images ? r.images.split(",").map(src=>`<img src="${src}" width="80"/>`).join("") : "-";
+    const signature = r.client_signature ? `<img src="${r.client_signature}" width="100"/>` : "-";
+    div.innerHTML=`
+      <strong>مندوب:</strong> ${r.users.name_ar} <br>
+      <strong>العميل:</strong> ${r.tasks.client_name_ar} <br>
+      <strong>العنوان:</strong> ${r.tasks.address_ar} <br>
+      <strong>الملاحظات:</strong> ${r.notes || "-"} <br>
+      <strong>الصور:</strong> ${images} <br>
+      <strong>توقيع العميل:</strong> ${signature} <br>
+      <strong>تاريخ التقرير:</strong> ${new Date(r.created_at).toLocaleString()}
+    `;
+    reportsContainer.appendChild(div);
+  });
 }
 
 // ===== الحضور =====
