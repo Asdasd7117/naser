@@ -51,7 +51,7 @@
     </section>
 
     <script>
-        const BASE_URL = "http://localhost:3000"; // غيّر إلى عنوان الخادم الفعلي عند الاستضافة
+        const BASE_URL = "https://naser700.onrender.com"; // تم تحديثه ليتوافق مع موقعك
         const USER_ID = 3;
 
         let map, marker;
@@ -59,8 +59,14 @@
         // ===== المهام =====
         async function loadTasks() {
             try {
-                const res = await fetch(`${BASE_URL}/tasks?employee_id=${USER_ID}`);
-                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                const res = await fetch(`${BASE_URL}/tasks?employee_id=${USER_ID}`, {
+                    method: "GET",
+                    headers: { "Content-Type": "application/json" }
+                });
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    throw new Error(`HTTP error! status: ${res.status}, response: ${errorText}`);
+                }
                 const tasks = await res.json();
                 const container = document.getElementById("tasks");
                 container.innerHTML = "";
@@ -87,7 +93,7 @@
                 });
             } catch (e) {
                 console.error("خطأ في تحميل المهام:", e);
-                document.getElementById("tasks").innerHTML = "فشل تحميل المهام، تحقق من الاتصال بالخادم.";
+                document.getElementById("tasks").innerHTML = `فشل تحميل المهام، تحقق من الاتصال بالخادم. التفاصيل: ${e.message}`;
             }
         }
 
@@ -137,7 +143,7 @@
                 if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
                 alert("✅ تم إرسال التقرير بنجاح");
                 document.getElementById("reportForm").reset();
-                loadNotifications(); // تحديث الإشعارات بعد إرسال التقرير
+                loadNotifications();
             } catch (e) {
                 console.error("خطأ في إرسال التقرير:", e);
                 alert("❌ حدث خطأ في إرسال التقرير (تفاصيل بالكونسول)");
@@ -153,27 +159,33 @@
 
             if (navigator.geolocation) {
                 setInterval(() => {
-                    navigator.geolocation.getCurrentPosition(async pos => {
-                        const lat = pos.coords.latitude, lon = pos.coords.longitude;
-                        try {
-                            const res = await fetch(`${BASE_URL}/locations`, {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ employee_id: USER_ID, latitude: lat, longitude: lon })
-                            });
-                            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                        } catch (e) {
-                            console.error("خطأ في تحديث الموقع:", e);
-                        }
+                    navigator.geolocation.getCurrentPosition(
+                        async pos => {
+                            const lat = pos.coords.latitude, lon = pos.coords.longitude;
+                            try {
+                                const res = await fetch(`${BASE_URL}/locations`, {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ employee_id: USER_ID, latitude: lat, longitude: lon })
+                                });
+                                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                            } catch (e) {
+                                console.error("خطأ في تحديث الموقع:", e);
+                            }
 
-                        if (!marker) {
-                            marker = L.marker([lat, lon]).addTo(map).bindPopup("موقعك الحالي");
-                        } else {
-                            marker.setLatLng([lat, lon]);
-                        }
-                        map.setView([lat, lon], 13);
-                    }, 15000);
-                });
+                            if (!marker) {
+                                marker = L.marker([lat, lon]).addTo(map).bindPopup("موقعك الحالي");
+                            } else {
+                                marker.setLatLng([lat, lon]);
+                            }
+                            map.setView([lat, lon], 13);
+                        },
+                        err => {
+                            console.error("خطأ في الحصول على الموقع:", err);
+                        },
+                        { timeout: 10000 }
+                    );
+                }, 15000);
             }
         }
 
@@ -181,7 +193,10 @@
         async function loadNotifications() {
             try {
                 const res = await fetch(`${BASE_URL}/notifications/${USER_ID}`);
-                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    throw new Error(`HTTP error! status: ${res.status}, response: ${errorText}`);
+                }
                 const notifs = await res.json();
                 const container = document.getElementById("notifications");
                 container.innerHTML = "";
@@ -198,7 +213,7 @@
                 });
             } catch (e) {
                 console.error("خطأ في تحميل الإشعارات:", e);
-                document.getElementById("notifications").innerHTML = "فشل تحميل الإشعارات، تحقق من الاتصال بالخادم.";
+                document.getElementById("notifications").innerHTML = `فشل تحميل الإشعارات، تحقق من الاتصال بالخادم. التفاصيل: ${e.message}`;
             }
         }
 
