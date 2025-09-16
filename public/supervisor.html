@@ -2,194 +2,182 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>لوحة المشرف / مدير المبيعات</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>شاشة المشرف</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-body { font-family: Arial; margin:0; background:#f4f6f8; }
-header { background:#007bff; color:white; padding:15px; text-align:center; font-size:1.5em; }
-nav { display:flex; justify-content:space-around; background:#fff; border-bottom:1px solid #ddd; }
-nav button { background:none; border:none; padding:15px 20px; cursor:pointer; font-size:1em; }
-nav button.active { border-bottom:3px solid #007bff; color:#007bff; font-weight:bold; }
-.container { padding:20px; }
-.cards-container { display:flex; flex-wrap:wrap; gap:15px; }
-.card { background:#fff; border-radius:10px; padding:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); flex:1 1 300px; position:relative; }
-.card h3 { margin:0 0 10px 0; }
-.status { display:inline-block; padding:5px 10px; border-radius:15px; color:white; font-size:0.9em; }
-.status.active { background:#28a745; }
-.status.inactive { background:#6c757d; }
-.status.break { background:#ffc107; color:#333; }
-.card button { position:absolute; top:15px; right:15px; background:#007bff; border:none; color:white; padding:5px 10px; border-radius:5px; cursor:pointer; }
-.map-container, .reports-container, .notifications-container { display:none; margin-top:20px; }
-#map { width:100%; height:400px; border-radius:10px; }
-.report-card { background:#fff; border-radius:10px; padding:15px; margin-bottom:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
-.report-card img { max-width:100px; margin-right:10px; }
-.notification { background:#fff; padding:10px; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
-.notification.unread { border-left:5px solid #dc3545; }
-textarea { width:100%; margin-top:5px; }
+  body { font-family: Arial, sans-serif; background:#f5f5f5; margin:0; padding:0; }
+  h1,h2,h3 { color:#333; text-align:center; margin:10px 0; }
+  nav { display:flex; justify-content:center; gap:10px; background:#2196f3; padding:10px; }
+  nav button { padding:8px 15px; border:none; border-radius:5px; cursor:pointer; color:white; font-weight:bold; background:#1976d2; }
+  section { display:none; padding:15px; margin:10px; border-radius:10px; background:white; }
+  section.active { display:block; }
+  .card { background:#e3f2fd; padding:10px; border-radius:8px; margin:10px 0; display:flex; justify-content:space-between; align-items:center; }
+  .status-active { color:green; font-weight:bold; }
+  .status-inactive { color:gray; font-weight:bold; }
+  .status-break { color:orange; font-weight:bold; }
+  .btn { padding:5px 10px; border:none; border-radius:5px; cursor:pointer; background:#1976d2; color:white; margin-left:5px; }
+  .task-count { margin-top:5px; font-size:0.9em; }
+  .notif { padding:8px; margin:5px 0; border-radius:5px; background:#ffebee; }
+  .notif.unread { background:#f44336; color:white; }
+  #map { height:400px; border-radius:8px; margin-top:10px; }
+  select { padding:5px; border-radius:5px; border:1px solid #ccc; }
+  textarea { width:100%; padding:5px; border-radius:5px; border:1px solid #ccc; margin-top:5px; }
 </style>
 </head>
 <body>
-<header>لوحة المشرف / مدير المبيعات</header>
+<h1>🧑‍💼 لوحة المشرف / مدير المبيعات</h1>
+
 <nav>
-  <button class="active" onclick="showTab('overview', event)">متابعة المندوبين</button>
-  <button onclick="showTab('map', event)">الخريطة</button>
-  <button onclick="showTab('reports', event)">التقارير</button>
-  <button onclick="showTab('notifications', event)">الإشعارات</button>
+  <button onclick="showTab('supervisorPanel')">📋 متابعة المندوبين</button>
+  <button onclick="showTab('mapTab')">🗺️ الخريطة</button>
+  <button onclick="showTab('reportsTab')">📝 مراجعة التقارير</button>
+  <button onclick="showTab('notificationsTab')">🔔 الإشعارات</button>
 </nav>
-<div class="container">
-  <div id="overview" class="cards-container"></div>
-  <div id="map" class="map-container"><div id="map"></div></div>
-  <div id="reports" class="reports-container"></div>
-  <div id="notifications" class="notifications-container"></div>
-</div>
 
-<!-- Supabase SDK -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+<!-- متابعة المندوبين -->
+<section id="supervisorPanel" class="active">
+  <h2>📊 متابعة أداء المندوبين</h2>
+  <div id="employeesList"></div>
+</section>
+
+<!-- الخريطة -->
+<section id="mapTab">
+  <h2>🗺️ مواقع المندوبين</h2>
+  <label>اختر مندوب:</label>
+  <select id="employeeSelectMap">
+    <option value="all">الكل</option>
+  </select>
+  <div id="map"></div>
+</section>
+
+<!-- مراجعة التقارير -->
+<section id="reportsTab">
+  <h2>📝 التقارير المرفوعة</h2>
+  <div id="reportsList"></div>
+</section>
+
+<!-- الإشعارات -->
+<section id="notificationsTab">
+  <h2>🔔 الإشعارات</h2>
+  <div id="notifications"></div>
+</section>
+
 <script>
-// تهيئة Supabase
-const supabase = supabase.createClient(
-  'https://ncjxqfqwswwikedaffif.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Nzg0MTA3NCwiZXhwIjoyMDczNDE3MDc0fQ.ZX7giBBgWRScW6usplziAWjNYn9yCVeLVAQz7YUBjvA'
-);
-</script>
-
-<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY"></script>
-<script>
-let map;
-let markers = [];
-
-// التبديل بين الأقسام
-function showTab(tab, event) {
-  document.querySelectorAll('.cards-container, .map-container, .reports-container, .notifications-container')
-    .forEach(el => el.style.display='none');
-  document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
-  if(tab==='overview') document.getElementById('overview').style.display='flex';
-  if(tab==='map') document.getElementById('map').style.display='block';
-  if(tab==='reports') document.getElementById('reports').style.display='block';
-  if(tab==='notifications') document.getElementById('notifications').style.display='block';
-  event.currentTarget.classList.add('active');
+function showTab(id){
+  document.querySelectorAll("section").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
 }
 
-// جلب المندوبين
-async function loadEmployees() {
-  const { data: employees, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('role', 'employee')
-    .limit(1000);
+// ===== متابعة المندوبين =====
+async function loadEmployees(){
+  const res = await fetch("/users");
+  const users = await res.json();
+  const container = document.getElementById("employeesList");
+  container.innerHTML = "";
+  const selectMap = document.getElementById("employeeSelectMap");
+  selectMap.innerHTML = '<option value="all">الكل</option>';
 
-  if(error){ console.error(error); alert('فشل جلب المندوبين'); return; }
-
-  const container = document.getElementById('overview');
-  container.innerHTML = '';
-  employees.forEach(emp => {
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.innerHTML = `
-      <h3>${emp.name_ar}</h3>
-      <span class="status ${emp.status === 'نشط' ? 'active' : emp.status === 'في استراحة' ? 'break' : 'inactive'}">
-        ${emp.status || 'غير معروف'}
-      </span>
-      ${emp.latitude && emp.longitude ? `<button onclick="showEmployeePath(${emp.id}, '${emp.name_ar}')"><i class="fas fa-map-marker-alt"></i></button>` : ''}
+  for(let u of users.filter(x=>x.role==="employee")){
+    const div = document.createElement("div");
+    div.className = "card";
+    div.innerHTML = `
+      <div>
+        <strong>${u.name_ar}</strong> | <span class="${u.status==='active'?'status-active':u.status==='break'?'status-break':'status-inactive'}">${u.status||'نشط'}</span>
+        <div class="task-count">مهام: ${u.completed||0} مكتملة / ${u.in_progress||0} قيد التنفيذ / ${u.delayed||0} مؤجلة</div>
+      </div>
+      <div>
+        <button class="btn" onclick="focusEmployeeOnMap(${u.id})">🗺️ عرض الموقع</button>
+      </div>
     `;
-    container.appendChild(card);
-  });
+    container.appendChild(div);
+    const opt = document.createElement("option");
+    opt.value = u.id;
+    opt.textContent = u.name_ar;
+    selectMap.appendChild(opt);
+  }
 }
 
-// عرض مسار المندوب على الخريطة
-async function showEmployeePath(empId, name) {
-  const { data: locations, error } = await supabase
-    .from('employee_locations')
-    .select('*')
-    .eq('employee_id', empId)
-    .order('recorded_at', { ascending: true })
-    .limit(1000);
-
-  if(error || !locations.length){ alert('لا توجد بيانات موقع لهذا المندوب'); return; }
-
-  const center = { lat: parseFloat(locations[0].latitude), lng: parseFloat(locations[0].longitude) };
-  map = new google.maps.Map(document.getElementById('map'), { zoom: 12, center });
-  markers.forEach(m => m.setMap(null)); 
-  markers = [];
-
-  const pathCoordinates = [];
-  locations.forEach(loc => {
-    const latlng = { lat: parseFloat(loc.latitude), lng: parseFloat(loc.longitude) };
-    pathCoordinates.push(latlng);
-    const marker = new google.maps.Marker({ position: latlng, map, title: name });
-    markers.push(marker);
-  });
-
-  const pathLine = new google.maps.Polyline({
-    path: pathCoordinates,
-    geodesic: true,
-    strokeColor: "#FF0000",
-    strokeOpacity: 1.0,
-    strokeWeight: 2
-  });
-  pathLine.setMap(map);
-
-  showTab('map', document.querySelector('nav button:nth-child(2)'));
+// ===== الخريطة =====
+let map, markers={};
+async function initMap(){
+  map = L.map('map').setView([30.0444,31.2357],12); // القاهرة
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
+  await updateMarkers();
+  document.getElementById("employeeSelectMap").addEventListener("change", updateMarkers);
 }
 
-// جلب التقارير
-async function loadReports() {
-  const { data: reports, error } = await supabase
-    .from('reports')
-    .select(`
-      id,
-      user_id,
-      notes,
-      images,
-      client_signature,
-      task:tasks(client_name_ar),
-      user:users(name_ar)
-    `)
-    .limit(1000);
+async function updateMarkers(){
+  const sel = document.getElementById("employeeSelectMap").value;
+  const res = await fetch("/locations");
+  const locs = await res.json();
+  Object.values(markers).forEach(m=>map.removeLayer(m));
+  markers = {};
+  locs.forEach(l=>{
+    if(sel==="all" || l.employee_id==sel){
+      const m = L.marker([l.latitude,l.longitude]).addTo(map).bindPopup(`${l.name_ar}`);
+      markers[l.employee_id]=m;
+    }
+  });
+  if(sel!=="all" && markers[sel]) map.setView(markers[sel].getLatLng(),14);
+}
 
-  if(error){ console.error(error); return; }
+function focusEmployeeOnMap(id){
+  showTab('mapTab');
+  document.getElementById("employeeSelectMap").value=id;
+  updateMarkers();
+}
 
-  const container = document.getElementById('reports');
-  container.innerHTML = '';
-  reports.forEach(r => {
-    const card = document.createElement('div');
-    card.className = 'report-card';
-    const imagesHTML = r.images ? r.images.split(',').map(i=>`<img src="${i}" alt="صورة">`).join('') : '';
-    card.innerHTML = `
-      <strong>المندوب:</strong> ${r.user.name_ar}<br>
-      <strong>العميل:</strong> ${r.task.client_name_ar}<br>
-      <strong>ملاحظات:</strong> ${r.notes || 'لا يوجد'}<br>
-      <strong>صور:</strong> ${imagesHTML}<br>
-      <strong>توقيع العميل:</strong> ${r.client_signature ? `<img src="${r.client_signature}" alt="توقيع">` : 'لا يوجد'}<br>
-      <textarea placeholder="إضافة ملاحظات / تعليمات"></textarea>
+// ===== مراجعة التقارير =====
+async function loadReports(){
+  const res = await fetch("/reports");
+  const reports = await res.json();
+  const container = document.getElementById("reportsList");
+  container.innerHTML="";
+  reports.forEach(r=>{
+    const div = document.createElement("div");
+    div.className="card";
+    div.innerHTML=`
+      <strong>مندوب:</strong> ${r.user_name} | <strong>عميل:</strong> ${r.client_name_ar}<br>
+      <strong>ملاحظات:</strong> ${r.notes}<br>
+      ${r.images? r.images.map(img=>`<img src="${img}" style="width:60px;height:60px;margin:3px;border-radius:5px;">`).join('') :''}
+      ${r.signature? `<div>🖊️ توقيع:<img src="${r.signature}" style="width:80px;height:40px;"></div>` :''}
+      <textarea placeholder="إضافة ملاحظات"></textarea>
+      <button class="btn" onclick="addReportNote(${r.id}, this.previousElementSibling.value)">إضافة ملاحظة</button>
     `;
-    container.appendChild(card);
-  });
-}
-
-// جلب الإشعارات
-async function loadNotifications() {
-  const { data: notifs, error } = await supabase
-    .from('notifications')
-    .select('id, user_id, title_ar, message_ar, read_status, user:users(name_ar)')
-    .limit(1000);
-
-  if(error){ console.error(error); return; }
-
-  const container = document.getElementById('notifications');
-  container.innerHTML = '';
-  notifs.forEach(n => {
-    const div = document.createElement('div');
-    div.className = 'notification ' + (n.read_status ? '' : 'unread');
-    div.innerHTML = `<span>${n.user.name_ar}: ${n.message_ar}</span> <i class="fas fa-bell"></i>`;
     container.appendChild(div);
   });
 }
 
-// تحميل البيانات عند فتح الصفحة
-loadEmployees();
-loadReports();
-loadNotifications();
+async function addReportNote(reportId,note){
+  await fetch(`/reports/${reportId}/note`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({note})});
+  alert("تم إضافة الملاحظة");
+}
+
+// ===== الإشعارات =====
+async function loadNotifications(){
+  const res = await fetch("/notifications");
+  const notifs = await res.json();
+  const container = document.getElementById("notifications");
+  container.innerHTML="";
+  notifs.forEach(n=>{
+    const div = document.createElement("div");
+    div.className="notif "+(n.read? "":"unread");
+    div.innerHTML=`${n.message} ${n.delay?`⏰ تأخير ${n.delay} دقيقة`:""}`;
+    container.appendChild(div);
+  });
+}
+
+// ===== بدء الصفحة =====
+(async()=>{
+  await loadEmployees();
+  await initMap();
+  await loadReports();
+  await loadNotifications();
+  setInterval(loadNotifications,10000);
+})();
 </script>
 </body>
 </html>
