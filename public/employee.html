@@ -41,8 +41,7 @@
   </section>
 
   <script>
-    // ===== استخدم معرف المندوب من تسجيل الدخول =====
-    const USER_ID = localStorage.getItem("user_id"); 
+    const USER_ID = 3; // ضع هنا معرف المندوب بعد تسجيل الدخول
 
     let map, marker;
 
@@ -53,8 +52,8 @@
       const container = document.getElementById("tasks");
       container.innerHTML = "";
 
-      // فلترة المهام مع تحويل كلا القيم إلى نص لتجنب التعارض بين رقم ونص
-      tasks.filter(t => String(t.employee_id) === String(USER_ID)).forEach(t => {
+      // تحويل employee_id و USER_ID إلى أرقام لتجنب مشاكل المقارنة
+      tasks.filter(t => Number(t.employee_id) === Number(USER_ID)).forEach(t => {
         const div = document.createElement("div");
         div.style.border = "1px solid #ccc";
         div.style.padding = "5px";
@@ -64,7 +63,7 @@
           <p><strong>العميل:</strong> ${t.client_name_ar}</p>
           <p><strong>العنوان:</strong> ${t.address_ar}</p>
           <p><strong>وقت الزيارة:</strong> ${new Date(t.visit_time).toLocaleString()}</p>
-          <p><strong>الحالة:</strong> <span id="status-${t.id}">${t.status || 'جديدة'}</span></p>
+          <p><strong>الحالة:</strong> <span id="status-${t.id}">${t.status || "جديدة"}</span></p>
           <button onclick="updateStatus(${t.id}, 'in_progress')">قيد التنفيذ</button>
           <button onclick="updateStatus(${t.id}, 'completed')">مكتملة</button>
           <button onclick="updateStatus(${t.id}, 'delayed')">مؤجلة</button>
@@ -75,12 +74,16 @@
     }
 
     async function updateStatus(taskId, status) {
-      await fetch(`/tasks/${taskId}/status`, {
+      const res = await fetch(`/tasks/${taskId}/status`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status })
       });
-      document.getElementById(`status-${taskId}`).innerText = status;
+      if (res.ok) {
+        document.getElementById(`status-${taskId}`).innerText = status;
+      } else {
+        alert("❌ حدث خطأ أثناء تحديث الحالة");
+      }
     }
 
     function selectTask(taskId) {
@@ -103,11 +106,15 @@
       for (let i = 0; i < imagesFiles.length; i++) formData.append("images", imagesFiles[i]);
       if (signatureFile) formData.append("images", signatureFile);
 
-      const res = await fetch("/reports", { method: "POST", body: formData });
+      const res = await fetch("/reports", {
+        method: "POST",
+        body: formData
+      });
 
       if (res.ok) {
         alert("✅ تم إرسال التقرير");
         document.getElementById("reportForm").reset();
+        loadTasks(); // تحديث المهام بعد إرسال التقرير
       } else {
         alert("❌ خطأ في إرسال التقرير");
       }
@@ -115,7 +122,7 @@
 
     // ===== الخريطة =====
     async function initMap() {
-      map = L.map('map').setView([24.7136, 46.6753], 10);
+      map = L.map('map').setView([24.7136, 46.6753], 10); // مثال الرياض
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors'
       }).addTo(map);
