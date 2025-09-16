@@ -41,7 +41,7 @@
   </section>
 
   <script>
-    const USER_ID = 3; // ضع هنا معرف المندوب بعد تسجيل الدخول
+    const USER_ID = 3; // ضع هنا معرف المندوب الحالي بعد تسجيل الدخول
 
     let map, marker;
 
@@ -52,14 +52,14 @@
       const container = document.getElementById("tasks");
       container.innerHTML = "";
 
-      // تحويل employee_id و USER_ID إلى أرقام لتجنب مشاكل المقارنة
-      tasks.filter(t => Number(t.employee_id) === Number(USER_ID)).forEach(t => {
+      tasks.forEach(t => {
         const div = document.createElement("div");
         div.style.border = "1px solid #ccc";
         div.style.padding = "5px";
         div.style.marginBottom = "5px";
 
         div.innerHTML = `
+          <p><strong>المندوب ID:</strong> ${t.employee_id}</p>
           <p><strong>العميل:</strong> ${t.client_name_ar}</p>
           <p><strong>العنوان:</strong> ${t.address_ar}</p>
           <p><strong>وقت الزيارة:</strong> ${new Date(t.visit_time).toLocaleString()}</p>
@@ -74,16 +74,12 @@
     }
 
     async function updateStatus(taskId, status) {
-      const res = await fetch(`/tasks/${taskId}/status`, {
+      await fetch(`/tasks/${taskId}/status`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status })
       });
-      if (res.ok) {
-        document.getElementById(`status-${taskId}`).innerText = status;
-      } else {
-        alert("❌ حدث خطأ أثناء تحديث الحالة");
-      }
+      document.getElementById(`status-${taskId}`).innerText = status;
     }
 
     function selectTask(taskId) {
@@ -114,7 +110,6 @@
       if (res.ok) {
         alert("✅ تم إرسال التقرير");
         document.getElementById("reportForm").reset();
-        loadTasks(); // تحديث المهام بعد إرسال التقرير
       } else {
         alert("❌ خطأ في إرسال التقرير");
       }
@@ -127,6 +122,7 @@
         attribution: '&copy; OpenStreetMap contributors'
       }).addTo(map);
 
+      // تحديث الموقع الحالي كل 15 ثانية
       if (navigator.geolocation) {
         setInterval(async () => {
           navigator.geolocation.getCurrentPosition(async pos => {
@@ -171,7 +167,7 @@
       await loadTasks();
       await initMap();
       await loadNotifications();
-      setInterval(loadNotifications, 10000);
+      setInterval(loadNotifications, 10000); // تحديث الإشعارات كل 10 ثواني
     })();
   </script>
 </body>
