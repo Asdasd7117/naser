@@ -26,6 +26,7 @@ nav button.active { border-bottom:3px solid #007bff; color:#007bff; font-weight:
 .report-card img { max-width:100px; margin-right:10px; }
 .notification { background:#fff; padding:10px; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
 .notification.unread { border-left:5px solid #dc3545; }
+textarea { width:100%; margin-top:5px; }
 </style>
 </head>
 <body>
@@ -39,8 +40,8 @@ nav button.active { border-bottom:3px solid #007bff; color:#007bff; font-weight:
 <div class="container">
   <div id="overview" class="cards-container"></div>
   <div id="map" class="map-container"></div>
-  <div id="reports" class="reports-container">هنا سيتم عرض التقارير</div>
-  <div id="notifications" class="notifications-container">هنا سيتم عرض الإشعارات</div>
+  <div id="reports" class="reports-container"></div>
+  <div id="notifications" class="notifications-container"></div>
 </div>
 
 <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY"></script>
@@ -59,7 +60,7 @@ function showTab(tab, event) {
   event.currentTarget.classList.add('active');
 }
 
-// جلب المندوبين وعرضهم
+// جلب المندوبين
 async function loadEmployees() {
   const res = await fetch('http://localhost:3000/api/employees');
   const employees = await res.json();
@@ -77,7 +78,7 @@ async function loadEmployees() {
   });
 }
 
-// عرض موقع ومسار المندوب على الخريطة
+// جلب مسار المندوب وعرضه على الخريطة
 async function showEmployeePath(empId, name) {
   const res = await fetch(`http://localhost:3000/api/employee/${empId}/locations`);
   const locations = await res.json();
@@ -87,7 +88,6 @@ async function showEmployeePath(empId, name) {
   map = new google.maps.Map(document.getElementById('map'), { zoom: 12, center });
   markers.forEach(m=>m.setMap(null)); markers=[];
 
-  // إضافة نقاط المسار
   const pathCoordinates = [];
   locations.forEach(loc => {
     const latlng = { lat: parseFloat(loc.latitude), lng: parseFloat(loc.longitude) };
@@ -96,7 +96,6 @@ async function showEmployeePath(empId, name) {
     markers.push(marker);
   });
 
-  // رسم الخط
   const pathLine = new google.maps.Polyline({
     path: pathCoordinates,
     geodesic: true,
@@ -105,13 +104,49 @@ async function showEmployeePath(empId, name) {
     strokeWeight: 2
   });
   pathLine.setMap(map);
-
-  // التبديل تلقائيًا إلى الخريطة
   showTab('map', document.querySelector('nav button:nth-child(2)'));
 }
 
-// تحميل البيانات عند فتح الصفحة
+// جلب التقارير
+async function loadReports() {
+  const res = await fetch('http://localhost:3000/api/reports');
+  const reports = await res.json();
+  const container = document.getElementById('reports');
+  container.innerHTML = '';
+  reports.forEach(r => {
+    const card = document.createElement('div');
+    card.className = 'report-card';
+    const imagesHTML = r.images ? r.images.split(',').map(i=>`<img src="${i}" alt="صورة">`).join('') : '';
+    card.innerHTML = `
+      <strong>المندوب:</strong> ${r.employee_name}<br>
+      <strong>العميل:</strong> ${r.client_name_ar}<br>
+      <strong>ملاحظات:</strong> ${r.notes}<br>
+      <strong>صور:</strong> ${imagesHTML}<br>
+      <strong>توقيع العميل:</strong> <img src="${r.client_signature}" alt="توقيع"><br>
+      <textarea placeholder="إضافة ملاحظات / تعليمات"></textarea>
+    `;
+    container.appendChild(card);
+  });
+}
+
+// جلب الإشعارات
+async function loadNotifications() {
+  const res = await fetch('http://localhost:3000/api/notifications');
+  const notifs = await res.json();
+  const container = document.getElementById('notifications');
+  container.innerHTML = '';
+  notifs.forEach(n => {
+    const div = document.createElement('div');
+    div.className = 'notification ' + (n.read_status ? '' : 'unread');
+    div.innerHTML = `<span>${n.employee_name}: ${n.message_ar}</span> <i class="fas fa-bell"></i>`;
+    container.appendChild(div);
+  });
+}
+
+// تحميل جميع البيانات عند فتح الصفحة
 loadEmployees();
+loadReports();
+loadNotifications();
 </script>
 </body>
-</html>
+</html
