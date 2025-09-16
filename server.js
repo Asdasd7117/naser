@@ -8,7 +8,7 @@ const { createClient } = require("@supabase/supabase-js");
 
 // ===== إعداد Express =====
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000; // Render يحدد المنفذ تلقائياً
 
 // تأكد من وجود مجلد uploads
 const uploadsDir = path.join(__dirname, "uploads");
@@ -19,7 +19,7 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/uploads", express.static(uploadsDir));
 
 app.use(cors({
-    origin: "http://localhost:3000" // غيّر إلى نطاق الصفحة الفعلي عند الاستضافة
+    origin: "https://naser700.onrender.com" // تم تحديثه ليتوافق مع موقعك
 }));
 app.use(bodyParser.json());
 
@@ -129,13 +129,17 @@ app.post("/tasks", async (req, res) => {
 app.get("/tasks", async (req, res) => {
     try {
         const { employee_id } = req.query;
+        console.log("Fetching tasks for employee_id:", employee_id); // تسجيل للتحقق
         let query = supabase.from("tasks").select("*").order("visit_time", { ascending: true });
         if (employee_id) query = query.eq("employee_id", employee_id);
         const { data, error } = await query;
-        if (error) throw error;
+        if (error) {
+            console.error("Supabase error:", error);
+            throw error;
+        }
         res.json(data);
     } catch (err) {
-        console.error(err);
+        console.error("Error in /tasks endpoint:", err);
         res.status(500).json({ error: "حدث خطأ عند جلب المهام" });
     }
 });
@@ -385,6 +389,13 @@ app.get("/locations", async (req, res) => {
 // =========================
 // تشغيل السيرفر
 // =========================
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+});
+
+// إدارة إغلاق السيرفر (لمنصات مثل Render)
+process.on("SIGTERM", () => {
+    server.close(() => {
+        console.log("Server terminated");
+    });
 });
