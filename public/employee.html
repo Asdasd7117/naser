@@ -1,218 +1,172 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>لوحة المندوب</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <style>
-    body {
-      font-family: "Arial", sans-serif;
-      background: #f5f5f5;
-      margin: 0;
-      padding: 0 10px;
-    }
-    h1, h2 {
-      text-align: center;
-      color: #333;
-    }
-    section {
-      margin: 20px 0;
-    }
-    .task-card, .report-card, .notif-card {
-      background: #fff;
-      border-radius: 10px;
-      padding: 15px;
-      margin-bottom: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-    .task-new { border-left: 5px solid #2196f3; }
-    .task-in_progress { border-left: 5px solid #ffca28; }
-    .task-completed { border-left: 5px solid #4caf50; }
-    button {
-      margin: 5px 5px 0 0;
-      padding: 5px 10px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    button.report-btn { background: #00bcd4; color: #fff; }
-    button.status-btn { background: #e0e0e0; }
-    button.status-btn.new { background: #2196f3; color: #fff; }
-    button.status-btn.in_progress { background: #ffca28; color: #fff; }
-    button.status-btn.completed { background: #4caf50; color: #fff; }
-    #map { height: 300px; border-radius: 10px; }
-    textarea { width: 100%; height: 60px; border-radius: 5px; border: 1px solid #ccc; padding: 5px; }
-    input[type=file] { margin: 5px 0; }
-    form { background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-  </style>
+<meta charset="UTF-8">
+<title>لوحة المندوب</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<style>
+  body { font-family: Arial, sans-serif; margin:20px; background:#f5f5f5; }
+  h1 { text-align:center; color:#333; }
+  section { margin-bottom:20px; }
+  .card { padding:10px; margin:10px 0; border-radius:8px; color:white; }
+  .status-new { background:#90caf9; }
+  .status-in_progress { background:#ffb74d; }
+  .status-completed { background:#81c784; }
+  .status-delayed { background:#e57373; }
+  button { margin:2px; padding:5px 10px; border:none; border-radius:5px; cursor:pointer; }
+  form input, form textarea { width:100%; padding:8px; margin:5px 0; border-radius:5px; border:1px solid #ccc; }
+  #map { height:300px; border-radius:8px; margin-top:10px; }
+  #notifications .card { background:#2196f3; }
+</style>
 </head>
 <body>
+<h1>👷 لوحة المندوب</h1>
 
-  <h1>👷 لوحة المندوب</h1>
+<!-- المهام اليومية -->
+<section>
+  <h2>📋 المهام اليومية</h2>
+  <div id="tasks"></div>
+</section>
 
-  <!-- المهام اليومية -->
-  <section>
-    <h2>📋 المهام اليومية</h2>
-    <div id="tasks"></div>
-  </section>
+<!-- رفع التقرير -->
+<section>
+  <h2>📝 رفع التقرير</h2>
+  <form id="reportForm">
+    <input type="hidden" id="task_id">
+    <textarea id="notes" placeholder="اكتب ملاحظاتك هنا..." required></textarea>
+    <input type="file" id="images" multiple>
+    <input type="file" id="signature" accept="image/*">
+    <button type="submit">إرسال التقرير</button>
+  </form>
+</section>
 
-  <!-- رفع التقرير -->
-  <section>
-    <h2>📝 رفع التقرير</h2>
-    <form id="reportForm">
-      <input type="hidden" id="task_id">
-      <textarea id="notes" placeholder="اكتب ملاحظاتك هنا..." required></textarea><br>
-      <input type="file" id="images" multiple><br>
-      <input type="file" id="signature" accept="image/*"><br>
-      <button type="submit">إرسال التقرير</button>
-    </form>
-  </section>
+<!-- الخريطة -->
+<section>
+  <h2>🗺️ موقعك الحالي</h2>
+  <div id="map"></div>
+</section>
 
-  <!-- التقارير السابقة -->
-  <section>
-    <h2>📂 التقارير السابقة</h2>
-    <div id="reports"></div>
-  </section>
-
-  <!-- الخريطة -->
-  <section>
-    <h2>🗺️ موقعك الحالي</h2>
-    <div id="map"></div>
-  </section>
-
-  <!-- الإشعارات -->
-  <section>
-    <h2>🔔 الإشعارات</h2>
-    <div id="notifications"></div>
-  </section>
+<!-- الإشعارات -->
+<section>
+  <h2>🔔 الإشعارات</h2>
+  <div id="notifications"></div>
+</section>
 
 <script>
-  const USER_ID = 3; // ضع معرف المندوب الحالي
+const USER_ID = 3; // ضع معرف المندوب بعد تسجيل الدخول
+let map, marker;
 
-  let map, marker;
+// ===== تحميل المهام =====
+async function loadTasks() {
+  const res = await fetch("/tasks");
+  const tasks = await res.json();
+  const container = document.getElementById("tasks");
+  container.innerHTML = "";
 
-  // ===== تحميل المهام =====
-  async function loadTasks() {
-    const res = await fetch("/tasks");
-    const tasks = await res.json();
-    const container = document.getElementById("tasks");
-    container.innerHTML = "";
-
-    tasks.filter(t => t.employee_id == USER_ID).forEach(t => {
-      const div = document.createElement("div");
-      div.className = "task-card task-" + (t.status || "new");
-      div.innerHTML = `
-        <p><strong>العميل:</strong> ${t.client_name_ar}</p>
-        <p><strong>العنوان:</strong> ${t.address_ar}</p>
-        <p><strong>وقت الزيارة:</strong> ${new Date(t.visit_time).toLocaleString()}</p>
-        <p><strong>الحالة:</strong> <span id="status-${t.id}">${t.status || "new"}</span></p>
-        <button class="status-btn new" onclick="updateStatus(${t.id}, 'new')">جديدة</button>
-        <button class="status-btn in_progress" onclick="updateStatus(${t.id}, 'in_progress')">قيد التنفيذ</button>
-        <button class="status-btn completed" onclick="updateStatus(${t.id}, 'completed')">مكتملة</button>
-        <button class="report-btn" onclick="selectTask(${t.id})">رفع تقرير</button>
-      `;
-      container.appendChild(div);
-    });
-  }
-
-  async function updateStatus(taskId, status) {
-    await fetch(`/tasks/${taskId}/status`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status })
-    });
-    document.getElementById(`status-${taskId}`).innerText = status;
-    loadTasks();
-  }
-
-  function selectTask(taskId) {
-    document.getElementById("task_id").value = taskId;
-  }
-
-  // ===== رفع التقرير =====
-  document.getElementById("reportForm").addEventListener("submit", async e => {
-    e.preventDefault();
-    const task_id = document.getElementById("task_id").value;
-    const notes = document.getElementById("notes").value;
-
-    const imagesFiles = document.getElementById("images").files;
-    const signatureFile = document.getElementById("signature").files[0];
-
-    const formData = new FormData();
-    formData.append("task_id", task_id);
-    formData.append("user_id", USER_ID);
-    formData.append("notes", notes);
-    for (let i = 0; i < imagesFiles.length; i++) formData.append("images", imagesFiles[i]);
-    if (signatureFile) formData.append("images", signatureFile);
-
-    const res = await fetch("/reports", { method: "POST", body: formData });
-    if (res.ok) {
-      alert("✅ تم إرسال التقرير");
-      document.getElementById("reportForm").reset();
-      loadReports();
-    } else alert("❌ خطأ في إرسال التقرير");
+  tasks.forEach(t => {
+    const div = document.createElement("div");
+    div.className = "card status-" + (t.status || "new");
+    div.innerHTML = `
+      <p><strong>المندوب ID:</strong> ${t.employee_id || "-"}</p>
+      <p><strong>العميل:</strong> ${t.client_name_ar || "-"}</p>
+      <p><strong>العنوان:</strong> ${t.address_ar || "-"}</p>
+      <p><strong>وقت الزيارة:</strong> ${t.visit_time ? new Date(t.visit_time).toLocaleString() : "-"}</p>
+      <p><strong>الحالة:</strong> <span id="status-${t.id}">${t.status || "منفصلة"}</span></p>
+      <button onclick="updateStatus(${t.id}, 'in_progress')">قيد التنفيذ</button>
+      <button onclick="updateStatus(${t.id}, 'completed')">تم التنفيذ</button>
+      <button onclick="updateStatus(${t.id}, 'delayed')">قيد الانتظار</button>
+      <button onclick="selectTask(${t.id})">رفع تقرير</button>
+    `;
+    container.appendChild(div);
   });
+}
 
-  // ===== عرض التقارير السابقة =====
-  async function loadReports() {
-    const res = await fetch("/reports");
-    const reports = await res.json();
-    const container = document.getElementById("reports");
-    container.innerHTML = "";
+async function updateStatus(taskId, status) {
+  await fetch(`/tasks/${taskId}/status`, {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ status })
+  });
+  document.getElementById(`status-${taskId}`).innerText = status;
+  loadTasks();
+}
 
-    reports.filter(r => r.user_id == USER_ID).forEach(r => {
-      const div = document.createElement("div");
-      div.className = "report-card";
-      const imgs = r.images ? r.images.split(",").map(img => `<img src="${img}" width="80" style="margin:3px; border-radius:5px;">`).join("") : "";
-      div.innerHTML = `
-        <p><strong>المهمة ID:</strong> ${r.task_id}</p>
-        <p><strong>ملاحظات:</strong> ${r.notes}</p>
-        <p>${imgs}</p>
-        <p><strong>التاريخ:</strong> ${new Date(r.created_at).toLocaleString()}</p>
-      `;
-      container.appendChild(div);
-    });
+function selectTask(taskId) {
+  document.getElementById("task_id").value = taskId;
+}
+
+// ===== رفع التقرير =====
+document.getElementById("reportForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const task_id = document.getElementById("task_id").value;
+  const notes = document.getElementById("notes").value;
+  const imagesFiles = document.getElementById("images").files;
+  const signatureFile = document.getElementById("signature").files[0];
+
+  const formData = new FormData();
+  formData.append("task_id", task_id);
+  formData.append("user_id", USER_ID);
+  formData.append("notes", notes);
+  for(let i=0;i<imagesFiles.length;i++) formData.append("images", imagesFiles[i]);
+  if(signatureFile) formData.append("signature", signatureFile);
+
+  const res = await fetch("/reports", { method:"POST", body:formData });
+  if(res.ok){
+    alert("✅ تم إرسال التقرير");
+    document.getElementById("reportForm").reset();
+  } else {
+    alert("❌ خطأ في إرسال التقرير");
   }
+});
 
-  // ===== الخريطة =====
-  async function initMap() {
-    map = L.map('map').setView([30.0444, 31.2357], 12); // القاهرة
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+// ===== الخريطة =====
+async function initMap() {
+  map = L.map('map').setView([30.0444,31.2357], 12); // القاهرة
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
 
-    if (navigator.geolocation) {
-      setInterval(() => {
-        navigator.geolocation.getCurrentPosition(async pos => {
-          const lat = pos.coords.latitude;
-          const lon = pos.coords.longitude;
-
-          await fetch("/locations", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ employee_id: USER_ID, latitude: lat, longitude: lon })
-          });
-
-          if (!marker) {
-            marker = L.marker([lat, lon]).addTo(map).bindPopup("موقعك الحالي");
-          } else marker.setLatLng([lat, lon]);
-          map.setView([lat, lon], 13);
+  if(navigator.geolocation){
+    setInterval(()=>{
+      navigator.geolocation.getCurrentPosition(async pos=>{
+        const lat=pos.coords.latitude, lon=pos.coords.longitude;
+        await fetch("/locations", {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body:JSON.stringify({ employee_id:USER_ID, latitude:lat, longitude:lon })
         });
-      }, 15000);
-    }
+        if(!marker){
+          marker = L.marker([lat,lon]).addTo(map).bindPopup("موقعك الحالي");
+        } else { marker.setLatLng([lat,lon]); }
+        map.setView([lat,lon],13);
+      });
+    },15000);
   }
+}
 
-  // ===== الإشعارات =====
-  async function loadNotifications() {
-    const res = await fetch(`/notifications/${USER_ID}`);
-    const notifs = await res.json();
-    const container = document.getElementById("notifications");
-    container.innerHTML = "";
-    notifs.forEach(n => {
-      const div = document.createElement("div");
-      div.className = "notif-card";
-      div.innerHTML = `<strong>${n.title_ar}</strong>: ${n.message_ar}`;
-      container.appendChild(div);
+// ===== الإشعارات =====
+async function loadNotifications() {
+  const res = await fetch(`/notifications/${USER_ID}`);
+  const notifs = await res.json();
+  const container = document.getElementById("notifications");
+  container.innerHTML = "";
+  notifs.forEach(n=>{
+    const div = document.createElement("div");
+    div.className = "card";
+    div.style.background="#2196f3";
+    div.innerHTML = `<strong>${n.title_ar}</strong>: ${n.message_ar}`;
+    container.appendChild(div);
+  });
+}
+
+// ===== بدء الصفحة =====
+(async ()=>{
+  await loadTasks();
+  await initMap();
+  await loadNotifications();
+  setInterval(loadNotifications,10000);
+})();
+</script>
+</body>
+</html>
