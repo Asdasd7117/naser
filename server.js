@@ -12,7 +12,6 @@ const { createClient } = require("@supabase/supabase-js");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ملفات ثابتة من مجلد public
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
@@ -34,13 +33,10 @@ const upload = multer({ storage });
 // =========================
 // APIs المستخدمين
 // =========================
-
-// تسجيل الدخول
 app.post("/login", async (req, res) => {
   try {
     const { emailOrPhone, password } = req.body;
 
-    // البحث بالبريد
     let { data: user, error } = await supabase
       .from("users")
       .select("*")
@@ -48,7 +44,6 @@ app.post("/login", async (req, res) => {
       .eq("password", password)
       .maybeSingle();
 
-    // إذا لم يوجد، البحث بالهاتف
     if (!user) {
       ({ data: user, error } = await supabase
         .from("users")
@@ -68,7 +63,6 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// إضافة مستخدم جديد
 app.post("/add-user", async (req, res) => {
   try {
     const { name_ar, name_en, email, phone, password, role } = req.body;
@@ -83,7 +77,6 @@ app.post("/add-user", async (req, res) => {
   }
 });
 
-// جلب كل المستخدمين
 app.get("/users", async (req, res) => {
   try {
     const { data, error } = await supabase.from("users").select("*");
@@ -95,7 +88,6 @@ app.get("/users", async (req, res) => {
   }
 });
 
-// حذف مستخدم
 app.delete("/users/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -111,8 +103,6 @@ app.delete("/users/:id", async (req, res) => {
 // =========================
 // APIs المهام
 // =========================
-
-// إضافة مهمة
 app.post("/tasks", async (req, res) => {
   try {
     const { employee_id, client_name_ar, client_name_en, address_ar, address_en, visit_time } = req.body;
@@ -127,11 +117,19 @@ app.post("/tasks", async (req, res) => {
   }
 });
 
-// جلب كل المهام
+// ✅ جلب المهام: فلترة حسب المندوب (employee_id) إن وجد
 app.get("/tasks", async (req, res) => {
   try {
-    const { data, error } = await supabase.from("tasks").select("*");
+    const { employee_id } = req.query;
+    let query = supabase.from("tasks").select("*");
+
+    if (employee_id) {
+      query = query.eq("employee_id", employee_id);
+    }
+
+    const { data, error } = await query;
     if (error) throw error;
+
     res.json(data);
   } catch (err) {
     console.log(err);
@@ -139,7 +137,6 @@ app.get("/tasks", async (req, res) => {
   }
 });
 
-// تحديث حالة المهمة
 app.post("/tasks/:id/status", async (req, res) => {
   try {
     const { id } = req.params;
@@ -153,7 +150,6 @@ app.post("/tasks/:id/status", async (req, res) => {
   }
 });
 
-// حذف مهمة
 app.delete("/tasks/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -169,8 +165,6 @@ app.delete("/tasks/:id", async (req, res) => {
 // =========================
 // APIs التقارير
 // =========================
-
-// رفع تقرير
 app.post("/reports", upload.array("images", 5), async (req, res) => {
   try {
     const { task_id, user_id, notes } = req.body;
@@ -186,7 +180,6 @@ app.post("/reports", upload.array("images", 5), async (req, res) => {
   }
 });
 
-// جلب كل التقارير
 app.get("/reports", async (req, res) => {
   try {
     const { data, error } = await supabase.from("reports").select("*, users(*), tasks(*)");
@@ -201,8 +194,6 @@ app.get("/reports", async (req, res) => {
 // =========================
 // APIs الإشعارات
 // =========================
-
-// إرسال إشعار
 app.post("/notifications", async (req, res) => {
   try {
     const { user_id, title_ar, title_en, message_ar, message_en, type } = req.body;
@@ -217,7 +208,6 @@ app.post("/notifications", async (req, res) => {
   }
 });
 
-// جلب إشعارات مستخدم معين
 app.get("/notifications/:user_id", async (req, res) => {
   try {
     const { user_id } = req.params;
@@ -233,8 +223,6 @@ app.get("/notifications/:user_id", async (req, res) => {
 // =========================
 // APIs المواقع
 // =========================
-
-// تحديث موقع المندوب
 app.post("/locations", async (req, res) => {
   try {
     const { employee_id, latitude, longitude } = req.body;
@@ -250,7 +238,6 @@ app.post("/locations", async (req, res) => {
   }
 });
 
-// جلب آخر موقع لكل مندوب
 app.get("/locations", async (req, res) => {
   try {
     const { data, error } = await supabase
