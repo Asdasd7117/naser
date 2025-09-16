@@ -23,47 +23,50 @@
 <body>
 <h1>👷 لوحة المندوب</h1>
 
-<!-- المهام اليومية -->
 <section>
   <h2>📋 المهام اليومية</h2>
   <div id="tasks"></div>
 </section>
 
-<!-- رفع التقرير -->
 <section>
   <h2>📝 رفع التقرير</h2>
   <form id="reportForm">
     <input type="hidden" id="task_id">
     <textarea id="notes" placeholder="اكتب ملاحظاتك هنا..." required></textarea>
     <input type="file" id="images" multiple>
-    <input type="file" id="signature" accept="image/*">
     <button type="submit">إرسال التقرير</button>
   </form>
 </section>
 
-<!-- الخريطة -->
 <section>
   <h2>🗺️ موقعك الحالي</h2>
   <div id="map"></div>
 </section>
 
-<!-- الإشعارات -->
 <section>
   <h2>🔔 الإشعارات</h2>
   <div id="notifications"></div>
 </section>
 
-<script>
-const USER_ID = 3; // ضع معرف المندوب بعد تسجيل الدخول
-let map, marker;
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+const SUPABASE_URL = "https://ncjxqfqwswwikedaffif.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Nzg0MTA3NCwiZXhwIjoyMDczNDE3MDc0fQ.ZX7giBBgWRScW6usplziAWjNYn9yCVeLVAQz7YUBjvA";
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const USER_ID = 3; // معرف المندوب
 
 // ===== تحميل المهام =====
 async function loadTasks() {
-  const res = await fetch("/tasks");
-  const tasks = await res.json();
+  const { data: tasks, error } = await supabase
+    .from("tasks")
+    .select("*")
+    .eq("employee_id", USER_ID);
+  if(error) return console.log(error);
+
   const container = document.getElementById("tasks");
   container.innerHTML = "";
-
   tasks.forEach(t => {
     const div = document.createElement("div");
     div.className = "card status-" + (t.status || "new");
@@ -82,12 +85,13 @@ async function loadTasks() {
   });
 }
 
+// ===== تحديث الحالة =====
 async function updateStatus(taskId, status) {
-  await fetch(`/tasks/${taskId}/status`, {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ status })
-  });
+  const { data, error } = await supabase
+    .from("tasks")
+    .update({ status })
+    .eq("id", taskId);
+  if(error) return console.log(error);
   document.getElementById(`status-${taskId}`).innerText = status;
   loadTasks();
 }
@@ -96,49 +100,50 @@ function selectTask(taskId) {
   document.getElementById("task_id").value = taskId;
 }
 
-// ===== رفع التقرير =====
+// ===== رفع التقرير مع الصور بدون امتداد =====
 document.getElementById("reportForm").addEventListener("submit", async e => {
   e.preventDefault();
   const task_id = document.getElementById("task_id").value;
   const notes = document.getElementById("notes").value;
   const imagesFiles = document.getElementById("images").files;
-  const signatureFile = document.getElementById("signature").files[0];
 
-  const formData = new FormData();
-  formData.append("task_id", task_id);
-  formData.append("user_id", USER_ID);
-  formData.append("notes", notes);
-  for(let i=0;i<imagesFiles.length;i++) formData.append("images", imagesFiles[i]);
-  if(signatureFile) formData.append("signature", signatureFile);
+  const uploadedFiles = [];
+  for (let file of imagesFiles) {
+    const filename = `${Date.now()}_${Math.random().toString(36).substr(2,5)}`;
+    const { data, error } = await supabase.storage
+      .from("reports")
+      .upload(filename, file); // بدون امتداد
+    if(error) console.log(error);
+    else uploadedFiles.push(data.path);
+  }
 
-  const res = await fetch("/reports", { method:"POST", body:formData });
-  if(res.ok){
+  const { data, error } = await supabase
+    .from("reports")
+    .insert([{ task_id, user_id: USER_ID, notes, images: uploadedFiles.join(",") }]);
+  if(error) console.log(error);
+  else {
     alert("✅ تم إرسال التقرير");
     document.getElementById("reportForm").reset();
-  } else {
-    alert("❌ خطأ في إرسال التقرير");
   }
 });
 
 // ===== الخريطة =====
+let map, marker;
 async function initMap() {
-  map = L.map('map').setView([30.0444,31.2357], 12); // القاهرة
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors'
+  map = L.map('map').setView([30.0444,31.2357], 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    attribution:'&copy; OpenStreetMap contributors'
   }).addTo(map);
 
   if(navigator.geolocation){
-    setInterval(()=>{
+    setInterval(async ()=>{
       navigator.geolocation.getCurrentPosition(async pos=>{
-        const lat=pos.coords.latitude, lon=pos.coords.longitude;
-        await fetch("/locations", {
-          method:"POST",
-          headers:{ "Content-Type":"application/json" },
-          body:JSON.stringify({ employee_id:USER_ID, latitude:lat, longitude:lon })
-        });
-        if(!marker){
-          marker = L.marker([lat,lon]).addTo(map).bindPopup("موقعك الحالي");
-        } else { marker.setLatLng([lat,lon]); }
+        const lat = pos.coords.latitude, lon = pos.coords.longitude;
+        await supabase
+          .from("employee_locations")
+          .insert([{ employee_id: USER_ID, latitude: lat, longitude: lon }]);
+        if(!marker) marker = L.marker([lat,lon]).addTo(map).bindPopup("موقعك الحالي");
+        else marker.setLatLng([lat,lon]);
         map.setView([lat,lon],13);
       });
     },15000);
@@ -147,11 +152,16 @@ async function initMap() {
 
 // ===== الإشعارات =====
 async function loadNotifications() {
-  const res = await fetch(`/notifications/${USER_ID}`);
-  const notifs = await res.json();
+  const { data: notifs, error } = await supabase
+    .from("notifications")
+    .select("*")
+    .eq("user_id", USER_ID)
+    .order("id", {ascending:false});
+  if(error) return console.log(error);
+
   const container = document.getElementById("notifications");
   container.innerHTML = "";
-  notifs.forEach(n=>{
+  notifs.forEach(n => {
     const div = document.createElement("div");
     div.className = "card";
     div.style.background="#2196f3";
@@ -161,7 +171,7 @@ async function loadNotifications() {
 }
 
 // ===== بدء الصفحة =====
-(async ()=>{
+(async()=>{
   await loadTasks();
   await initMap();
   await loadNotifications();
