@@ -1,185 +1,214 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<title>لوحة المندوب</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<style>
-body { font-family: Tahoma, sans-serif; background:#f5f7fa; margin:20px; }
-h1 { text-align:center; color:#333; margin-bottom:25px; }
-section { margin-bottom:25px; }
-.card { padding:12px; margin:10px 0; border-radius:10px; color:white; box-shadow:0 2px 6px rgba(0,0,0,0.1); }
-.status-new { background:#42a5f5; }
-.status-in_progress { background:#ff9800; }
-.status-completed { background:#4caf50; }
-.status-delayed { background:#e53935; }
-button { margin:3px; padding:7px 12px; border:none; border-radius:6px; cursor:pointer; background:#607d8b; color:white; }
-button:hover { opacity:0.9; }
-form input, form textarea { width:100%; padding:8px; margin:6px 0; border-radius:6px; border:1px solid #ccc; }
-#map { height:300px; border-radius:10px; margin-top:10px; }
-#notifications .card { background:#2196f3; }
-</style>
+    <meta charset="UTF-8">
+    <title>لوحة المندوب</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <style>
+        body { font-family: Tahoma, sans-serif; background: #f5f7fa; margin: 20px; }
+        h1 { text-align: center; color: #333; margin-bottom: 25px; }
+        section { margin-bottom: 25px; }
+        .card { padding: 12px; margin: 10px 0; border-radius: 10px; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+        .status-new { background: #42a5f5; }
+        .status-in_progress { background: #ff9800; }
+        .status-completed { background: #4caf50; }
+        .status-delayed { background: #e53935; }
+        button { margin: 3px; padding: 7px 12px; border: none; border-radius: 6px; cursor: pointer; background: #607d8b; color: white; }
+        button:hover { opacity: 0.9; }
+        form input, form textarea { width: 100%; padding: 8px; margin: 6px 0; border-radius: 6px; border: 1px solid #ccc; }
+        #map { height: 300px; border-radius: 10px; margin-top: 10px; }
+        #notifications .card { background: #2196f3; }
+    </style>
 </head>
 <body>
-<h1>👷 لوحة المندوب</h1>
+    <h1>👷 لوحة المندوب</h1>
 
-<section>
-<h2>📋 المهام اليومية</h2>
-<div id="tasks">جاري تحميل المهام...</div>
-</section>
+    <section>
+        <h2>📋 المهام اليومية</h2>
+        <div id="tasks">جاري تحميل المهام...</div>
+    </section>
 
-<section>
-<h2>📝 رفع التقرير</h2>
-<form id="reportForm">
-  <input type="hidden" id="task_id">
-  <textarea id="notes" placeholder="اكتب ملاحظاتك هنا..."></textarea>
-  <input type="file" id="images" multiple>
-  <input type="file" id="signature" accept="image/*">
-  <button type="submit">إرسال التقرير</button>
-</form>
-</section>
+    <section>
+        <h2>📝 رفع التقرير</h2>
+        <form id="reportForm">
+            <input type="hidden" id="task_id">
+            <textarea id="notes" placeholder="اكتب ملاحظاتك هنا..."></textarea>
+            <input type="file" id="images" multiple>
+            <input type="file" id="signature" accept="image/*">
+            <button type="submit">إرسال التقرير</button>
+        </form>
+    </section>
 
-<section>
-<h2>🗺️ موقعك الحالي</h2>
-<div id="map"></div>
-</section>
+    <section>
+        <h2>🗺️ موقعك الحالي</h2>
+        <div id="map"></div>
+    </section>
 
-<section>
-<h2>🔔 الإشعارات</h2>
-<div id="notifications">لا يوجد إشعارات حالياً</div>
-</section>
+    <section>
+        <h2>🔔 الإشعارات</h2>
+        <div id="notifications">لا يوجد إشعارات حالياً</div>
+    </section>
 
-<script>
-const USER_ID = 3; // معرف المندوب بعد تسجيل الدخول
-let map, marker;
+    <script>
+        const BASE_URL = "http://localhost:3000"; // غيّر إلى عنوان الخادم الفعلي عند الاستضافة
+        const USER_ID = 3;
 
-// ===== المهام =====
-async function loadTasks(){
-  try{
-    const res = await fetch("/tasks");
-    const tasks = await res.json();
-    const container = document.getElementById("tasks");
-    container.innerHTML = "";
-    if(tasks.length===0){ container.innerHTML="لا توجد مهام حالياً"; return; }
+        let map, marker;
 
-    tasks.forEach(t=>{
-      const div = document.createElement("div");
-      const statusClass = "status-" + (t.status||"new");
-      div.className = "card "+statusClass;
-      div.innerHTML = `
-        <p><strong>المندوب:</strong> ${t.employee_id||"-"}</p>
-        <p><strong>العميل:</strong> ${t.client_name_ar||"-"}</p>
-        <p><strong>العنوان:</strong> ${t.address_ar||"-"}</p>
-        <p><strong>وقت الزيارة:</strong> ${t.visit_time?new Date(t.visit_time).toLocaleString():"-"}</p>
-        <p><strong>الحالة:</strong> <span id="status-${t.id}">${t.status||"منفصلة"}</span></p>
-        <button onclick="updateStatus(${t.id},'in_progress')">قيد التنفيذ</button>
-        <button onclick="updateStatus(${t.id},'completed')">تم التنفيذ</button>
-        <button onclick="updateStatus(${t.id},'delayed')">قيد الانتظار</button>
-        <button onclick="selectTask(${t.id})">رفع تقرير</button>
-      `;
-      container.appendChild(div);
-    });
-  }catch(e){ console.error("خطأ في تحميل المهام:", e); }
-}
+        // ===== المهام =====
+        async function loadTasks() {
+            try {
+                const res = await fetch(`${BASE_URL}/tasks?employee_id=${USER_ID}`);
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                const tasks = await res.json();
+                const container = document.getElementById("tasks");
+                container.innerHTML = "";
+                if (tasks.length === 0) {
+                    container.innerHTML = "لا توجد مهام حالياً";
+                    return;
+                }
+                tasks.forEach(t => {
+                    const div = document.createElement("div");
+                    const statusClass = "status-" + (t.status || "new");
+                    div.className = "card " + statusClass;
+                    div.innerHTML = `
+                        <p><strong>المندوب:</strong> ${t.employee_id || "-"}</p>
+                        <p><strong>العميل:</strong> ${t.client_name_ar || "-"}</p>
+                        <p><strong>العنوان:</strong> ${t.address_ar || "-"}</p>
+                        <p><strong>وقت الزيارة:</strong> ${t.visit_time ? new Date(t.visit_time).toLocaleString() : "-"}</p>
+                        <p><strong>الحالة:</strong> <span id="status-${t.id}">${t.status || "منفصلة"}</span></p>
+                        <button onclick="updateStatus(${t.id}, 'in_progress')">قيد التنفيذ</button>
+                        <button onclick="updateStatus(${t.id}, 'completed')">تم التنفيذ</button>
+                        <button onclick="updateStatus(${t.id}, 'delayed')">قيد الانتظار</button>
+                        <button onclick="selectTask(${t.id})">رفع تقرير</button>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (e) {
+                console.error("خطأ في تحميل المهام:", e);
+                document.getElementById("tasks").innerHTML = "فشل تحميل المهام، تحقق من الاتصال بالخادم.";
+            }
+        }
 
-function selectTask(taskId){ document.getElementById("task_id").value = taskId; }
+        function selectTask(taskId) {
+            document.getElementById("task_id").value = taskId;
+        }
 
-async function updateStatus(taskId,status){
-  try{
-    await fetch(`/tasks/${taskId}/status`,{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({status})
-    });
-    document.getElementById(`status-${taskId}`).innerText = status;
-    loadTasks();
-  }catch(e){ console.error("خطأ في تحديث الحالة:", e); }
-}
+        async function updateStatus(taskId, status) {
+            try {
+                const res = await fetch(`${BASE_URL}/tasks/${taskId}/status`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ status })
+                });
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                document.getElementById(`status-${taskId}`).innerText = status;
+                loadTasks();
+            } catch (e) {
+                console.error("خطأ في تحديث الحالة:", e);
+            }
+        }
 
-// ===== رفع التقرير =====
-document.getElementById("reportForm").addEventListener("submit", async e=>{
-  e.preventDefault();
-  const task_id = document.getElementById("task_id").value || 1; 
-  const notes = document.getElementById("notes").value || "لا توجد ملاحظات";
+        // ===== رفع التقرير =====
+        document.getElementById("reportForm").addEventListener("submit", async e => {
+            e.preventDefault();
+            const task_id = document.getElementById("task_id").value || 1;
+            const notes = document.getElementById("notes").value || "لا توجد ملاحظات";
 
-  const imagesFiles = document.getElementById("images").files;
-  const signatureFile = document.getElementById("signature").files[0];
+            const imagesFiles = document.getElementById("images").files;
+            const signatureFile = document.getElementById("signature").files[0];
 
-  const formData = new FormData();
-  formData.append("task_id", task_id);
-  formData.append("user_id", USER_ID);
-  formData.append("notes", notes);
+            const formData = new FormData();
+            formData.append("task_id", task_id);
+            formData.append("user_id", USER_ID);
+            formData.append("notes", notes);
 
-  for(let i=0;i<imagesFiles.length;i++) formData.append("images", imagesFiles[i]);
-  if(signatureFile) formData.append("images", signatureFile); // يعوض التوقيع بالصورة
+            for (let i = 0; i < imagesFiles.length; i++) {
+                formData.append("images", imagesFiles[i]);
+            }
+            if (signatureFile) formData.append("signature", signatureFile);
 
-  try{
-    const res = await fetch("/reports",{method:"POST", body:formData});
-    const text = await res.text();
-    if(res.ok){
-      alert("✅ تم إرسال التقرير بنجاح");
-      document.getElementById("reportForm").reset();
-    } else {
-      console.error("❌ خطأ في إرسال التقرير:", text);
-      alert("❌ حدث خطأ في إرسال التقرير (تفاصيل بالكونسول)");
-    }
-  }catch(e){ console.error("خطأ في إرسال التقرير:", e); }
-});
+            try {
+                const res = await fetch(`${BASE_URL}/reports`, {
+                    method: "POST",
+                    body: formData
+                });
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                alert("✅ تم إرسال التقرير بنجاح");
+                document.getElementById("reportForm").reset();
+                loadNotifications(); // تحديث الإشعارات بعد إرسال التقرير
+            } catch (e) {
+                console.error("خطأ في إرسال التقرير:", e);
+                alert("❌ حدث خطأ في إرسال التقرير (تفاصيل بالكونسول)");
+            }
+        });
 
-// ===== الخريطة =====
-async function initMap(){
-  map = L.map('map').setView([30.0444,31.2357],12); // القاهرة
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    attribution:'&copy; OpenStreetMap contributors'
-  }).addTo(map);
+        // ===== الخريطة =====
+        async function initMap() {
+            map = L.map('map').setView([30.0444, 31.2357], 12); // القاهرة
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
 
-  if(navigator.geolocation){
-    setInterval(()=>{
-      navigator.geolocation.getCurrentPosition(async pos=>{
-        const lat=pos.coords.latitude, lon=pos.coords.longitude;
-        try{
-          await fetch("/locations",{
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({employee_id:USER_ID,latitude:lat,longitude:lon})
-          });
-        }catch(e){ console.error("خطأ في تحديث الموقع:",e); }
+            if (navigator.geolocation) {
+                setInterval(() => {
+                    navigator.geolocation.getCurrentPosition(async pos => {
+                        const lat = pos.coords.latitude, lon = pos.coords.longitude;
+                        try {
+                            const res = await fetch(`${BASE_URL}/locations`, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ employee_id: USER_ID, latitude: lat, longitude: lon })
+                            });
+                            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                        } catch (e) {
+                            console.error("خطأ في تحديث الموقع:", e);
+                        }
 
-        if(!marker){ marker=L.marker([lat,lon]).addTo(map).bindPopup("موقعك الحالي"); }
-        else{ marker.setLatLng([lat,lon]); }
-        map.setView([lat,lon],13);
-      });
-    },15000);
-  }
-}
+                        if (!marker) {
+                            marker = L.marker([lat, lon]).addTo(map).bindPopup("موقعك الحالي");
+                        } else {
+                            marker.setLatLng([lat, lon]);
+                        }
+                        map.setView([lat, lon], 13);
+                    }, 15000);
+                });
+            }
+        }
 
-// ===== الإشعارات =====
-async function loadNotifications(){
-  try{
-    const res = await fetch(`/notifications/${USER_ID}`);
-    const notifs = await res.json();
-    const container = document.getElementById("notifications");
-    container.innerHTML = "";
-    if(notifs.length===0){ container.innerHTML="لا يوجد إشعارات حالياً"; return; }
+        // ===== الإشعارات =====
+        async function loadNotifications() {
+            try {
+                const res = await fetch(`${BASE_URL}/notifications/${USER_ID}`);
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                const notifs = await res.json();
+                const container = document.getElementById("notifications");
+                container.innerHTML = "";
+                if (notifs.length === 0) {
+                    container.innerHTML = "لا يوجد إشعارات حالياً";
+                    return;
+                }
+                notifs.forEach(n => {
+                    const div = document.createElement("div");
+                    div.className = "card";
+                    div.style.background = "#2196f3";
+                    div.innerHTML = `<strong>${n.title_ar || "تنبيه"}</strong>: ${n.message_ar || "-"}`;
+                    container.appendChild(div);
+                });
+            } catch (e) {
+                console.error("خطأ في تحميل الإشعارات:", e);
+                document.getElementById("notifications").innerHTML = "فشل تحميل الإشعارات، تحقق من الاتصال بالخادم.";
+            }
+        }
 
-    notifs.forEach(n=>{
-      const div = document.createElement("div");
-      div.className="card";
-      div.style.background="#2196f3";
-      div.innerHTML=`<strong>${n.title_ar||"تنبيه"}</strong>: ${n.message_ar||"-"}`;
-      container.appendChild(div);
-    });
-  }catch(e){ console.error("خطأ في تحميل الإشعارات:", e); }
-}
-
-// ===== بدء الصفحة =====
-(async ()=>{
-  await loadTasks();
-  await initMap();
-  await loadNotifications();
-  setInterval(loadNotifications,10000);
-})();
-</script>
+        // ===== بدء الصفحة =====
+        (async () => {
+            await loadTasks();
+            await initMap();
+            await loadNotifications();
+            setInterval(loadNotifications, 10000);
+        })();
+    </script>
 </body>
 </html>
