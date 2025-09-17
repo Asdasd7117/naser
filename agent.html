@@ -79,17 +79,9 @@
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+    import { supabase } from './main.js'; // استخدم main.js المعدل مسبقاً
 
-    // === إعداد Supabase ===
-    const supabaseUrl = "https://YOUR_PROJECT.supabase.co";
-    const supabaseKey = "YOUR_PUBLIC_ANON_KEY";
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // استرجاع المندوب الحالي (بعد تسجيل الدخول)
-    const { data: { user } } = await supabase.auth.getUser();
-    const currentUserId = user?.id;
-
+    const currentUserId = supabase.auth.user()?.id;
     if(!currentUserId){
       alert("لم يتم تسجيل الدخول!");
       window.location.href = "login.html";
@@ -108,7 +100,6 @@
       map: document.getElementById("mapBtn"),
       notifications: document.getElementById("notificationsBtn"),
     };
-
     Object.keys(navButtons).forEach(key=>{
       navButtons[key].addEventListener("click", ()=>{
         Object.keys(sections).forEach(k=>sections[k].classList.remove("active"));
@@ -120,25 +111,17 @@
 
     // === تحميل المهام ===
     async function loadTasks(){
-      const { data: tasks, error } = await supabase
-        .from("tasks")
-        .select("*")
-        .eq("assigned_to", currentUserId);
-
-      if(error){ console.error(error); return; }
-
+      const { data: tasks } = await supabase.from("tasks").select("*").eq("assigned_to", currentUserId);
       const container = document.getElementById("tasksContainer");
       const selectTask = document.getElementById("selectTask");
       container.innerHTML = "";
       selectTask.innerHTML = "<option value=''>اختر مهمة</option>";
-
       tasks.forEach(t=>{
         const card = document.createElement("div");
         card.className = "card";
         if(t.status==="completed") card.classList.add("green");
         else if(t.status==="pending") card.classList.add("yellow");
         else if(t.status==="delayed") card.classList.add("red");
-
         card.innerHTML = `<strong>${t.client_name}</strong><br>العنوان: ${t.client_address || ""}<br>الحالة: ${t.status}`;
         container.appendChild(card);
 
@@ -149,11 +132,10 @@
       });
     }
 
-    // === إرسال تقرير ===
+    // === رفع التقرير ===
     const canvas = document.getElementById("signatureCanvas");
     const ctx = canvas.getContext("2d");
     let drawing = false;
-
     canvas.addEventListener("pointerdown", e=>{ drawing=true; ctx.moveTo(e.offsetX,e.offsetY) });
     canvas.addEventListener("pointermove", e=>{ if(drawing){ ctx.lineTo(e.offsetX,e.offsetY); ctx.stroke(); } });
     canvas.addEventListener("pointerup", ()=>drawing=false);
@@ -163,19 +145,18 @@
       const taskId = document.getElementById("selectTask").value;
       const notes = document.getElementById("taskNotes").value;
       if(!taskId) return alert("اختر المهمة");
-
       const signatureData = canvas.toDataURL();
       await supabase.from("tasks").update({ notes, signature: signatureData, status:"completed" }).eq("id", taskId);
-
       alert("تم إرسال التقرير");
       document.getElementById("taskNotes").value="";
       ctx.clearRect(0,0,canvas.width,canvas.height);
+      loadTasks();
     });
 
     // === الخريطة ===
     let map, marker;
     function initMap(){
-      map = L.map("map").setView([30.0444, 31.2357], 13); // القاهرة
+      map = L.map("map").setView([30.0444, 31.2357], 13);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution:"&copy; OpenStreetMap" }).addTo(map);
       marker = L.marker([30.0444,31.2357]).addTo(map).bindPopup("موقعك الحالي");
     }
@@ -186,27 +167,20 @@
           const lng = pos.coords.longitude;
           marker.setLatLng([lat,lng]);
           map.setView([lat,lng],13);
+          supabase.from("users").update({ lat, lng }).eq("id", currentUserId);
         });
       }else alert("لا يمكن الوصول إلى الموقع");
     });
 
     // === الإشعارات ===
     async function loadNotifications(){
-      const { data: notes, error } = await supabase
-        .from("notifications")
-        .select("*")
-        .eq("user_id", currentUserId)
-        .order("created_at", { ascending:false });
-
-      if(error){ console.error(error); return; }
-
+      const { data: notes } = await supabase.from("notifications").select("*").eq("user_id", currentUserId).order("created_at",{ ascending:false });
       const container = document.getElementById("notificationsContainer");
       container.innerHTML = "";
-
       notes.forEach(n=>{
         const div = document.createElement("div");
         div.className = "notification";
-        if(!n.is_read) div.classList.add("unread");
+        if(!n.read) div.classList.add("unread");
         div.textContent = n.message;
         container.appendChild(div);
       });
@@ -214,8 +188,8 @@
 
     // === التحديث اللحظي ===
     supabase.channel("realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, loadTasks)
-      .on("postgres_changes", { event: "*", schema: "public", table: "notifications" }, loadNotifications)
+      .on("postgres_changes",{ event:"*", schema:"public", table:"tasks" }, loadTasks)
+      .on("postgres_changes",{ event:"*", schema:"public", table:"notifications" }, loadNotifications)
       .subscribe();
 
     // === تشغيل أولي ===
