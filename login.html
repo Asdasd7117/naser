@@ -35,7 +35,7 @@ a { color:#0288d1; cursor:pointer; text-decoration:underline; }
     <p>ليس لديك حساب؟ <a id="showSignUp">إنشاء حساب</a></p>
   </form>
 
-  <!-- تسجيل حساب جديد -->
+  <!-- إنشاء حساب جديد -->
   <form id="signUpForm" class="hidden">
     <input type="email" id="signUpEmail" placeholder="البريد الإلكتروني" required>
     <input type="password" id="signUpPassword" placeholder="كلمة المرور" required>
@@ -51,75 +51,84 @@ a { color:#0288d1; cursor:pointer; text-decoration:underline; }
 </div>
 
 <script type="module">
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-const supabaseUrl = "https://vkativialsvvbifhjrey.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3MzY3OTEwNX0.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0";
-const supabase = createClient(supabaseUrl, supabaseKey);
+// ======== ضع هنا مفتاح Supabase الخاص بك ========
+const supabaseUrl = 'https://vkativialsvvbifhjrey.supabase.co'
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3MzY3OTEwNX0.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0'
 
-const loginForm = document.getElementById('loginForm');
-const signUpForm = document.getElementById('signUpForm');
-const showSignUp = document.getElementById('showSignUp');
-const showLogin = document.getElementById('showLogin');
+const supabase = createClient(supabaseUrl, supabaseKey)
+
+// ======== عناصر الصفحة ========
+const loginForm = document.getElementById('loginForm')
+const signUpForm = document.getElementById('signUpForm')
+const showSignUp = document.getElementById('showSignUp')
+const showLogin = document.getElementById('showLogin')
 
 // تبديل النماذج
-showSignUp.addEventListener('click', ()=>{ loginForm.classList.add('hidden'); signUpForm.classList.remove('hidden'); });
-showLogin.addEventListener('click', ()=>{ signUpForm.classList.add('hidden'); loginForm.classList.remove('hidden'); });
+showSignUp.addEventListener('click', ()=>{
+  loginForm.classList.add('hidden')
+  signUpForm.classList.remove('hidden')
+})
+showLogin.addEventListener('click', ()=>{
+  signUpForm.classList.add('hidden')
+  loginForm.classList.remove('hidden')
+})
 
-// تسجيل الدخول
+// ======== تسجيل الدخول ========
 loginForm.addEventListener('submit', async e=>{
-  e.preventDefault();
-  const email = document.getElementById('loginEmail').value;
-  const password = document.getElementById('loginPassword').value;
-  const role = document.getElementById('loginRole').value;
+  e.preventDefault()
+  const email = document.getElementById('loginEmail').value
+  const password = document.getElementById('loginPassword').value
+  const role = document.getElementById('loginRole').value
 
-  try {
-    const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
-    if(loginError) throw loginError;
+  // استعلام المستخدم
+  const { data: users, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('email_or_phone', email)
+    .eq('password', password)
+    .single()
 
-    // استعلام جدول users للحصول على الدور والمعرف
-    const { data: userData, error: userError } = await supabase.from('users').select('*').eq('id', loginData.user.id).single();
-    if(userError) throw userError;
-
-    if(userData.role !== role) return alert('الدور لا يتطابق مع الحساب!');
-
-    // حفظ معرف المندوب إن وجد
-    if(role==='agent') localStorage.setItem('agent_uuid', userData.id);
-
-    alert('تم تسجيل الدخول بنجاح');
-
-    if(role==='admin') window.location.href='admin.html';
-    else if(role==='supervisor') window.location.href='supervisor.html';
-    else if(role==='agent') window.location.href='agent.html';
-  } catch(err) {
-    console.error(err);
-    alert('خطأ في تسجيل الدخول: '+err.message);
+  if(error || !users){
+    return alert('المستخدم أو كلمة المرور غير صحيحة')
   }
-});
 
-// إنشاء حساب جديد
+  if(users.role !== role){
+    return alert('الدور المختار لا يتطابق مع الحساب!')
+  }
+
+  alert('تم تسجيل الدخول بنجاح')
+
+  // إعادة التوجيه حسب الدور
+  if(role==='admin') window.location.href='admin.html'
+  else if(role==='supervisor') window.location.href='supervisor.html'
+  else if(role==='agent') window.location.href='agent.html'
+})
+
+// ======== إنشاء حساب جديد ========
 signUpForm.addEventListener('submit', async e=>{
-  e.preventDefault();
-  const email = document.getElementById('signUpEmail').value;
-  const password = document.getElementById('signUpPassword').value;
-  const role = document.getElementById('signUpRole').value;
+  e.preventDefault()
+  const email = document.getElementById('signUpEmail').value
+  const password = document.getElementById('signUpPassword').value
+  const role = document.getElementById('signUpRole').value
 
-  try {
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password });
-    if(signUpError) throw signUpError;
+  const { data, error } = await supabase.from('users').insert([{
+    email_or_phone: email,
+    password: password,
+    role: role
+  }])
 
-    // أضف المستخدم الجديد إلى جدول users مع الدور
-    await supabase.from('users').insert([{ id: signUpData.user.id, role }]);
-
-    alert('تم إنشاء الحساب بنجاح');
-    signUpForm.classList.add('hidden');
-    loginForm.classList.remove('hidden');
-    document.getElementById('loginEmail').value=email;
-  } catch(err) {
-    console.error(err);
-    alert('خطأ في إنشاء الحساب: '+err.message);
+  if(error){
+    console.error(error)
+    return alert('خطأ في إنشاء الحساب: '+error.message)
   }
-});
+
+  alert('تم إنشاء الحساب بنجاح')
+  signUpForm.classList.add('hidden')
+  loginForm.classList.remove('hidden')
+  document.getElementById('loginEmail').value=email
+})
 </script>
 </body>
 </html>
