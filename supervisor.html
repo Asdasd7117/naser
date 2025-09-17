@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>شاشة المشرف / مدير المبيعات</title>
+<link rel="stylesheet" href="style.css">
+<style>
+body { font-family: Arial, sans-serif; margin:0; padding:0; background:#e0f7fa;}
+.container { max-width:1000px; margin:20px auto; padding:15px;}
+h2 { text-align:center; color:#0277bd; }
+section { display:none; padding:15px; background:#fff; border-radius:12px; margin-bottom:15px; box-shadow:0 3px 10px rgba(0,0,0,0.1);}
+section.active { display:block; }
+.cards { display:flex; flex-wrap:wrap; gap:10px; overflow-x:auto;}
+.card { flex:1 1 250px; background:#b3e5fc; padding:10px; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1);}
+.card.green { background:#c8e6c9; }
+.card.yellow { background:#fff9c4; }
+.card.red { background:#ffcdd2; }
+button { padding:8px 12px; background:#0288d1; color:#fff; border:none; border-radius:6px; cursor:pointer; margin-top:5px;}
+button:hover { background:#0277bd;}
+textarea { width:100%; height:60px; padding:8px; margin-top:5px; border-radius:6px; border:1px solid #ccc;}
+#map { width:100%; height:300px; border-radius:10px;}
+.bottomNav { display:flex; justify-content:space-around; position:fixed; bottom:0; width:100%; background:#4dd0e1; padding:10px 0;}
+.bottomNav button { background:transparent; color:#fff; border:none; font-size:16px; }
+.bottomNav button.active { font-weight:bold; text-decoration:underline;}
+#notificationsContainer { max-height:250px; overflow-y:auto; margin-top:5px;}
+.notification { padding:10px; margin-bottom:5px; border-radius:6px; background:#fff; box-shadow:0 1px 5px rgba(0,0,0,0.1);}
+.notification.unread { color:red; font-weight:bold; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>شاشة المشرف / مدير المبيعات</h2>
+
+  <!-- متابعة المندوبين -->
+  <section id="agentsSection" class="active">
+    <h3>متابعة المندوبين</h3>
+    <div class="cards" id="agentsContainer"></div>
+  </section>
+
+  <!-- الخريطة -->
+  <section id="mapSection">
+    <h3>خريطة المندوبين</h3>
+    <label>اختر مندوب: 
+      <select id="selectAgent"><option value="all">عرض الجميع</option></select>
+    </label>
+    <div id="map"></div>
+  </section>
+
+  <!-- مراجعة التقارير -->
+  <section id="reportsSection">
+    <h3>مراجعة التقارير</h3>
+    <div id="reportsContainer"></div>
+  </section>
+
+  <!-- الإشعارات -->
+  <section id="notificationsSection">
+    <h3>الإشعارات</h3>
+    <div id="notificationsContainer"></div>
+  </section>
+</div>
+
+<!-- التنقل الأسفل -->
+<div class="bottomNav">
+  <button id="agentsBtn" class="active">المندوبين</button>
+  <button id="mapBtn">الخريطة</button>
+  <button id="reportsBtn">التقارير</button>
+  <button id="notificationsBtn">الإشعارات</button>
+</div>
+
+<script type="module">
+import { supabase, subscribeTable } from './main.js';
+
+// --- التنقل بين الأقسام ---
+const sections = {
+  agents: document.getElementById('agentsSection'),
+  map: document.getElementById('mapSection'),
+  reports: document.getElementById('reportsSection'),
+  notifications: document.getElementById('notificationsSection')
+}
+const navButtons = {
+  agents: document.getElementById('agentsBtn'),
+  map: document.getElementById('mapBtn'),
+  reports: document.getElementById('reportsBtn'),
+  notifications: document.getElementById('notificationsBtn')
+}
+
+Object.keys(navButtons).forEach(key=>{
+  navButtons[key].addEventListener('click',()=>{
+    Object.keys(sections).forEach(k=>sections[k].classList.remove('active'))
+    sections[key].classList.add('active')
+    Object.keys(navButtons).forEach(k=>navButtons[k].classList.remove('active'))
+    navButtons[key].classList.add('active')
+  })
+})
+
+// --- متابعة المندوبين ---
+async function loadAgents(){
+  const { data: agents } = await supabase.from('users').select('*').eq('role','agent')
+  const { data: tasks } = await supabase.from('tasks').select('*')
+  const container = document.getElementById('agentsContainer')
+  const select = document.getElementById('selectAgent')
+  container.innerHTML=''; select.innerHTML='<option value="all">عرض الجميع</option>'
+  agents.forEach(a=>{
+    // عدد المهام لكل حالة
+    const userTasks = tasks.filter(t=>t.assigned_to===a.id)
+    const completed = userTasks.filter(t=>t.status==='completed').length
+    const pending = userTasks.filter(t=>t.status==='pending').length
+    const delayed = userTasks.filter(t=>t.status==='delayed').length
+
+    const card = document.createElement('div')
+    card.className='card'
+    card.innerHTML=`
+      <strong>${a.email_or_phone}</strong><br>
+      الحالة: ${a.status || 'نشط'}<br>
+      المهام: مكتملة(${completed}) / قيد التنفيذ(${pending}) / مؤجلة(${delayed})<br>
+      <button class="viewLocationBtn" data-lat="${a.lat || 24.7136}" data-lng="${a.lng || 46.6753}">عرض الموقع</button>
+    `
+    container.appendChild(card)
+
+    const opt = document.createElement('option')
+    opt.value=a.id; opt.text=a.email_or_phone
+    select.appendChild(opt)
+  })
+}
+
+// --- الخريطة ---
+let map, markers=[]
+function initMap(){
+  map = L.map('map').setView([24.7136,46.6753], 13)
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'&copy; OpenStreetMap' }).addTo(map)
+}
+document.getElementById('selectAgent').addEventListener('change', loadMapMarkers)
+
+function loadMapMarkers(){
+  const agentId = document.getElementById('selectAgent').value
+  markers.forEach(m=>map.removeLayer(m))
+  markers=[]
+  supabase.from('users').select('*').eq('role','agent').then(({data})=>{
+    data.forEach(a=>{
+      if(agentId==='all' || a.id===agentId){
+        const lat = a.lat || 24.7136
+        const lng = a.lng || 46.6753
+        const m = L.marker([lat,lng]).addTo(map).bindPopup(a.email_or_phone)
+        markers.push(m)
+      }
+    })
+  })
+}
+
+// --- مراجعة التقارير ---
+async function loadReports(){
+  const { data: reports } = await supabase.from('tasks').select('*').not('notes', 'is', null)
+  const container = document.getElementById('reportsContainer')
+  container.innerHTML=''
+  reports.forEach(r=>{
+    const card = document.createElement('div')
+    card.className='card'
+    card.innerHTML=`
+      <strong>المندوب: ${r.assigned_to}</strong><br>
+      العميل: ${r.client_name}<br>
+      الملاحظات: ${r.notes}<br>
+      <button class="addCommentBtn" data-id="${r.id}">إضافة ملاحظات</button>
+    `
+    container.appendChild(card)
+  })
+}
+
+// --- الإشعارات ---
+async function loadNotifications(){
+  const { data } = await supabase.from('notifications').select('*').order('created_at',{ascending:false})
+  const container = document.getElementById('notificationsContainer')
+  container.innerHTML=''
+  data.forEach(n=>{
+    const div = document.createElement('div')
+    div.className='notification'
+    if(!n.read) div.classList.add('unread')
+    div.textContent = n.message
+    container.appendChild(div)
+  })
+}
+
+// --- تحديث لحظي ---
+subscribeTable('tasks', ()=>{ loadAgents(); loadReports() })
+subscribeTable('users', loadAgents)
+subscribeTable('notifications', loadNotifications)
+
+initMap()
+loadAgents()
+loadReports()
+loadNotifications()
+
+// --- عرض موقع مندوب عند الضغط ---
+document.addEventListener('click', e=>{
+  if(e.target.classList.contains('viewLocationBtn')){
+    const lat=parseFloat(e.target.dataset.lat)
+    const lng=parseFloat(e.target.dataset.lng)
+    map.setView([lat,lng],15)
+    L.marker([lat,lng]).addTo(map).bindPopup('موقع المندوب').openPopup()
+  }
+})
+</script>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+</body>
+</html>
