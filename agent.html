@@ -5,68 +5,90 @@
 <title>لوحة المندوب</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <style>
-body { font-family: Arial, sans-serif; margin:0; padding:0; background:#e0f7fa; color:#000; }
-.container { max-width:1000px; margin:20px auto; padding:15px; }
-h2 { text-align:center; color:#0277bd; }
-section { display:none; padding:15px; background:#fff; border-radius:12px; margin-bottom:15px; box-shadow:0 3px 10px rgba(0,0,0,0.1);}
+body {
+  font-family: Arial, sans-serif;
+  margin:0; padding:0;
+  background:#f0f4f8; color:#333;
+}
+.container {
+  max-width:1000px; margin:20px auto; padding:20px;
+}
+h2 {
+  text-align:center; color:#1976d2; margin-bottom:20px;
+}
+section {
+  display:none; padding:20px; background:#fff; border-radius:12px;
+  margin-bottom:15px; box-shadow:0 4px 15px rgba(0,0,0,0.1);
+}
 section.active { display:block; }
-.cards { display:flex; flex-wrap:wrap; gap:10px; overflow-x:auto;}
-.card { flex:1 1 200px; background:#b3e5fc; padding:10px; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1);}
-.card.green { background:#c8e6c9;}
-.card.yellow { background:#fff9c4;}
-.card.red { background:#ffcdd2;}
-button { padding:8px 12px; background:#0288d1; color:#fff; border:none; border-radius:6px; cursor:pointer; margin-top:5px;}
-button:hover { background:#0277bd;}
-textarea { width:100%; height:80px; padding:8px; margin-top:5px; border-radius:6px; border:1px solid #ccc;}
-input[type="file"] { margin-top:5px; }
-#signatureCanvas { border:1px solid #ccc; border-radius:6px; width:100%; height:150px; touch-action:none;}
-.bottomNav { display:flex; justify-content:space-around; position:fixed; bottom:0; width:100%; background:#4dd0e1; padding:10px 0;}
+.cards { display:flex; flex-wrap:wrap; gap:10px; overflow-x:auto; }
+.card {
+  flex:1 1 220px; background:#e3f2fd; padding:12px;
+  border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.1);
+}
+.card.green { background:#c8e6c9; }
+.card.yellow { background:#fff9c4; }
+.card.red { background:#ffcdd2; }
+button {
+  padding:8px 14px; background:#1976d2; color:#fff;
+  border:none; border-radius:6px; cursor:pointer; margin-top:8px;
+}
+button:hover { background:#1565c0; }
+textarea { width:100%; height:80px; padding:8px; margin-top:5px; border-radius:6px; border:1px solid #ccc; }
+#signatureCanvas { border:1px solid #ccc; border-radius:6px; width:100%; height:150px; touch-action:none; }
+.bottomNav {
+  display:flex; justify-content:space-around; position:fixed; bottom:0; width:100%;
+  background:#2196f3; padding:12px 0;
+}
 .bottomNav button { background:transparent; color:#fff; border:none; font-size:16px; }
-.bottomNav button.active { font-weight:bold; text-decoration:underline;}
-#map { width:100%; height:300px; border-radius:10px;}
-#notificationsContainer { max-height:300px; overflow-y:auto; }
-.notification { padding:10px; margin-bottom:5px; border-radius:6px; background:#fff; box-shadow:0 1px 5px rgba(0,0,0,0.1);}
-.notification.unread { color:red; font-weight:bold; }
+.bottomNav button.active { font-weight:bold; text-decoration:underline; }
+#map { width:100%; height:300px; border-radius:10px; margin-top:10px; }
+#notificationsContainer { max-height:300px; overflow-y:auto; margin-top:10px; }
+.notification { padding:10px; margin-bottom:6px; border-radius:6px; background:#fff; box-shadow:0 1px 5px rgba(0,0,0,0.1); }
+.notification.unread { color:#d32f2f; font-weight:bold; }
+label { display:block; margin-top:10px; font-weight:bold; }
+select,input { width:100%; padding:6px; margin-top:4px; border-radius:6px; border:1px solid #ccc; }
 </style>
 </head>
 <body>
+
 <div class="container">
-<h2>لوحة المندوب</h2>
+  <h2>لوحة المندوب</h2>
 
-<!-- المهام -->
-<section id="tasksSection" class="active">
-  <h3>المهام اليومية</h3>
-  <div class="cards" id="tasksContainer"></div>
-</section>
+  <!-- المهام -->
+  <section id="tasksSection" class="active">
+    <h3>المهام اليومية</h3>
+    <div class="cards" id="tasksContainer"></div>
+  </section>
 
-<!-- التقارير -->
-<section id="reportSection">
-  <h3>رفع التقرير</h3>
-  <label>اختر المهمة:
-    <select id="selectTask"><option value="">اختر مهمة</option></select>
-  </label>
-  <label>الملاحظات:</label>
-  <textarea id="taskNotes" placeholder="أدخل الملاحظات هنا"></textarea>
-  <label>إضافة صورة/صور:</label>
-  <input type="file" id="taskImages" accept="image/*" multiple>
-  <label>توقيع العميل:</label>
-  <canvas id="signatureCanvas"></canvas>
-  <button id="clearSignatureBtn">مسح التوقيع</button>
-  <button id="submitReport">إرسال التقرير</button>
-</section>
+  <!-- التقارير -->
+  <section id="reportSection">
+    <h3>رفع التقرير</h3>
+    <label>اختر المهمة:
+      <select id="selectTask"><option value="">اختر مهمة</option></select>
+    </label>
+    <label>الملاحظات:</label>
+    <textarea id="taskNotes" placeholder="أدخل الملاحظات هنا"></textarea>
+    <label>إضافة صورة/صور:</label>
+    <input type="file" id="taskImages" accept="image/*" multiple>
+    <label>توقيع العميل:</label>
+    <canvas id="signatureCanvas"></canvas>
+    <button id="clearSignatureBtn">مسح التوقيع</button>
+    <button id="submitReport">إرسال التقرير</button>
+  </section>
 
-<!-- الخريطة -->
-<section id="mapSection">
-  <h3>الموقع الحالي</h3>
-  <div id="map"></div>
-  <button id="refreshLocation">تحديث الموقع</button>
-</section>
+  <!-- الخريطة -->
+  <section id="mapSection">
+    <h3>الموقع الحالي</h3>
+    <div id="map"></div>
+    <button id="refreshLocation">تحديث الموقع</button>
+  </section>
 
-<!-- الإشعارات -->
-<section id="notificationsSection">
-  <h3>الإشعارات</h3>
-  <div id="notificationsContainer"></div>
-</section>
+  <!-- الإشعارات -->
+  <section id="notificationsSection">
+    <h3>الإشعارات</h3>
+    <div id="notificationsContainer"></div>
+  </section>
 </div>
 
 <!-- التنقل -->
@@ -79,11 +101,15 @@ input[type="file"] { margin-top:5px; }
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script type="module">
-import { supabase, subscribeTable } from './main.js';
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
+// === إعداد Supabase ===
+const supabaseUrl = "https://YOUR_PROJECT.supabase.co";
+const supabaseKey = "YOUR_PUBLIC_ANON_KEY";
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// --- التأكد من تسجيل الدخول
 let currentUserId;
-
-// الحصول على المستخدم الحالي
 (async()=>{
   const { data: { user } } = await supabase.auth.getUser();
   currentUserId = user?.id;
@@ -92,12 +118,13 @@ let currentUserId;
     window.location.href="login.html";
   }
 
-  loadTasks();
-  loadNotifications();
+  // بعد تحديد المستخدم
+  await loadTasks();
+  await loadNotifications();
   initMap();
 })();
 
-// التنقل بين الأقسام
+// === التنقل ===
 const sections = {
   tasks: document.getElementById("tasksSection"),
   report: document.getElementById("reportSection"),
@@ -119,38 +146,37 @@ Object.keys(navButtons).forEach(key=>{
   });
 });
 
-// تحميل المهام
+// === تحميل المهام ===
 async function loadTasks(){
+  if(!currentUserId) return;
   const { data: tasks, error } = await supabase.from("tasks").select("*").eq("assigned_to", currentUserId);
   if(error){ console.error(error); return; }
   const container = document.getElementById("tasksContainer");
   const selectTask = document.getElementById("selectTask");
-  container.innerHTML = "";
-  selectTask.innerHTML = "<option value=''>اختر مهمة</option>";
+  container.innerHTML=""; selectTask.innerHTML="<option value=''>اختر مهمة</option>";
   tasks.forEach(t=>{
     const card = document.createElement("div");
-    card.className = "card";
+    card.className="card";
     if(t.status==="completed") card.classList.add("green");
     else if(t.status==="pending") card.classList.add("yellow");
     else if(t.status==="delayed") card.classList.add("red");
-    card.innerHTML = `<strong>${t.client_name}</strong><br>العنوان: ${t.client_address || ""}<br>الحالة: ${t.status}`;
+    card.innerHTML=`<strong>${t.client_name}</strong><br>العنوان: ${t.client_address || ""}<br>الحالة: ${t.status}`;
     container.appendChild(card);
 
     const opt = document.createElement("option");
-    opt.value = t.id;
-    opt.text = t.client_name;
+    opt.value=t.id; opt.text=t.client_name;
     selectTask.appendChild(opt);
   });
 }
 
-// رفع التقرير
+// === رفع التقرير ===
 const canvas = document.getElementById("signatureCanvas");
 const ctx = canvas.getContext("2d");
 let drawing=false;
 canvas.addEventListener("pointerdown", e=>{ drawing=true; ctx.moveTo(e.offsetX,e.offsetY) });
 canvas.addEventListener("pointermove", e=>{ if(drawing){ ctx.lineTo(e.offsetX,e.offsetY); ctx.stroke(); } });
 canvas.addEventListener("pointerup", ()=>drawing=false);
-document.getElementById("clearSignatureBtn").addEventListener("click", ()=>{ ctx.clearRect(0,0,canvas.width,canvas.height) });
+document.getElementById("clearSignatureBtn").addEventListener("click", ()=>{ ctx.clearRect(0,0,canvas.width,canvas.height); });
 
 document.getElementById("submitReport").addEventListener("click", async ()=>{
   const taskId = document.getElementById("selectTask").value;
@@ -164,43 +190,53 @@ document.getElementById("submitReport").addEventListener("click", async ()=>{
   loadTasks();
 });
 
-// الخريطة
+// === الخريطة ===
 let map, marker;
 function initMap(){
-  map = L.map("map").setView([30.0444, 31.2357], 13);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution:"&copy; OpenStreetMap" }).addTo(map);
-  marker = L.marker([30.0444,31.2357]).addTo(map).bindPopup("موقعك الحالي");
+  let lat=24.7136, lng=46.6753; // افتراضي
+  supabase.from("users").select("lat,lng").eq("id", currentUserId).then(({data})=>{
+    if(data && data[0]){
+      lat = data[0].lat || lat;
+      lng = data[0].lng || lng;
+    }
+    map = L.map("map").setView([lat,lng],13);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"&copy; OpenStreetMap"}).addTo(map);
+    marker = L.marker([lat,lng]).addTo(map).bindPopup("موقعك الحالي");
+  });
 }
 document.getElementById("refreshLocation").addEventListener("click", ()=>{
   if(navigator.geolocation){
-    navigator.geolocation.getCurrentPosition(async pos=>{
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
+    navigator.geolocation.getCurrentPosition(pos=>{
+      const lat=pos.coords.latitude, lng=pos.coords.longitude;
       marker.setLatLng([lat,lng]);
       map.setView([lat,lng],13);
-      await supabase.from("users").update({ lat, lng }).eq("id", currentUserId);
+      supabase.from("users").update({ lat,lng }).eq("id", currentUserId);
     });
-  }else alert("لا يمكن الوصول إلى الموقع");
+  } else alert("لا يمكن الوصول إلى الموقع");
 });
 
-// الإشعارات
+// === الإشعارات ===
 async function loadNotifications(){
-  const { data, error } = await supabase.from("notifications").select("*").eq("user_id", currentUserId).order("created_at",{ ascending:false });
+  if(!currentUserId) return;
+  const { data: notes, error } = await supabase.from("notifications").select("*").eq("user_id", currentUserId).order("created_at",{ascending:false});
   if(error){ console.error(error); return; }
   const container = document.getElementById("notificationsContainer");
   container.innerHTML="";
-  data.forEach(n=>{
+  notes.forEach(n=>{
     const div = document.createElement("div");
     div.className="notification";
-    if(!n.is_read) div.classList.add("unread");
+    if(!n.read) div.classList.add("unread");
     div.textContent = n.message;
     container.appendChild(div);
   });
 }
 
-// التحديث اللحظي
-subscribeTable("tasks", loadTasks);
-subscribeTable("notifications", loadNotifications);
+// === التحديث اللحظي ===
+supabase.channel("realtime")
+  .on("postgres_changes",{event:"*",schema:"public",table:"tasks"}, loadTasks)
+  .on("postgres_changes",{event:"*",schema:"public",table:"notifications"}, loadNotifications)
+  .subscribe();
+
 </script>
 </body>
 </html>
