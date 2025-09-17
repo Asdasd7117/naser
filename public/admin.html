@@ -2,207 +2,95 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>لوحة المدير - الموارد البشرية</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #f0f4f8;
-  color: #333;
-}
-.sidebar {
-  position: fixed;
-  top: 0; left: 0;
-  width: 220px;
-  height: 100%;
-  background: #1e3a8a;
-  color: #fff;
-  padding: 20px;
-}
-.sidebar h2 { margin-bottom: 30px; font-size: 20px; text-align: center; }
-.sidebar ul { list-style: none; padding: 0; }
-.sidebar ul li {
-  padding: 12px; cursor: pointer; display: flex; align-items: center; gap: 10px;
-  border-radius: 5px; transition: background 0.3s;
-}
-.sidebar ul li.active,
-.sidebar ul li:hover { background: #3b82f6; }
-.main-content { margin-right: 220px; padding: 20px; }
-.section { display: none; }
-.section.active { display: block; }
-.filters { margin-bottom: 15px; }
-.charts { display: flex; gap: 20px; flex-wrap: wrap; }
-.chart-card { background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 0 8px rgba(0,0,0,0.1); flex: 1 1 45%; }
-.cards-container { display: flex; flex-wrap: wrap; gap: 15px; }
-.cards-container .card, .control-cards .card { background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 0 8px rgba(0,0,0,0.1); flex: 1 1 300px; }
-.card form input, .card form textarea { width: 100%; margin: 5px 0; padding: 8px; border-radius: 5px; border: 1px solid #ccc; }
-.card button { background: #10b981; color: #fff; border: none; padding: 10px; border-radius: 5px; cursor: pointer; margin-top: 5px; }
-.card button:hover { background: #059669; }
-#lang-toggle { margin-top: 50px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
-</style>
+<title>صفحة المدير</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="sidebar">
+<div class="container">
   <h2>لوحة المدير</h2>
-  <ul>
-    <li class="active" data-section="reports"><i class="fa-solid fa-chart-line"></i> التقارير والتحليلات</li>
-    <li data-section="attendance"><i class="fa-solid fa-clock"></i> الحضور والانصراف</li>
-    <li data-section="control"><i class="fa-solid fa-gear"></i> لوحة التحكم</li>
-    <li id="lang-toggle"><i class="fa-solid fa-language"></i> English</li>
-  </ul>
+
+  <!-- إضافة مهمة -->
+  <h3>إضافة / تعديل مهمة</h3>
+  <form id="taskForm">
+    <input type="text" id="clientName" placeholder="اسم العميل" required>
+    <input type="text" id="clientAddress" placeholder="عنوان العميل" required>
+    <input type="time" id="visitTime" required>
+    <select id="assignedTo" required>
+      <option value="">اختر مندوب</option>
+    </select>
+    <button type="submit">حفظ المهمة</button>
+  </form>
+
+  <!-- المهام -->
+  <h3>المهام</h3>
+  <div id="tasksContainer"></div>
+
+  <!-- إشعارات -->
+  <h3>إرسال إشعارات</h3>
+  <input type="text" id="notificationMessage" placeholder="رسالة الإشعار">
+  <button id="sendNotificationBtn">إرسال إشعار</button>
 </div>
 
-<div class="main-content">
-  <!-- التقارير والتحليلات -->
-  <section id="reports" class="section active">
-    <h2>التقارير والتحليلات</h2>
-    <div class="filters">
-      <label>الفترة:
-        <select id="report-period">
-          <option value="daily">يومي</option>
-          <option value="weekly">أسبوعي</option>
-          <option value="monthly">شهري</option>
-        </select>
-      </label>
-    </div>
-    <div class="charts">
-      <div class="chart-card">
-        <h3>أداء المندوبين</h3>
-        <canvas id="individualPerformance"></canvas>
-      </div>
-      <div class="chart-card">
-        <h3>إنجاز المهام الأسبوعي</h3>
-        <canvas id="taskSummary"></canvas>
-      </div>
-    </div>
-  </section>
+<script type="module">
+import { supabase, currentUser, subscribeTable, sendNotification } from './main.js'
 
-  <!-- الحضور والانصراف -->
-  <section id="attendance" class="section">
-    <h2>الحضور والانصراف</h2>
-    <div class="cards-container" id="attendance-cards"></div>
-  </section>
-
-  <!-- لوحة التحكم -->
-  <section id="control" class="section">
-    <h2>لوحة التحكم</h2>
-    <div class="control-cards">
-      <div class="card">
-        <h3>إضافة / تعديل المهام</h3>
-        <form id="taskForm">
-          <input type="text" placeholder="عنوان المهمة" required>
-          <input type="text" placeholder="اسم العميل" required>
-          <input type="datetime-local" required>
-          <button type="submit">حفظ المهمة</button>
-        </form>
-      </div>
-      <div class="card">
-        <h3>تعديل بيانات المندوبين</h3>
-        <form id="repForm">
-          <input type="text" placeholder="اسم المندوب" required>
-          <input type="email" placeholder="البريد الإلكتروني" required>
-          <input type="tel" placeholder="رقم الهاتف" required>
-          <button type="submit">حفظ البيانات</button>
-        </form>
-      </div>
-      <div class="card">
-        <h3>إرسال إشعارات جماعية</h3>
-        <textarea placeholder="اكتب رسالتك هنا"></textarea>
-        <button id="sendNotification">إرسال الإشعار</button>
-      </div>
-    </div>
-  </section>
-</div>
-
-<script>
-// التنقل بين الأقسام
-document.querySelectorAll('.sidebar ul li').forEach(item => {
-  item.addEventListener('click', () => {
-    document.querySelectorAll('.sidebar ul li').forEach(i => i.classList.remove('active'));
-    document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
-    item.classList.add('active');
-    document.getElementById(item.dataset.section).classList.add('active');
-  });
-});
-
-// بيانات افتراضية للمندوبين
-const reps = [
-  {name: 'محمد', login: '08:00', logout: '17:00', tasks: 5},
-  {name: 'سارة', login: '08:30', logout: '16:30', tasks: 4},
-  {name: 'أحمد', login: '09:00', logout: '18:00', tasks: 6},
-];
-
-// ملئ بطاقات الحضور
-const attendanceCards = document.getElementById('attendance-cards');
-function renderAttendance() {
-  attendanceCards.innerHTML = '';
-  reps.forEach(rep => {
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.innerHTML = `
-      <h3>${rep.name}</h3>
-      <p>تسجيل الدخول: ${rep.login}</p>
-      <p>تسجيل الخروج: ${rep.logout}</p>
-      <p>عدد المهام: ${rep.tasks}</p>
-      <p>${rep.tasks < 5 ? '<span style="color:red;">مهام ناقصة!</span>' : '<span style="color:green;">كل المهام مكتملة</span>'}</p>
-    `;
-    attendanceCards.appendChild(card);
-  });
+// جلب جميع المندوبين لخيارات الاختيار
+async function loadAgents(){
+  const { data: agents } = await supabase.from('users').select('*').eq('role','agent')
+  const select = document.getElementById('assignedTo')
+  select.innerHTML='<option value="">اختر مندوب</option>'
+  agents.forEach(a=>{
+    const opt = document.createElement('option')
+    opt.value=a.id
+    opt.text=a.email_or_phone
+    select.appendChild(opt)
+  })
 }
-renderAttendance();
 
-// الرسوم البيانية باستخدام Chart.js
-const ctx1 = document.getElementById('individualPerformance').getContext('2d');
-const individualPerformance = new Chart(ctx1, {
-  type: 'bar',
-  data: {
-    labels: reps.map(r => r.name),
-    datasets: [{ label: 'نسبة الإنجاز %', data: reps.map(r => r.tasks*20), backgroundColor: '#3b82f6' }]
-  },
-  options: { responsive: true, scales: { y: { beginAtZero: true, max: 100 } } }
-});
+// حفظ المهمة
+document.getElementById('taskForm').addEventListener('submit', async (e)=>{
+  e.preventDefault()
+  const client_name = document.getElementById('clientName').value
+  const client_address = document.getElementById('clientAddress').value
+  const visit_time = document.getElementById('visitTime').value
+  const assigned_to = document.getElementById('assignedTo').value
 
-const ctx2 = document.getElementById('taskSummary').getContext('2d');
-const taskSummary = new Chart(ctx2, {
-  type: 'pie',
-  data: {
-    labels: ['مكتملة', 'مؤجلة', 'قيد التنفيذ'],
-    datasets: [{ data: [50, 10, 20], backgroundColor: ['#10b981', '#f59e0b', '#ef4444'] }]
-  },
-  options: { responsive: true }
-});
+  await supabase.from('tasks').insert([{ client_name, client_address, visit_time, assigned_to, status:'pending' }])
+  document.getElementById('taskForm').reset()
+})
 
-// إرسال الإشعارات
-document.getElementById('sendNotification').addEventListener('click', () => {
-  const message = document.querySelector('#control textarea').value;
-  if(message) alert('تم إرسال الإشعار: ' + message);
-});
+// جلب وعرض المهام
+async function loadTasks(){
+  const { data: tasks } = await supabase.from('tasks').select('*').order('visit_time',{ascending:true})
+  const container = document.getElementById('tasksContainer')
+  container.innerHTML=''
+  tasks.forEach(t=>{
+    const div = document.createElement('div')
+    div.style.border='1px solid #ccc'; div.style.padding='10px'; div.style.margin='5px'; div.style.borderRadius='8px'
+    div.innerHTML=`
+      <strong>${t.client_name}</strong> - ${t.client_address} <br>
+      وقت الزيارة: ${t.visit_time} <br>
+      الحالة: ${t.status} <br>
+      المندوب: ${t.assigned_to}
+    `
+    container.appendChild(div)
+  })
+}
 
-// حفظ المهام
-document.getElementById('taskForm').addEventListener('submit', e => {
-  e.preventDefault();
-  alert('تم حفظ المهمة!');
-});
+// إرسال إشعار لجميع المندوبين
+document.getElementById('sendNotificationBtn').addEventListener('click', async ()=>{
+  const message = document.getElementById('notificationMessage').value
+  const { data: agents } = await supabase.from('users').select('*').eq('role','agent')
+  agents.forEach(a=>sendNotification(a.id,message))
+  alert('تم إرسال الإشعار لجميع المندوبين')
+  document.getElementById('notificationMessage').value=''
+})
 
-// حفظ بيانات المندوبين
-document.getElementById('repForm').addEventListener('submit', e => {
-  e.preventDefault();
-  alert('تم تحديث بيانات المندوب!');
-});
+// تحديث لحظي للمهام
+subscribeTable('tasks', loadTasks)
 
-// تبديل اللغة
-document.getElementById('lang-toggle').addEventListener('click', () => {
-  const html = document.documentElement;
-  if(html.dir === 'rtl') {
-    html.dir = 'ltr'; html.lang='en';
-    document.getElementById('lang-toggle').innerHTML = '<i class="fa-solid fa-language"></i> العربية';
-  } else {
-    html.dir = 'rtl'; html.lang='ar';
-    document.getElementById('lang-toggle').innerHTML = '<i class="fa-solid fa-language"></i> English';
-  }
-});
+loadAgents()
+loadTasks()
 </script>
 </body>
 </html>
