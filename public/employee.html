@@ -4,19 +4,25 @@
   <meta charset="UTF-8">
   <title>لوحة المندوب</title>
   <script src="https://unpkg.com/@supabase/supabase-js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
     body { font-family: Arial, sans-serif; direction: rtl; text-align: right; padding: 20px; background: #f9f9f9; }
     h2 { color: #333; }
-    #tasks { margin-top: 20px; }
-    .task { background: #fff; padding: 10px; margin: 10px 0; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    #tasks, #notifications { margin-top: 20px; }
+    .card { background: #fff; padding: 10px; margin: 10px 0; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     textarea, input { width: 100%; margin: 5px 0; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
     button { background: #007bff; color: #fff; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; }
     button:hover { background: #0056b3; }
+    #map { height: 300px; margin-top: 20px; border-radius: 6px; }
   </style>
 </head>
 <body>
   <h2>📋 مهامي</h2>
-  <div id="tasks">جار التحميل...</div>
+  <div id="tasks">⏳ جاري التحميل...</div>
+
+  <h2>🔔 إشعارات</h2>
+  <div id="notifications">⏳ جاري التحميل...</div>
 
   <h2>📝 إرسال تقرير</h2>
   <form id="reportForm">
@@ -27,67 +33,64 @@
     <button type="submit">إرسال التقرير</button>
   </form>
 
+  <h2>🗺️ موقعي (القاهرة)</h2>
+  <div id="map"></div>
+
   <script>
     // ⚡ إعداد supabase
-    const SUPABASE_URL = "https://ncjxqfwsswwikedaffif.supabase.co"; // غيّرها عندك
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NDEwNzQsImV4cCI6MjA3MzQxNzA3NH0.4G54968qAHyePjq9_ufSCSA1fHzx5XHFzOAqGKmVW18"; // مفتاح anon
+    const SUPABASE_URL = "https://ncjxqfwsswwikedaffif.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NDEwNzQsImV4cCI6MjA3MzQxNzA3NH0.4G54968qAHyePjq9_ufSCSA1fHzx5XHFzOAqGKmVW18";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const tasksDiv = document.getElementById("tasks");
+    const notiDiv = document.getElementById("notifications");
     const reportForm = document.getElementById("reportForm");
 
-    // ✅ جلب المستخدم الحالي
-    async function getUserId() {
-      const { data, error } = await supabase.auth.getUser();
-      if (error || !data.user) {
-        alert("⚠️ يجب تسجيل الدخول أولاً");
-        return null;
-      }
-      return data.user.id;
-    }
-
-    // ✅ تحميل المهام الخاصة بالمندوب
+    // ✅ جلب المهام
     async function loadTasks() {
-      const userId = await getUserId();
-      if (!userId) return;
-
-      const { data, error } = await supabase
-        .from("tasks")
-        .select("*")
-        .eq("receiver_id", userId)
-        .order("created_at", { ascending: false });
-
+      const { data, error } = await supabase.from("tasks").select("*").order("created_at", { ascending: false });
       if (error) {
         tasksDiv.innerHTML = "❌ خطأ في تحميل المهام";
         console.error(error);
         return;
       }
-
       if (!data.length) {
         tasksDiv.innerHTML = "لا توجد مهام حالياً ✅";
         return;
       }
-
       tasksDiv.innerHTML = "";
       data.forEach(task => {
         const el = document.createElement("div");
-        el.className = "task";
-        el.innerHTML = `
-          <strong>📌 ${task.title}</strong><br>
-          ${task.description || ""}<br>
-          <small>🆔 ${task.id}</small>
-        `;
+        el.className = "card";
+        el.innerHTML = `<strong>📌 ${task.title}</strong><br>${task.description || ""}<br><small>🆔 ${task.id}</small>`;
         tasksDiv.appendChild(el);
+      });
+    }
+
+    // ✅ جلب الإشعارات
+    async function loadNotifications() {
+      const { data, error } = await supabase.from("notifications").select("*").order("created_at", { ascending: false });
+      if (error) {
+        notiDiv.innerHTML = "❌ خطأ في تحميل الإشعارات";
+        console.error(error);
+        return;
+      }
+      if (!data.length) {
+        notiDiv.innerHTML = "لا توجد إشعارات جديدة ✅";
+        return;
+      }
+      notiDiv.innerHTML = "";
+      data.forEach(n => {
+        const el = document.createElement("div");
+        el.className = "card";
+        el.innerHTML = `🔔 ${n.message}<br><small>${n.created_at}</small>`;
+        notiDiv.appendChild(el);
       });
     }
 
     // ✅ إرسال تقرير
     reportForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const userId = await getUserId();
-      if (!userId) return;
-
-      const taskId = document.getElementById("taskId").value.trim();
       let reportData;
       try {
         reportData = JSON.parse(document.getElementById("reportData").value);
@@ -95,37 +98,33 @@
         alert("⚠️ صيغة JSON غير صحيحة");
         return;
       }
-
-      const { data, error } = await supabase
-        .from("reports")
-        .insert([{ task_id: taskId, user_id: userId, report_data: reportData }]);
-
+      const taskId = document.getElementById("taskId").value.trim();
+      const { error } = await supabase.from("reports").insert([{ task_id: taskId, report_data: reportData }]);
       if (error) {
         alert("❌ خطأ في إرسال التقرير");
         console.error(error);
       } else {
-        alert("✅ تم إرسال التقرير بنجاح");
+        alert("✅ تم إرسال التقرير");
         reportForm.reset();
       }
     });
 
-    // ✅ تحديث حي (Realtime) للمهام الجديدة
-    async function subscribeTasks() {
-      const userId = await getUserId();
-      if (!userId) return;
+    // ✅ الخريطة (موقع القاهرة)
+    const map = L.map("map").setView([30.0444, 31.2357], 12);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap",
+    }).addTo(map);
+    L.marker([30.0444, 31.2357]).addTo(map).bindPopup("📍 القاهرة").openPopup();
 
-      supabase
-        .channel("tasks-channel")
-        .on("postgres_changes", { event: "INSERT", schema: "public", table: "tasks", filter: `receiver_id=eq.${userId}` }, payload => {
-          alert("📥 تم استلام مهمة جديدة: " + payload.new.title);
-          loadTasks();
-        })
-        .subscribe();
-    }
-
-    // 🚀 تشغيل الصفحة
+    // ✅ تشغيل الصفحة
     loadTasks();
-    subscribeTasks();
+    loadNotifications();
+
+    // ✅ تحديث فوري
+    supabase.channel("changes")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "tasks" }, loadTasks)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications" }, loadNotifications)
+      .subscribe();
   </script>
 </body>
 </html>
