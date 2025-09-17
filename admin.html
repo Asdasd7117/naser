@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>لوحة المدير / الموارد البشرية</title>
-<link rel="stylesheet" href="style.css">
 <style>
 body { font-family: Arial, sans-serif; background: #e0f7fa; margin: 0; padding: 0; }
 .container { max-width: 1200px; margin: 20px auto; padding: 20px; }
@@ -11,8 +10,8 @@ h2 { text-align: center; color: #0277bd; }
 section { margin-bottom: 30px; padding: 15px; background: #fff; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);}
 .cards { display: flex; flex-wrap: wrap; gap: 15px; }
 .card { flex: 1 1 200px; padding: 15px; border-radius: 10px; background:#b3e5fc; box-shadow:0 3px 8px rgba(0,0,0,0.1);}
-.card.red { background:#ffcdd2; } 
-.card.yellow { background:#fff9c4; } 
+.card.red { background:#ffcdd2; }
+.card.yellow { background:#fff9c4; }
 .card.green { background:#c8e6c9; }
 button { padding: 10px 15px; background:#0288d1; color:#fff; border:none; border-radius:8px; cursor:pointer; margin-top:10px;}
 button:hover { background:#0277bd; }
@@ -32,23 +31,14 @@ input, select { padding:8px; margin:5px 0; width:100%; border-radius:6px; border
 <div class="container">
   <h2>لوحة المدير / الموارد البشرية</h2>
 
-  <!-- التنقل بين الأقسام -->
   <nav>
     <button id="reportsTab" class="active">التقارير والتحليلات</button>
     <button id="attendanceTab">الحضور والانصراف</button>
     <button id="controlTab">لوحة التحكم</button>
   </nav>
 
-  <!-- التقارير والتحليلات -->
   <section id="reportsSection">
     <h3>التقارير والتحليلات</h3>
-    <label>تصفية حسب الفترة:
-      <select id="filterPeriod">
-        <option value="daily">يومي</option>
-        <option value="weekly">أسبوعي</option>
-        <option value="monthly">شهري</option>
-      </select>
-    </label>
     <div id="reportsContainer">
       <table>
         <thead>
@@ -64,13 +54,11 @@ input, select { padding:8px; margin:5px 0; width:100%; border-radius:6px; border
     </div>
   </section>
 
-  <!-- الحضور والانصراف -->
   <section id="attendanceSection" class="hidden">
     <h3>الحضور والانصراف</h3>
     <div class="cards" id="attendanceCards"></div>
   </section>
 
-  <!-- لوحة التحكم -->
   <section id="controlSection" class="hidden">
     <h3>إدارة المهام والمندوبين</h3>
     <form id="taskForm">
@@ -105,7 +93,11 @@ input, select { padding:8px; margin:5px 0; width:100%; border-radius:6px; border
 </div>
 
 <script type="module">
-import { supabase } from './main.js'
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+const supabaseUrl = "https://vkativialsvvbifhjrey.supabase.co"
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3MzY3OTEwNX0.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0"
+const supabase = createClient(supabaseUrl, supabaseKey)
 
 // --- التنقل بين الأقسام ---
 const reportsTab = document.getElementById('reportsTab')
@@ -132,42 +124,6 @@ reportsTab.addEventListener('click',()=> showSection('reports'))
 attendanceTab.addEventListener('click',()=> showSection('attendance'))
 controlTab.addEventListener('click',()=> showSection('control'))
 
-// --- تحميل التقارير ---
-async function loadReports(){
-  const { data: tasks } = await supabase.from('tasks').select('*')
-  const { data: users } = await supabase.from('users').select('*').eq('role','agent')
-  const tbody = document.getElementById('reportsTableBody')
-  tbody.innerHTML = ''
-  users.forEach(u=>{
-    const userTasks = tasks.filter(t=>t.assigned_to===u.agent_uuid)
-    const completed = userTasks.filter(t=>t.status==='completed').length
-    const delayed = userTasks.filter(t=>t.status==='delayed').length
-    const total = userTasks.length
-    const percent = total ? Math.round((completed/total)*100) : 0
-    const tr = document.createElement('tr')
-    tr.innerHTML = `<td>${u.email}</td><td>${completed}</td><td>${delayed}</td><td>${percent}%</td>`
-    tbody.appendChild(tr)
-  })
-}
-
-// --- تحميل الحضور ---
-async function loadAttendance(){
-  const { data: attendance } = await supabase.from('attendance').select('*')
-  const { data: users } = await supabase.from('users').select('*').eq('role','agent')
-  const container = document.getElementById('attendanceCards')
-  container.innerHTML = ''
-  users.forEach(u=>{
-    const record = attendance.find(a=>a.user_id===u.agent_uuid)
-    const loginTime = record?.login_time || 'غير موجود'
-    const logoutTime = record?.logout_time || 'غير موجود'
-    const card = document.createElement('div')
-    card.className = 'card'
-    if(!record) card.classList.add('red')
-    card.innerHTML = `<strong>${u.email}</strong><br>دخول: ${loginTime}<br>خروج: ${logoutTime}`
-    container.appendChild(card)
-  })
-}
-
 // --- تحميل المندوبين للقائمة ---
 async function loadAgents(){
   const { data: agents } = await supabase.from('users').select('*').eq('role','agent')
@@ -175,30 +131,49 @@ async function loadAgents(){
   select.innerHTML='<option value="">اختر مندوب</option>'
   agents.forEach(a=>{
     const opt = document.createElement('option')
-    opt.value = a.agent_uuid; opt.text = a.email
+    opt.value = a.id
+    opt.text = a.email
     select.appendChild(opt)
   })
 }
 
-// --- تحميل المهام الحالية ---
+// --- تحميل المهام ---
 async function loadTasks(){
   const { data: tasks } = await supabase.from('tasks').select('*')
   const { data: agents } = await supabase.from('users').select('*').eq('role','agent')
   const tbody = document.getElementById('tasksTableBody')
   tbody.innerHTML = ''
   tasks.forEach(t=>{
-    const agent = agents.find(a=>a.agent_uuid===t.assigned_to)
+    const agent = agents.find(a=>a.id===t.assigned_to)
     const tr = document.createElement('tr')
     tr.innerHTML = `
       <td>${t.client_name}</td>
       <td>${t.client_address}</td>
       <td>${t.visit_time}</td>
-      <td>${agent?.email||'-'}</td>
+      <td>${agent?.email || '-'}</td>
       <td>${t.status}</td>
       <td>
         <button class="deleteBtn" data-id="${t.id}">حذف</button>
       </td>
     `
+    tbody.appendChild(tr)
+  })
+}
+
+// --- تحميل التقارير ---
+async function loadReports(){
+  const { data: tasks } = await supabase.from('tasks').select('*')
+  const { data: agents } = await supabase.from('users').select('*').eq('role','agent')
+  const tbody = document.getElementById('reportsTableBody')
+  tbody.innerHTML = ''
+  agents.forEach(a=>{
+    const userTasks = tasks.filter(t=>t.assigned_to===a.id)
+    const completed = userTasks.filter(t=>t.status==='completed').length
+    const delayed = userTasks.filter(t=>t.status==='delayed').length
+    const total = userTasks.length
+    const percent = total ? Math.round((completed/total)*100) : 0
+    const tr = document.createElement('tr')
+    tr.innerHTML = `<td>${a.email}</td><td>${completed}</td><td>${delayed}</td><td>${percent}%</td>`
     tbody.appendChild(tr)
   })
 }
@@ -209,7 +184,6 @@ document.getElementById('tasksTableBody').addEventListener('click', async e=>{
     const taskId = e.target.dataset.id
     if(confirm('هل أنت متأكد من حذف المهمة؟')){
       await supabase.from('tasks').delete().eq('id', taskId)
-      alert('تم حذف المهمة')
       loadTasks()
       loadReports()
     }
@@ -217,36 +191,22 @@ document.getElementById('tasksTableBody').addEventListener('click', async e=>{
 })
 
 // --- إضافة مهمة ---
-document.getElementById('taskForm').addEventListener('submit', async (e)=>{
+document.getElementById('taskForm').addEventListener('submit', async e=>{
   e.preventDefault()
   const client_name = document.getElementById('clientName').value
   const client_address = document.getElementById('clientAddress').value
   const visit_time = document.getElementById('visitTime').value
   const assigned_to = document.getElementById('assignedTo').value
   await supabase.from('tasks').insert([{ client_name, client_address, visit_time, assigned_to, status:'pending' }])
-  alert('تم حفظ المهمة')
   e.target.reset()
   loadTasks()
   loadReports()
 })
 
-// --- إرسال إشعار جماعي ---
-document.getElementById('sendNotificationBtn').addEventListener('click', async ()=>{
-  const message = document.getElementById('notificationMessage').value
-  if(!message) return alert('أدخل الرسالة')
-  const { data: agents } = await supabase.from('users').select('*').eq('role','agent')
-  for(const a of agents){
-    await supabase.from('notifications').insert([{ user_id: a.agent_uuid, message }])
-  }
-  alert('تم إرسال الإشعار لجميع المندوبين')
-  document.getElementById('notificationMessage').value=''
-})
-
 // --- تحميل البيانات عند البداية ---
-loadReports()
-loadAttendance()
 loadAgents()
 loadTasks()
+loadReports()
 </script>
 </body>
 </html>
