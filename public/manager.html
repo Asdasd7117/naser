@@ -2,276 +2,207 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>صفحة المدير</title>
+<title>لوحة المدير - الموارد البشرية</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-body { font-family: Arial, sans-serif; margin:20px; background:#f5f5f5; }
-h1 { text-align:center; color:#333; }
-nav { display:flex; justify-content:center; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
-nav button { padding:8px 15px; border:none; border-radius:5px; cursor:pointer; background:#2196f3; color:white; font-weight:bold; }
-section { display:none; padding:10px; border-radius:8px; background:white; margin-bottom:20px; }
-section.active { display:block; }
-.card { padding:10px; margin:10px 0; border-radius:8px; color:#333; background:#e3f2fd; }
-.status-new { background:#90caf9; }
-.status-in_progress { background:#ffb74d; }
-.status-completed { background:#81c784; }
-.status-delayed { background:#e57373; }
-.delete-btn { color:red; cursor:pointer; margin-left:10px; }
-table { width:100%; border-collapse:collapse; margin-top:10px; }
-th, td { padding:8px; border:1px solid #ccc; text-align:center; }
-img { border-radius:5px; margin:2px; }
-textarea, input, select, button { font-size:14px; }
-form input, form select, form textarea { width:100%; padding:6px; margin:4px 0; border-radius:5px; border:1px solid #ccc; }
-form button { background:#2196f3; color:white; padding:8px 12px; border:none; border-radius:5px; cursor:pointer; margin-top:5px; }
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f0f4f8;
+  color: #333;
+}
+.sidebar {
+  position: fixed;
+  top: 0; left: 0;
+  width: 220px;
+  height: 100%;
+  background: #1e3a8a;
+  color: #fff;
+  padding: 20px;
+}
+.sidebar h2 { margin-bottom: 30px; font-size: 20px; text-align: center; }
+.sidebar ul { list-style: none; padding: 0; }
+.sidebar ul li {
+  padding: 12px; cursor: pointer; display: flex; align-items: center; gap: 10px;
+  border-radius: 5px; transition: background 0.3s;
+}
+.sidebar ul li.active,
+.sidebar ul li:hover { background: #3b82f6; }
+.main-content { margin-right: 220px; padding: 20px; }
+.section { display: none; }
+.section.active { display: block; }
+.filters { margin-bottom: 15px; }
+.charts { display: flex; gap: 20px; flex-wrap: wrap; }
+.chart-card { background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 0 8px rgba(0,0,0,0.1); flex: 1 1 45%; }
+.cards-container { display: flex; flex-wrap: wrap; gap: 15px; }
+.cards-container .card, .control-cards .card { background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 0 8px rgba(0,0,0,0.1); flex: 1 1 300px; }
+.card form input, .card form textarea { width: 100%; margin: 5px 0; padding: 8px; border-radius: 5px; border: 1px solid #ccc; }
+.card button { background: #10b981; color: #fff; border: none; padding: 10px; border-radius: 5px; cursor: pointer; margin-top: 5px; }
+.card button:hover { background: #059669; }
+#lang-toggle { margin-top: 50px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
 </style>
 </head>
 <body>
-<h1>👨‍💼 لوحة المدير</h1>
+<div class="sidebar">
+  <h2>لوحة المدير</h2>
+  <ul>
+    <li class="active" data-section="reports"><i class="fa-solid fa-chart-line"></i> التقارير والتحليلات</li>
+    <li data-section="attendance"><i class="fa-solid fa-clock"></i> الحضور والانصراف</li>
+    <li data-section="control"><i class="fa-solid fa-gear"></i> لوحة التحكم</li>
+    <li id="lang-toggle"><i class="fa-solid fa-language"></i> English</li>
+  </ul>
+</div>
 
-<nav>
-  <button onclick="showTab('reports')">📊 التقارير</button>
-  <button onclick="showTab('attendance')">⏰ الحضور</button>
-  <button onclick="showTab('control')">⚙️ لوحة التحكم</button>
-</nav>
+<div class="main-content">
+  <!-- التقارير والتحليلات -->
+  <section id="reports" class="section active">
+    <h2>التقارير والتحليلات</h2>
+    <div class="filters">
+      <label>الفترة:
+        <select id="report-period">
+          <option value="daily">يومي</option>
+          <option value="weekly">أسبوعي</option>
+          <option value="monthly">شهري</option>
+        </select>
+      </label>
+    </div>
+    <div class="charts">
+      <div class="chart-card">
+        <h3>أداء المندوبين</h3>
+        <canvas id="individualPerformance"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>إنجاز المهام الأسبوعي</h3>
+        <canvas id="taskSummary"></canvas>
+      </div>
+    </div>
+  </section>
 
-<!-- التقارير -->
-<section id="reports" class="active">
-  <h2>📊 التقارير والتحليلات</h2>
-  <canvas id="generalChart" width="400" height="200"></canvas>
-  <h3>📈 أداء المندوبين</h3>
-  <div id="employeesPerformance"></div>
-  <h3>📝 تفاصيل التقارير</h3>
-  <div id="reportsList"></div>
-</section>
+  <!-- الحضور والانصراف -->
+  <section id="attendance" class="section">
+    <h2>الحضور والانصراف</h2>
+    <div class="cards-container" id="attendance-cards"></div>
+  </section>
 
-<!-- الحضور -->
-<section id="attendance">
-  <h2>⏰ الحضور اليومي</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>الاسم</th>
-        <th>الدور</th>
-        <th>دخول</th>
-        <th>خروج</th>
-      </tr>
-    </thead>
-    <tbody id="attendanceList"></tbody>
-  </table>
-</section>
-
-<!-- لوحة التحكم -->
-<section id="control">
-  <h2>👥 إدارة المستخدمين</h2>
-  <form id="addUserForm">
-    <input type="text" id="name" placeholder="الاسم الكامل" required>
-    <input type="text" id="email" placeholder="البريد الإلكتروني">
-    <input type="text" id="phone" placeholder="رقم الهاتف">
-    <input type="password" id="password" placeholder="كلمة المرور" required>
-    <select id="role" required>
-      <option value="">اختر الدور</option>
-      <option value="employee">مندوب</option>
-      <option value="supervisor">مشرف</option>
-    </select>
-    <button type="submit">➕ إضافة مستخدم</button>
-  </form>
-  <div id="usersList"></div>
-
-  <h2>📝 إدارة المهام</h2>
-  <form id="addTaskForm">
-    <select id="employeeSelect" required></select>
-    <input type="text" id="client_name" placeholder="اسم العميل" required>
-    <input type="text" id="address" placeholder="العنوان" required>
-    <input type="datetime-local" id="visit_time" required>
-    <button type="submit">➕ إضافة مهمة</button>
-  </form>
-  <div id="tasksList"></div>
-
-  <h2>📢 إرسال إشعارات</h2>
-  <form id="notifyForm">
-    <textarea id="message" placeholder="نص الإشعار" required></textarea>
-    <button type="submit">📨 إرسال إشعار جماعي</button>
-  </form>
-</section>
+  <!-- لوحة التحكم -->
+  <section id="control" class="section">
+    <h2>لوحة التحكم</h2>
+    <div class="control-cards">
+      <div class="card">
+        <h3>إضافة / تعديل المهام</h3>
+        <form id="taskForm">
+          <input type="text" placeholder="عنوان المهمة" required>
+          <input type="text" placeholder="اسم العميل" required>
+          <input type="datetime-local" required>
+          <button type="submit">حفظ المهمة</button>
+        </form>
+      </div>
+      <div class="card">
+        <h3>تعديل بيانات المندوبين</h3>
+        <form id="repForm">
+          <input type="text" placeholder="اسم المندوب" required>
+          <input type="email" placeholder="البريد الإلكتروني" required>
+          <input type="tel" placeholder="رقم الهاتف" required>
+          <button type="submit">حفظ البيانات</button>
+        </form>
+      </div>
+      <div class="card">
+        <h3>إرسال إشعارات جماعية</h3>
+        <textarea placeholder="اكتب رسالتك هنا"></textarea>
+        <button id="sendNotification">إرسال الإشعار</button>
+      </div>
+    </div>
+  </section>
+</div>
 
 <script>
-function showTab(id){
-  document.querySelectorAll("section").forEach(s=>s.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-}
-
-// ===== التقارير =====
-async function loadReports(){
-  const resTasks = await fetch("/tasks");
-  const tasks = await resTasks.json();
-
-  const completed = tasks.filter(t=>t.status==="completed").length;
-  const in_progress = tasks.filter(t=>t.status==="in_progress").length;
-  const delayed = tasks.filter(t=>t.status==="delayed").length;
-
-  new Chart(document.getElementById("generalChart"), {
-    type:"doughnut",
-    data:{ labels:["تم التنفيذ","قيد التنفيذ","قيد الانتظار"], datasets:[{data:[completed,in_progress,delayed], backgroundColor:["#81c784","#ffb74d","#e57373"]}] }
+// التنقل بين الأقسام
+document.querySelectorAll('.sidebar ul li').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.sidebar ul li').forEach(i => i.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+    item.classList.add('active');
+    document.getElementById(item.dataset.section).classList.add('active');
   });
+});
 
-  const perfContainer=document.getElementById("employeesPerformance");
-  perfContainer.innerHTML="";
-  const grouped={};
-  tasks.forEach(t=>{
-    if(!grouped[t.employee_id]) grouped[t.employee_id]={completed:0,total:0};
-    grouped[t.employee_id].total++;
-    if(t.status==="completed") grouped[t.employee_id].completed++;
-  });
-  for(let emp in grouped){
-    const p=Math.round((grouped[emp].completed/grouped[emp].total)*100);
-    const div=document.createElement("div");
-    div.className="card";
-    div.innerHTML=`<strong>مندوب ID ${emp}</strong> - نسبة الإنجاز: ${p}%`;
-    perfContainer.appendChild(div);
-  }
+// بيانات افتراضية للمندوبين
+const reps = [
+  {name: 'محمد', login: '08:00', logout: '17:00', tasks: 5},
+  {name: 'سارة', login: '08:30', logout: '16:30', tasks: 4},
+  {name: 'أحمد', login: '09:00', logout: '18:00', tasks: 6},
+];
 
-  // ===== جلب التقارير =====
-  const resReports = await fetch("/reports");
-  const reports = await resReports.json();
-  const reportsContainer = document.getElementById("reportsList");
-  reportsContainer.innerHTML="";
-
-  reports.forEach(r=>{
-    const div=document.createElement("div");
-    div.className="card";
-    const images = r.images ? r.images.split(",").map(src=>`<img src="${src}" width="80"/>`).join("") : "-";
-    const signature = r.client_signature ? `<img src="${r.client_signature}" width="100"/>` : "-";
-    div.innerHTML=`
-      <strong>مندوب:</strong> ${r.users.name_ar} <br>
-      <strong>العميل:</strong> ${r.tasks.client_name_ar} <br>
-      <strong>العنوان:</strong> ${r.tasks.address_ar} <br>
-      <strong>الملاحظات:</strong> ${r.notes || "-"} <br>
-      <strong>الصور:</strong> ${images} <br>
-      <strong>توقيع العميل:</strong> ${signature} <br>
-      <strong>تاريخ التقرير:</strong> ${new Date(r.created_at).toLocaleString()}
+// ملئ بطاقات الحضور
+const attendanceCards = document.getElementById('attendance-cards');
+function renderAttendance() {
+  attendanceCards.innerHTML = '';
+  reps.forEach(rep => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <h3>${rep.name}</h3>
+      <p>تسجيل الدخول: ${rep.login}</p>
+      <p>تسجيل الخروج: ${rep.logout}</p>
+      <p>عدد المهام: ${rep.tasks}</p>
+      <p>${rep.tasks < 5 ? '<span style="color:red;">مهام ناقصة!</span>' : '<span style="color:green;">كل المهام مكتملة</span>'}</p>
     `;
-    reportsContainer.appendChild(div);
+    attendanceCards.appendChild(card);
   });
 }
+renderAttendance();
 
-// ===== الحضور =====
-async function loadAttendance(){
-  const res = await fetch("/attendance");
-  const data = await res.json();
-  const tbody = document.getElementById("attendanceList");
-  tbody.innerHTML="";
-  data.forEach(a=>{
-    const tr=document.createElement("tr");
-    tr.innerHTML=`<td>${a.user_name}</td><td>${a.role}</td><td>${a.check_in}</td><td>${a.check_out||"لم يسجل خروج"}</td>`;
-    tbody.appendChild(tr);
-  });
-}
-
-// ===== إدارة المستخدمين =====
-async function loadUsers(){
-  const res = await fetch("/users");
-  const users = await res.json();
-  const container=document.getElementById("usersList");
-  container.innerHTML="";
-  users.forEach(u=>{
-    const div=document.createElement("div");
-    div.className="card status-new";
-    div.innerHTML=`${u.name_ar} | ${u.role} | ${u.email||u.phone} <span class="delete-btn" onclick="deleteUser(${u.id})">🗑 حذف</span>`;
-    container.appendChild(div);
-  });
-}
-
-async function deleteUser(id){
-  if(!confirm("هل تريد حذف هذا المستخدم؟")) return;
-  const res = await fetch(`/users/${id}`, {method:"DELETE"});
-  if(res.ok) { alert("تم حذف المستخدم"); await refreshAll(); }
-}
-
-async function loadEmployees(){
-  const res=await fetch("/users");
-  const users = await res.json();
-  const select=document.getElementById("employeeSelect");
-  select.innerHTML="<option value=''>اختر المندوب</option>";
-  users.filter(u=>u.role==="employee").forEach(u=>{
-    const opt=document.createElement("option");
-    opt.value=u.id;
-    opt.textContent=u.name_ar;
-    select.appendChild(opt);
-  });
-}
-
-// ===== إدارة المهام =====
-async function loadTasks(){
-  const res = await fetch("/tasks");
-  const tasks = await res.json();
-  const container=document.getElementById("tasksList");
-  container.innerHTML="";
-  tasks.forEach(t=>{
-    const div=document.createElement("div");
-    div.className="card status-" + (t.status||"new");
-    div.innerHTML=`<strong>${t.client_name_ar||"-"}</strong> - الحالة: ${t.status||"منفصلة"} <span class="delete-btn" onclick="deleteTask(${t.id})">🗑 حذف</span>`;
-    container.appendChild(div);
-  });
-}
-
-async function deleteTask(id){
-  if(!confirm("هل تريد حذف هذه المهمة؟")) return;
-  const res=await fetch(`/tasks/${id}`,{method:"DELETE"});
-  if(res.ok){ alert("تم حذف المهمة"); await refreshAll(); }
-}
-
-// ===== إضافة المستخدم =====
-document.getElementById("addUserForm").addEventListener("submit", async e=>{
-  e.preventDefault();
-  const payload={
-    name_ar: document.getElementById("name").value,
-    email: document.getElementById("email").value,
-    phone: document.getElementById("phone").value,
-    password: document.getElementById("password").value,
-    role: document.getElementById("role").value
-  };
-  const res=await fetch("/add-user",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-  if(res.ok){ alert("تم إضافة المستخدم"); await refreshAll(); }
+// الرسوم البيانية باستخدام Chart.js
+const ctx1 = document.getElementById('individualPerformance').getContext('2d');
+const individualPerformance = new Chart(ctx1, {
+  type: 'bar',
+  data: {
+    labels: reps.map(r => r.name),
+    datasets: [{ label: 'نسبة الإنجاز %', data: reps.map(r => r.tasks*20), backgroundColor: '#3b82f6' }]
+  },
+  options: { responsive: true, scales: { y: { beginAtZero: true, max: 100 } } }
 });
 
-// ===== إضافة مهمة =====
-document.getElementById("addTaskForm").addEventListener("submit", async e=>{
-  e.preventDefault();
-  const payload={
-    employee_id: document.getElementById("employeeSelect").value,
-    client_name_ar: document.getElementById("client_name").value,
-    address_ar: document.getElementById("address").value,
-    visit_time: document.getElementById("visit_time").value
-  };
-  const res=await fetch("/tasks",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-  if(res.ok){ alert("تمت إضافة المهمة"); await refreshAll(); }
+const ctx2 = document.getElementById('taskSummary').getContext('2d');
+const taskSummary = new Chart(ctx2, {
+  type: 'pie',
+  data: {
+    labels: ['مكتملة', 'مؤجلة', 'قيد التنفيذ'],
+    datasets: [{ data: [50, 10, 20], backgroundColor: ['#10b981', '#f59e0b', '#ef4444'] }]
+  },
+  options: { responsive: true }
 });
 
-// ===== إرسال إشعارات =====
-document.getElementById("notifyForm").addEventListener("submit", async e=>{
+// إرسال الإشعارات
+document.getElementById('sendNotification').addEventListener('click', () => {
+  const message = document.querySelector('#control textarea').value;
+  if(message) alert('تم إرسال الإشعار: ' + message);
+});
+
+// حفظ المهام
+document.getElementById('taskForm').addEventListener('submit', e => {
   e.preventDefault();
-  const message=document.getElementById("message").value;
-  const resUsers=await fetch("/users");
-  const users=await resUsers.json();
-  for(let u of users){
-    await fetch("/notifications",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({user_id:u.id,title_ar:"إشعار من المدير",title_en:"Manager Notification",message_ar:message,message_en:message,type:"individual"})});
+  alert('تم حفظ المهمة!');
+});
+
+// حفظ بيانات المندوبين
+document.getElementById('repForm').addEventListener('submit', e => {
+  e.preventDefault();
+  alert('تم تحديث بيانات المندوب!');
+});
+
+// تبديل اللغة
+document.getElementById('lang-toggle').addEventListener('click', () => {
+  const html = document.documentElement;
+  if(html.dir === 'rtl') {
+    html.dir = 'ltr'; html.lang='en';
+    document.getElementById('lang-toggle').innerHTML = '<i class="fa-solid fa-language"></i> العربية';
+  } else {
+    html.dir = 'rtl'; html.lang='ar';
+    document.getElementById('lang-toggle').innerHTML = '<i class="fa-solid fa-language"></i> English';
   }
-  alert("✅ تم إرسال الإشعارات لجميع المستخدمين");
-  await loadReports();
 });
-
-// ===== تحديث الكل =====
-async function refreshAll(){
-  await loadUsers();
-  await loadEmployees();
-  await loadTasks();
-  await loadReports();
-  await loadAttendance();
-}
-
-// ===== بدء الصفحة =====
-refreshAll();
 </script>
 </body>
 </html>
