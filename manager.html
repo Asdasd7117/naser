@@ -24,6 +24,8 @@ nav button { background:#4dd0e1; }
 nav button.active { background:#0288d1; color:#fff; }
 .hidden { display:none; }
 input, select { padding:8px; margin:5px 0; width:100%; border-radius:6px; border:1px solid #ccc; }
+.deleteBtn { background:#e53935 !important; margin-left:5px; }
+.deleteBtn:hover { background:#c62828 !important; }
 </style>
 </head>
 <body>
@@ -80,6 +82,21 @@ input, select { padding:8px; margin:5px 0; width:100%; border-radius:6px; border
       </select>
       <button type="submit">حفظ المهمة</button>
     </form>
+
+    <h4>المهام الحالية</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>العميل</th>
+          <th>العنوان</th>
+          <th>الوقت</th>
+          <th>المندوب</th>
+          <th>الحالة</th>
+          <th>إجراءات</th>
+        </tr>
+      </thead>
+      <tbody id="tasksTableBody"></tbody>
+    </table>
 
     <h4>إرسال إشعارات جماعية</h4>
     <input type="text" id="notificationMessage" placeholder="رسالة الإشعار">
@@ -163,6 +180,42 @@ async function loadAgents(){
   })
 }
 
+// --- تحميل المهام الحالية ---
+async function loadTasks(){
+  const { data: tasks } = await supabase.from('tasks').select('*')
+  const { data: agents } = await supabase.from('users').select('*').eq('role','agent')
+  const tbody = document.getElementById('tasksTableBody')
+  tbody.innerHTML = ''
+  tasks.forEach(t=>{
+    const agent = agents.find(a=>a.id===t.assigned_to)
+    const tr = document.createElement('tr')
+    tr.innerHTML = `
+      <td>${t.client_name}</td>
+      <td>${t.client_address}</td>
+      <td>${t.visit_time}</td>
+      <td>${agent?.email_or_phone||'-'}</td>
+      <td>${t.status}</td>
+      <td>
+        <button class="deleteBtn" data-id="${t.id}">حذف</button>
+      </td>
+    `
+    tbody.appendChild(tr)
+  })
+}
+
+// --- حذف مهمة ---
+document.getElementById('tasksTableBody').addEventListener('click', async e=>{
+  if(e.target.classList.contains('deleteBtn')){
+    const taskId = e.target.dataset.id
+    if(confirm('هل أنت متأكد من حذف المهمة؟')){
+      await supabase.from('tasks').delete().eq('id', taskId)
+      alert('تم حذف المهمة')
+      loadTasks()
+      loadReports()
+    }
+  }
+})
+
 // --- إضافة مهمة ---
 document.getElementById('taskForm').addEventListener('submit', async (e)=>{
   e.preventDefault()
@@ -173,6 +226,7 @@ document.getElementById('taskForm').addEventListener('submit', async (e)=>{
   await supabase.from('tasks').insert([{ client_name, client_address, visit_time, assigned_to, status:'pending' }])
   alert('تم حفظ المهمة')
   e.target.reset()
+  loadTasks()
   loadReports()
 })
 
@@ -192,6 +246,7 @@ document.getElementById('sendNotificationBtn').addEventListener('click', async (
 loadReports()
 loadAttendance()
 loadAgents()
+loadTasks()
 </script>
 </body>
 </html>
