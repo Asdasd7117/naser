@@ -35,7 +35,7 @@ a { color:#0288d1; cursor:pointer; text-decoration:underline; }
     <p>ليس لديك حساب؟ <a id="showSignUp">إنشاء حساب</a></p>
   </form>
 
-  <!-- إنشاء حساب جديد -->
+  <!-- تسجيل حساب جديد -->
   <form id="signUpForm" class="hidden">
     <input type="email" id="signUpEmail" placeholder="البريد الإلكتروني" required>
     <input type="password" id="signUpPassword" placeholder="كلمة المرور" required>
@@ -74,15 +74,16 @@ loginForm.addEventListener('submit', async e=>{
   const role = document.getElementById('loginRole').value;
 
   try {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if(error) throw error;
+    const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+    if(loginError) throw loginError;
 
-    // تحقق الدور من جدول المستخدمين
-    const { data: userData, error: userError } = await supabase.from('users').select('*').eq('id', data.user.id).single();
+    // استعلام جدول users للحصول على الدور والمعرف
+    const { data: userData, error: userError } = await supabase.from('users').select('*').eq('id', loginData.user.id).single();
     if(userError) throw userError;
+
     if(userData.role !== role) return alert('الدور لا يتطابق مع الحساب!');
 
-    // حفظ معرف المندوب في localStorage إذا كان agent
+    // حفظ معرف المندوب إن وجد
     if(role==='agent') localStorage.setItem('agent_uuid', userData.id);
 
     alert('تم تسجيل الدخول بنجاح');
@@ -104,14 +105,11 @@ signUpForm.addEventListener('submit', async e=>{
   const role = document.getElementById('signUpRole').value;
 
   try {
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if(error) throw error;
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password });
+    if(signUpError) throw signUpError;
 
-    // إنشاء سجل في جدول users لتخزين الدور
-    await supabase.from('users').insert([{ id: data.user.id, email_or_phone: email, role }]);
-
-    // حفظ معرف المندوب في localStorage إذا كان agent
-    if(role==='agent') localStorage.setItem('agent_uuid', data.user.id);
+    // أضف المستخدم الجديد إلى جدول users مع الدور
+    await supabase.from('users').insert([{ id: signUpData.user.id, role }]);
 
     alert('تم إنشاء الحساب بنجاح');
     signUpForm.classList.add('hidden');
