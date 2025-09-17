@@ -2,13 +2,14 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>تسجيل دخول/حساب المندوب</title>
+<title>تسجيل الدخول / إنشاء حساب</title>
 <style>
-body { font-family: Arial,sans-serif; background:#e0f7fa; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
+body { font-family: Arial, sans-serif; background:#e0f7fa; margin:0; padding:0; display:flex; justify-content:center; align-items:center; height:100vh; }
 .container { background:#fff; padding:30px; border-radius:12px; box-shadow:0 8px 20px rgba(0,0,0,0.1); width:350px; }
 h2 { text-align:center; color:#0277bd; margin-bottom:20px; }
 form { display:flex; flex-direction:column; gap:15px; }
-input, button { padding:10px; border-radius:8px; border:1px solid #ccc; font-size:16px; }
+input, select, button { padding:10px; border-radius:8px; border:1px solid #ccc; font-size:16px; }
+input:focus, select:focus { outline:none; border-color:#0288d1; }
 button { background:#0288d1; color:#fff; border:none; cursor:pointer; transition:0.3s; }
 button:hover { background:#0277bd; }
 p { text-align:center; margin-top:10px; color:#555; }
@@ -18,28 +19,40 @@ a { color:#0288d1; cursor:pointer; text-decoration:underline; }
 </head>
 <body>
 <div class="container">
-<h2>نظام تسجيل دخول/حساب المندوب</h2>
+  <h2>نظام تسجيل الدخول</h2>
 
-<form id="loginForm">
-<input type="email" id="loginEmail" placeholder="البريد الإلكتروني" required>
-<input type="password" id="loginPassword" placeholder="كلمة المرور" required>
-<button type="submit">تسجيل الدخول</button>
-<p>ليس لديك حساب؟ <a id="showSignUp">إنشاء حساب</a></p>
-</form>
+  <!-- تسجيل الدخول -->
+  <form id="loginForm">
+    <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" required>
+    <input type="password" id="loginPassword" placeholder="كلمة المرور" required>
+    <select id="loginRole" required>
+      <option value="">اختر الدور</option>
+      <option value="admin">مدير</option>
+      <option value="supervisor">مشرف</option>
+      <option value="agent">مندوب</option>
+    </select>
+    <button type="submit">تسجيل الدخول</button>
+    <p>ليس لديك حساب؟ <a id="showSignUp">إنشاء حساب</a></p>
+  </form>
 
-<form id="signUpForm" class="hidden">
-<input type="email" id="signUpEmail" placeholder="البريد الإلكتروني" required>
-<input type="password" id="signUpPassword" placeholder="كلمة المرور" required>
-<button type="submit">إنشاء الحساب</button>
-<p>لديك حساب بالفعل؟ <a id="showLogin">تسجيل الدخول</a></p>
-</form>
+  <!-- إنشاء حساب جديد -->
+  <form id="signUpForm" class="hidden">
+    <input type="email" id="signUpEmail" placeholder="البريد الإلكتروني" required>
+    <input type="password" id="signUpPassword" placeholder="كلمة المرور" required>
+    <select id="signUpRole" required>
+      <option value="">اختر الدور</option>
+      <option value="admin">مدير</option>
+      <option value="supervisor">مشرف</option>
+      <option value="agent">مندوب</option>
+    </select>
+    <button type="submit">إنشاء الحساب</button>
+    <p>لديك حساب بالفعل؟ <a id="showLogin">تسجيل الدخول</a></p>
+  </form>
 </div>
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-import { v4 as uuidv4 } from 'https://cdn.jsdelivr.net/npm/uuid/+esm';
 
-// --- إعداد Supabase ---
 const supabaseUrl = "https://vkativialsvvbifhjrey.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3MzY3OTEwNX0.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0";
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -49,59 +62,65 @@ const signUpForm = document.getElementById('signUpForm');
 const showSignUp = document.getElementById('showSignUp');
 const showLogin = document.getElementById('showLogin');
 
+// تبديل النماذج
 showSignUp.addEventListener('click', ()=>{ loginForm.classList.add('hidden'); signUpForm.classList.remove('hidden'); });
 showLogin.addEventListener('click', ()=>{ signUpForm.classList.add('hidden'); loginForm.classList.remove('hidden'); });
 
-// --- تسجيل الدخول ---
+// تسجيل الدخول
 loginForm.addEventListener('submit', async e=>{
   e.preventDefault();
   const email = document.getElementById('loginEmail').value;
   const password = document.getElementById('loginPassword').value;
+  const role = document.getElementById('loginRole').value;
 
-  // تسجيل الدخول عبر Supabase Auth
-  const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
-  if(signInErr) return alert('خطأ في تسجيل الدخول: '+signInErr.message);
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if(error) throw error;
 
-  let user = signInData.user;
-  if(!user) return alert('حدث خطأ، لم يتم العثور على المستخدم');
+    // تحقق الدور من جدول المستخدمين
+    const { data: userData, error: userError } = await supabase.from('users').select('*').eq('id', data.user.id).single();
+    if(userError) throw userError;
+    if(userData.role !== role) return alert('الدور لا يتطابق مع الحساب!');
 
-  // التحقق من وجود UUID في جدول users
-  let { data: dbUser } = await supabase.from('users').select('*').eq('email', email).single();
-  if(!dbUser){
-    // إضافة المندوب الجديد بUUID
-    const agent_uuid = uuidv4();
-    const { data: newUser } = await supabase.from('users').insert([{ email, role:'agent', agent_uuid }]).select().single();
-    dbUser = newUser;
-  } else if(!dbUser.agent_uuid){
-    // إنشاء UUID إذا لم يكن موجود
-    const agent_uuid = uuidv4();
-    await supabase.from('users').update({ agent_uuid }).eq('id', dbUser.id);
-    dbUser.agent_uuid = agent_uuid;
+    // حفظ معرف المندوب في localStorage إذا كان agent
+    if(role==='agent') localStorage.setItem('agent_uuid', userData.id);
+
+    alert('تم تسجيل الدخول بنجاح');
+
+    if(role==='admin') window.location.href='admin.html';
+    else if(role==='supervisor') window.location.href='supervisor.html';
+    else if(role==='agent') window.location.href='agent.html';
+  } catch(err) {
+    console.error(err);
+    alert('خطأ في تسجيل الدخول: '+err.message);
   }
-
-  alert('تم تسجيل الدخول بنجاح');
-  // حفظ UUID محليًا أو الانتقال لصفحة المندوب
-  localStorage.setItem('agent_uuid', dbUser.agent_uuid);
-  window.location.href='agent.html';
 });
 
-// --- إنشاء حساب جديد ---
+// إنشاء حساب جديد
 signUpForm.addEventListener('submit', async e=>{
   e.preventDefault();
   const email = document.getElementById('signUpEmail').value;
   const password = document.getElementById('signUpPassword').value;
+  const role = document.getElementById('signUpRole').value;
 
-  const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({ email, password });
-  if(signUpErr) return alert('خطأ في إنشاء الحساب: '+signUpErr.message);
+  try {
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if(error) throw error;
 
-  // إنشاء UUID للمندوب الجديد
-  const agent_uuid = uuidv4();
-  await supabase.from('users').insert([{ email, role:'agent', agent_uuid }]);
+    // إنشاء سجل في جدول users لتخزين الدور
+    await supabase.from('users').insert([{ id: data.user.id, email_or_phone: email, role }]);
 
-  alert('تم إنشاء الحساب بنجاح، يمكنك تسجيل الدخول الآن');
-  signUpForm.classList.add('hidden');
-  loginForm.classList.remove('hidden');
-  document.getElementById('loginEmail').value=email;
+    // حفظ معرف المندوب في localStorage إذا كان agent
+    if(role==='agent') localStorage.setItem('agent_uuid', data.user.id);
+
+    alert('تم إنشاء الحساب بنجاح');
+    signUpForm.classList.add('hidden');
+    loginForm.classList.remove('hidden');
+    document.getElementById('loginEmail').value=email;
+  } catch(err) {
+    console.error(err);
+    alert('خطأ في إنشاء الحساب: '+err.message);
+  }
 });
 </script>
 </body>
