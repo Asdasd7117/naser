@@ -1,172 +1,131 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar">
 <head>
-<meta charset="UTF-8">
-<title>لوحة المندوب</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<style>
-  body { font-family: Arial, sans-serif; margin:20px; background:#f5f5f5; }
-  h1 { text-align:center; color:#333; }
-  section { margin-bottom:20px; }
-  .card { padding:10px; margin:10px 0; border-radius:8px; color:white; }
-  .status-new { background:#90caf9; }
-  .status-in_progress { background:#ffb74d; }
-  .status-completed { background:#81c784; }
-  .status-delayed { background:#e57373; }
-  button { margin:2px; padding:5px 10px; border:none; border-radius:5px; cursor:pointer; }
-  form input, form textarea { width:100%; padding:8px; margin:5px 0; border-radius:5px; border:1px solid #ccc; }
-  #map { height:300px; border-radius:8px; margin-top:10px; }
-  #notifications .card { background:#2196f3; }
-</style>
+  <meta charset="UTF-8">
+  <title>لوحة المندوب</title>
+  <script src="https://unpkg.com/@supabase/supabase-js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; direction: rtl; text-align: right; padding: 20px; background: #f9f9f9; }
+    h2 { color: #333; }
+    #tasks { margin-top: 20px; }
+    .task { background: #fff; padding: 10px; margin: 10px 0; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    textarea, input { width: 100%; margin: 5px 0; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+    button { background: #007bff; color: #fff; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; }
+    button:hover { background: #0056b3; }
+  </style>
 </head>
 <body>
-<h1>👷 لوحة المندوب</h1>
+  <h2>📋 مهامي</h2>
+  <div id="tasks">جار التحميل...</div>
 
-<!-- المهام اليومية -->
-<section>
-  <h2>📋 المهام اليومية</h2>
-  <div id="tasks"></div>
-</section>
-
-<!-- رفع التقرير -->
-<section>
-  <h2>📝 رفع التقرير</h2>
+  <h2>📝 إرسال تقرير</h2>
   <form id="reportForm">
-    <input type="hidden" id="task_id">
-    <textarea id="notes" placeholder="اكتب ملاحظاتك هنا..." required></textarea>
-    <input type="file" id="images" multiple>
-    <input type="file" id="signature" accept="image/*">
+    <label>رقم المهمة:</label>
+    <input type="text" id="taskId" placeholder="انسخ رقم المهمة">
+    <label>بيانات التقرير (JSON):</label>
+    <textarea id="reportData" rows="4" placeholder='{"status":"مكتمل","ملاحظات":"تم التنفيذ"}'></textarea>
     <button type="submit">إرسال التقرير</button>
   </form>
-</section>
 
-<!-- الخريطة -->
-<section>
-  <h2>🗺️ موقعك الحالي</h2>
-  <div id="map"></div>
-</section>
+  <script>
+    // ⚡ إعداد supabase
+    const SUPABASE_URL = "https://ncjxqfwsswwikedaffif.supabase.co"; // غيّرها عندك
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NDEwNzQsImV4cCI6MjA3MzQxNzA3NH0.4G54968qAHyePjq9_ufSCSA1fHzx5XHFzOAqGKmVW18"; // مفتاح anon
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-<!-- الإشعارات -->
-<section>
-  <h2>🔔 الإشعارات</h2>
-  <div id="notifications"></div>
-</section>
+    const tasksDiv = document.getElementById("tasks");
+    const reportForm = document.getElementById("reportForm");
 
-<script>
-const USER_ID = 3; // ضع معرف المندوب بعد تسجيل الدخول
-let map, marker;
+    // ✅ جلب المستخدم الحالي
+    async function getUserId() {
+      const { data, error } = await supabase.auth.getUser();
+      if (error || !data.user) {
+        alert("⚠️ يجب تسجيل الدخول أولاً");
+        return null;
+      }
+      return data.user.id;
+    }
 
-// ===== تحميل المهام =====
-async function loadTasks() {
-  const res = await fetch("/tasks");
-  const tasks = await res.json();
-  const container = document.getElementById("tasks");
-  container.innerHTML = "";
+    // ✅ تحميل المهام الخاصة بالمندوب
+    async function loadTasks() {
+      const userId = await getUserId();
+      if (!userId) return;
 
-  tasks.forEach(t => {
-    const div = document.createElement("div");
-    div.className = "card status-" + (t.status || "new");
-    div.innerHTML = `
-      <p><strong>المندوب ID:</strong> ${t.employee_id || "-"}</p>
-      <p><strong>العميل:</strong> ${t.client_name_ar || "-"}</p>
-      <p><strong>العنوان:</strong> ${t.address_ar || "-"}</p>
-      <p><strong>وقت الزيارة:</strong> ${t.visit_time ? new Date(t.visit_time).toLocaleString() : "-"}</p>
-      <p><strong>الحالة:</strong> <span id="status-${t.id}">${t.status || "منفصلة"}</span></p>
-      <button onclick="updateStatus(${t.id}, 'in_progress')">قيد التنفيذ</button>
-      <button onclick="updateStatus(${t.id}, 'completed')">تم التنفيذ</button>
-      <button onclick="updateStatus(${t.id}, 'delayed')">قيد الانتظار</button>
-      <button onclick="selectTask(${t.id})">رفع تقرير</button>
-    `;
-    container.appendChild(div);
-  });
-}
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("*")
+        .eq("receiver_id", userId)
+        .order("created_at", { ascending: false });
 
-async function updateStatus(taskId, status) {
-  await fetch(`/tasks/${taskId}/status`, {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ status })
-  });
-  document.getElementById(`status-${taskId}`).innerText = status;
-  loadTasks();
-}
+      if (error) {
+        tasksDiv.innerHTML = "❌ خطأ في تحميل المهام";
+        console.error(error);
+        return;
+      }
 
-function selectTask(taskId) {
-  document.getElementById("task_id").value = taskId;
-}
+      if (!data.length) {
+        tasksDiv.innerHTML = "لا توجد مهام حالياً ✅";
+        return;
+      }
 
-// ===== رفع التقرير =====
-document.getElementById("reportForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  const task_id = document.getElementById("task_id").value;
-  const notes = document.getElementById("notes").value;
-  const imagesFiles = document.getElementById("images").files;
-  const signatureFile = document.getElementById("signature").files[0];
-
-  const formData = new FormData();
-  formData.append("task_id", task_id);
-  formData.append("user_id", USER_ID);
-  formData.append("notes", notes);
-  for(let i=0;i<imagesFiles.length;i++) formData.append("images", imagesFiles[i]);
-  if(signatureFile) formData.append("signature", signatureFile);
-
-  const res = await fetch("/reports", { method:"POST", body:formData });
-  if(res.ok){
-    alert("✅ تم إرسال التقرير");
-    document.getElementById("reportForm").reset();
-  } else {
-    alert("❌ خطأ في إرسال التقرير");
-  }
-});
-
-// ===== الخريطة =====
-async function initMap() {
-  map = L.map('map').setView([30.0444,31.2357], 12); // القاهرة
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(map);
-
-  if(navigator.geolocation){
-    setInterval(()=>{
-      navigator.geolocation.getCurrentPosition(async pos=>{
-        const lat=pos.coords.latitude, lon=pos.coords.longitude;
-        await fetch("/locations", {
-          method:"POST",
-          headers:{ "Content-Type":"application/json" },
-          body:JSON.stringify({ employee_id:USER_ID, latitude:lat, longitude:lon })
-        });
-        if(!marker){
-          marker = L.marker([lat,lon]).addTo(map).bindPopup("موقعك الحالي");
-        } else { marker.setLatLng([lat,lon]); }
-        map.setView([lat,lon],13);
+      tasksDiv.innerHTML = "";
+      data.forEach(task => {
+        const el = document.createElement("div");
+        el.className = "task";
+        el.innerHTML = `
+          <strong>📌 ${task.title}</strong><br>
+          ${task.description || ""}<br>
+          <small>🆔 ${task.id}</small>
+        `;
+        tasksDiv.appendChild(el);
       });
-    },15000);
-  }
-}
+    }
 
-// ===== الإشعارات =====
-async function loadNotifications() {
-  const res = await fetch(`/notifications/${USER_ID}`);
-  const notifs = await res.json();
-  const container = document.getElementById("notifications");
-  container.innerHTML = "";
-  notifs.forEach(n=>{
-    const div = document.createElement("div");
-    div.className = "card";
-    div.style.background="#2196f3";
-    div.innerHTML = `<strong>${n.title_ar}</strong>: ${n.message_ar}`;
-    container.appendChild(div);
-  });
-}
+    // ✅ إرسال تقرير
+    reportForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const userId = await getUserId();
+      if (!userId) return;
 
-// ===== بدء الصفحة =====
-(async ()=>{
-  await loadTasks();
-  await initMap();
-  await loadNotifications();
-  setInterval(loadNotifications,10000);
-})();
-</script>
+      const taskId = document.getElementById("taskId").value.trim();
+      let reportData;
+      try {
+        reportData = JSON.parse(document.getElementById("reportData").value);
+      } catch (err) {
+        alert("⚠️ صيغة JSON غير صحيحة");
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("reports")
+        .insert([{ task_id: taskId, user_id: userId, report_data: reportData }]);
+
+      if (error) {
+        alert("❌ خطأ في إرسال التقرير");
+        console.error(error);
+      } else {
+        alert("✅ تم إرسال التقرير بنجاح");
+        reportForm.reset();
+      }
+    });
+
+    // ✅ تحديث حي (Realtime) للمهام الجديدة
+    async function subscribeTasks() {
+      const userId = await getUserId();
+      if (!userId) return;
+
+      supabase
+        .channel("tasks-channel")
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "tasks", filter: `receiver_id=eq.${userId}` }, payload => {
+          alert("📥 تم استلام مهمة جديدة: " + payload.new.title);
+          loadTasks();
+        })
+        .subscribe();
+    }
+
+    // 🚀 تشغيل الصفحة
+    loadTasks();
+    subscribeTasks();
+  </script>
 </body>
 </html>
