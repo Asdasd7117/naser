@@ -4,101 +4,84 @@
 <meta charset="UTF-8">
 <title>لوحة المندوب</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <style>
 body { font-family: Arial, sans-serif; margin:20px; background:#f5f5f5; }
-h1 { text-align:center; color:#333; }
+h1, h2 { text-align:center; color:#333; }
 section { margin-bottom:20px; }
 .card { padding:10px; margin:10px 0; border-radius:8px; color:white; }
-.status-new { background:#90caf9; }
-.status-in_progress { background:#ffb74d; }
-.status-completed { background:#81c784; }
-.status-delayed { background:#e57373; }
+.status-new { background:#90caf9; }          
+.status-in_progress { background:#ffb74d; }  
+.status-completed { background:#81c784; }    
+.status-delayed { background:#e57373; }      
 button { margin:2px; padding:5px 10px; border:none; border-radius:5px; cursor:pointer; }
 form input, form textarea { width:100%; padding:8px; margin:5px 0; border-radius:5px; border:1px solid #ccc; }
-#map { height:300px; border-radius:8px; margin-top:10px; }
-#notifications .card { background:#2196f3; margin-bottom:5px; }
 </style>
 </head>
 <body>
+
 <h1>👷 لوحة المندوب</h1>
 
-<!-- المهام اليومية -->
 <section>
-<h2>📋 المهام اليومية</h2>
-<div id="tasks">جاري تحميل المهام...</div>
+  <h2>📋 المهام اليومية</h2>
+  <div id="tasks">جاري التحميل...</div>
 </section>
 
-<!-- رفع التقرير -->
 <section>
-<h2>📝 رفع التقرير</h2>
-<form id="reportForm">
-<input type="hidden" id="task_id">
-<textarea id="notes" placeholder="اكتب ملاحظاتك هنا..." required></textarea>
-<input type="file" id="images" multiple>
-<button type="submit">إرسال التقرير</button>
-<div id="reportStatus"></div>
-</form>
+  <h2>📝 رفع التقرير</h2>
+  <form id="reportForm">
+    <input type="hidden" id="task_id">
+    <textarea id="notes" placeholder="اكتب ملاحظاتك هنا..." required></textarea>
+    <input type="file" id="images" multiple>
+    <button type="submit">إرسال التقرير</button>
+  </form>
 </section>
 
-<!-- الخريطة -->
 <section>
-<h2>🗺️ موقعك الحالي</h2>
-<div id="map">جاري تحميل الخريطة...</div>
-</section>
-
-<!-- الإشعارات -->
-<section>
-<h2>🔔 الإشعارات</h2>
-<div id="notifications">جاري تحميل الإشعارات...</div>
+  <h2>🔔 الإشعارات</h2>
+  <div id="notifications">جاري التحميل...</div>
 </section>
 
 <script>
 // ===== إعداد Supabase =====
 const SUPABASE_URL = "https://ncjxqfqwswwikedaffif.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Nzg0MTA3NCwiZXhwIjoyMDczNDE3MDc0fQ.ZX7giBBgWRScW6usplziAWjNYn9yCVeLVAQz7YUBjvA";
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ===== إعداد المندوب =====
-const USER_ID = 3; // ضع هنا معرف المندوب
+// ===== معرف المندوب =====
+const USER_ID = 3;
 
-// ===== المهام =====
-async function loadTasks(){
-  const { data: tasks, error } = await supabase.from("tasks")
-    .select("*").eq("employee_id", USER_ID).order("visit_time", { ascending:true });
+// ===== تحميل المهام =====
+async function loadTasks() {
+  const { data: tasks, error } = await supabase
+    .from("tasks")
+    .select("*")
+    .eq("employee_id", USER_ID)
+    .order("visit_time", { ascending: true });
+
   const container = document.getElementById("tasks");
+  if(error) return container.innerHTML = "خطأ في تحميل المهام: " + error.message;
+  if(!tasks || tasks.length===0) return container.innerHTML = "لا توجد مهام لهذا اليوم.";
 
-  if(error){ container.innerHTML = "❌ خطأ في تحميل المهام: "+error.message; console.error(error); return; }
-  if(!tasks || tasks.length===0){ container.innerHTML="لا توجد مهام اليوم"; return; }
-
-  container.innerHTML="";
+  container.innerHTML = "";
   tasks.forEach(t=>{
     const statusClass = "status-" + (t.status || "new");
     const div = document.createElement("div");
-    div.className = "card "+statusClass;
-    div.innerHTML=`
-      <p><strong>العميل:</strong> ${t.client_name_ar||"-"}</p>
-      <p><strong>العنوان:</strong> ${t.address_ar||"-"}</p>
-      <p><strong>وقت الزيارة:</strong> ${t.visit_time? new Date(t.visit_time).toLocaleString() : "-"}</p>
-      <p><strong>الحالة:</strong> <span id="status-${t.id}">${t.status||"منفصلة"}</span></p>
-      <button onclick="updateStatus(${t.id}, 'in_progress')">قيد التنفيذ</button>
-      <button onclick="updateStatus(${t.id}, 'completed')">تم التنفيذ</button>
-      <button onclick="updateStatus(${t.id}, 'delayed')">قيد الانتظار</button>
+    div.className = "card " + statusClass;
+    div.innerHTML = `
+      <p><strong>المهمة:</strong> ${t.client_name_ar || "-"}</p>
+      <p><strong>العنوان:</strong> ${t.address_ar || "-"}</p>
+      <p><strong>وقت الزيارة:</strong> ${t.visit_time ? new Date(t.visit_time).toLocaleString() : "-"}</p>
+      <p><strong>الحالة:</strong> <span id="status-${t.id}">${t.status || "منفصلة"}</span></p>
       <button onclick="selectTask(${t.id})">رفع تقرير</button>
     `;
     container.appendChild(div);
   });
 }
 
-async function updateStatus(taskId, status){
-  const { data, error } = await supabase.from("tasks").update({ status }).eq("id", taskId);
-  if(error){ alert("❌ خطأ تحديث الحالة: "+error.message); console.error(error); return; }
-  document.getElementById(`status-${taskId}`).innerText=status;
-  loadTasks();
+// ===== اختيار مهمة للتقرير =====
+function selectTask(taskId){
+  document.getElementById("task_id").value = taskId;
 }
-
-function selectTask(taskId){ document.getElementById("task_id").value=taskId; }
 
 // ===== رفع التقرير =====
 document.getElementById("reportForm").addEventListener("submit", async e=>{
@@ -107,67 +90,44 @@ document.getElementById("reportForm").addEventListener("submit", async e=>{
   const notes = document.getElementById("notes").value;
   const files = document.getElementById("images").files;
 
-  if(!task_id){ alert("اختر مهمة أولاً"); return; }
+  const formData = new FormData();
+  formData.append("task_id", task_id);
+  formData.append("user_id", USER_ID);
+  formData.append("notes", notes);
+  for(let i=0;i<files.length;i++) formData.append("images", files[i]);
 
-  const imagesUrls=[];
-  for(let i=0;i<files.length;i++){
-    const file = files[i];
-    const { data, error } = await supabase.storage.from("reports").upload(Date.now()+"-"+file.name, file);
-    if(error){ console.error(error); continue; }
-    imagesUrls.push(supabase.storage.from("reports").getPublicUrl(data.path).publicUrl);
-  }
-
-  const { data, error } = await supabase.from("reports").insert([{ task_id, user_id:USER_ID, notes, images:imagesUrls.join(",") }]);
-  if(error){ document.getElementById("reportStatus").innerText="❌ خطأ في إرسال التقرير: "+error.message; console.error(error); return; }
-
-  document.getElementById("reportStatus").innerText="✅ تم إرسال التقرير بنجاح";
-  document.getElementById("reportForm").reset();
-  loadTasks();
+  const res = await fetch("/reports", { method:"POST", body: formData });
+  if(res.ok) alert("✅ تم إرسال التقرير بنجاح");
+  else alert("❌ خطأ في إرسال التقرير");
 });
 
-// ===== الإشعارات =====
+// ===== تحميل الإشعارات =====
 async function loadNotifications(){
-  const { data: notifs, error } = await supabase.from("notifications").select("*").order("id",{ascending:false});
+  const { data: notifs, error } = await supabase
+    .from("notifications")
+    .select("*")
+    .order("id", { ascending: false });
+
   const container = document.getElementById("notifications");
-  if(error){ container.innerHTML="❌ خطأ في الإشعارات: "+error.message; console.error(error); return; }
-  if(!notifs || notifs.length===0){ container.innerHTML="لا توجد إشعارات"; return; }
-  container.innerHTML="";
+  if(error) return container.innerHTML = "خطأ في تحميل الإشعارات: "+error.message;
+  if(!notifs || notifs.length===0) return container.innerHTML = "لا توجد إشعارات.";
+
+  container.innerHTML = "";
   notifs.forEach(n=>{
-    const div=document.createElement("div");
-    div.className="card";
-    div.innerHTML=`<strong>${n.title_ar||"-"}</strong>: ${n.message_ar||"-"}`;
+    const div = document.createElement("div");
+    div.className = "card";
+    div.innerHTML = `<strong>${n.title_ar}</strong>: ${n.message_ar}`;
     container.appendChild(div);
   });
-}
-
-// ===== الخريطة =====
-let map, marker;
-async function initMap(){
-  map = L.map('map').setView([30.0444,31.2357],12);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'&copy; OpenStreetMap contributors' }).addTo(map);
-
-  if(navigator.geolocation){
-    setInterval(async ()=>{
-      navigator.geolocation.getCurrentPosition(async pos=>{
-        const lat=pos.coords.latitude, lon=pos.coords.longitude;
-        if(!marker) marker=L.marker([lat,lon]).addTo(map).bindPopup("موقعك الحالي");
-        else marker.setLatLng([lat,lon]);
-        map.setView([lat,lon],13);
-
-        const { data, error } = await supabase.from("employee_locations").insert([{ employee_id:USER_ID, latitude:lat, longitude:lon }]);
-        if(error) console.error("خطأ إرسال الموقع:", error.message);
-      });
-    },15000);
-  }
 }
 
 // ===== بدء الصفحة =====
 (async ()=>{
   await loadTasks();
   await loadNotifications();
-  await initMap();
-  setInterval(loadNotifications,10000);
+  setInterval(loadNotifications, 10000);
 })();
 </script>
+
 </body>
 </html>
