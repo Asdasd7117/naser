@@ -3,31 +3,39 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 // ==== تهيئة Supabase ====
 const SUPABASE_URL = 'https://vkativialsvvbifhjrey.supabase.co'
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODEwMzEwNSwiZXhwIjoyMDczNjc5MTA1fQ.xUR96RId88zr0VhJNuxEy55FSKUFTRVqxJQMMHNkoMY'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3MzY3OTEwNX0.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0' // استخدم فقط anon key للمتصفح
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
 // ==== المستخدم الحالي ====
-export function currentUser() {
-    return supabase.auth.user()
+export async function currentUser() {
+    const { data, error } = await supabase.auth.getUser()
+    if(error) throw error
+    return data.user
 }
 
-// ==== تسجيل الدخول ====
-export async function signIn(emailOrPhone, password) {
+// ==== تسجيل الدخول بالإيميل فقط ====
+export async function signIn(email, password) {
     const { data, error } = await supabase.auth.signInWithPassword({
-        email: emailOrPhone.includes('@') ? emailOrPhone : undefined,
+        email,
         password
     })
     if(error) throw error
+
     // استرجاع بيانات المستخدم من جدول users
-    const { data: userData } = await supabase.from('users').select('*').eq('id', data.user.id).single()
-    if(!userData) throw new Error('المستخدم غير موجود')
+    const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', data.user.id)
+        .single()
+
+    if(userError || !userData) throw new Error('المستخدم غير موجود')
     return userData
 }
 
-// ==== تسجيل حساب جديد ====
-export async function signUp(emailOrPhone, password, role) {
+// ==== تسجيل حساب جديد بالإيميل فقط ====
+export async function signUp(email, password, role) {
     const { data, error } = await supabase.auth.signUp({
-        email: emailOrPhone.includes('@') ? emailOrPhone : undefined,
+        email,
         password
     })
     if(error) throw error
@@ -35,11 +43,12 @@ export async function signUp(emailOrPhone, password, role) {
     // إضافة المستخدم إلى جدول users
     await supabase.from('users').insert([{
         id: data.user.id,
-        email_or_phone: emailOrPhone,
+        email_or_phone: email,
         role,
         status:'نشط'
     }])
-    return { id: data.user.id, email_or_phone: emailOrPhone, role, status:'نشط' }
+
+    return { id: data.user.id, email_or_phone: email, role, status:'نشط' }
 }
 
 // ==== الاشتراك في تحديثات الجدول لحظياً ====
