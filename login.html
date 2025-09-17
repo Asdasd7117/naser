@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>تسجيل الدخول / إنشاء حساب</title>
+<title>نظام تسجيل الدخول</title>
 <style>
 body { font-family: Arial, sans-serif; background:#e0f7fa; margin:0; padding:0; display:flex; justify-content:center; align-items:center; height:100vh; }
 .container { background:#fff; padding:30px; border-radius:12px; box-shadow:0 8px 20px rgba(0,0,0,0.1); width:350px; }
@@ -52,8 +52,8 @@ a { color:#0288d1; cursor:pointer; text-decoration:underline; }
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-import { v4 as uuidv4 } from 'https://jspm.dev/uuid';
 
+// --- مفتاح Supabase ---
 const supabaseUrl = "https://vkativialsvvbifhjrey.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3MzY3OTEwNX0.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0";
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -63,10 +63,11 @@ const signUpForm = document.getElementById('signUpForm');
 const showSignUp = document.getElementById('showSignUp');
 const showLogin = document.getElementById('showLogin');
 
+// تبديل النماذج
 showSignUp.addEventListener('click', ()=>{ loginForm.classList.add('hidden'); signUpForm.classList.remove('hidden'); });
 showLogin.addEventListener('click', ()=>{ signUpForm.classList.add('hidden'); loginForm.classList.remove('hidden'); });
 
-// تسجيل الدخول
+// --- تسجيل الدخول ---
 loginForm.addEventListener('submit', async e=>{
   e.preventDefault();
   const email = document.getElementById('loginEmail').value;
@@ -74,31 +75,35 @@ loginForm.addEventListener('submit', async e=>{
   const role = document.getElementById('loginRole').value;
 
   try {
-    const { data: { user }, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if(error) throw error;
+    if(!data.user) return alert('المستخدم غير موجود');
 
-    let { data: profile } = await supabase.from('users').select('*').eq('id', user.id).single();
+    // جلب بيانات المستخدم من جدول users
+    const { data: userRecord, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', data.user.id)
+      .single();
+    if(userError) throw userError;
+    if(!userRecord) return alert('المستخدم غير موجود في جدول المستخدمين');
 
-    // إذا مندوب قديم بدون UUID
-    if(role==='agent' && !profile.agent_uuid){
-      const newUuid = uuidv4();
-      await supabase.from('users').update({ agent_uuid: newUuid }).eq('id', user.id);
-      profile.agent_uuid = newUuid;
-    }
+    if(userRecord.role !== role) return alert('الدور لا يتطابق مع الحساب!');
 
-    if(profile.role !== role) return alert('الدور لا يتطابق مع الحساب!');
+    alert('تم تسجيل الدخول بنجاح');
 
     // إعادة التوجيه حسب الدور
     if(role==='admin') window.location.href='admin.html';
     else if(role==='supervisor') window.location.href='supervisor.html';
     else if(role==='agent') window.location.href='agent.html';
-  } catch(err){
+
+  } catch(err) {
     console.error(err);
-    alert('خطأ: '+err.message);
+    alert('خطأ في تسجيل الدخول: '+err.message);
   }
 });
 
-// إنشاء حساب جديد
+// --- إنشاء حساب جديد ---
 signUpForm.addEventListener('submit', async e=>{
   e.preventDefault();
   const email = document.getElementById('signUpEmail').value;
@@ -106,20 +111,32 @@ signUpForm.addEventListener('submit', async e=>{
   const role = document.getElementById('signUpRole').value;
 
   try {
-    const { data: { user }, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({ email, password });
     if(error) throw error;
+    if(!data.user) return alert('فشل إنشاء الحساب');
 
-    const agentUuid = role==='agent' ? uuidv4() : null;
+    // لكل مندوب جديد، نضيف UUID
+    let agent_uuid = null;
+    if(role==='agent'){
+      agent_uuid = crypto.randomUUID(); // توليد معرف فريد
+    }
 
-    await supabase.from('users').insert({ id: user.id, email, role, agent_uuid: agentUuid });
+    // حفظ بيانات إضافية في جدول users
+    await supabase.from('users').upsert([{
+      id: data.user.id,
+      email: email,
+      role: role,
+      agent_uuid: agent_uuid
+    }]);
 
     alert('تم إنشاء الحساب بنجاح');
     signUpForm.classList.add('hidden');
     loginForm.classList.remove('hidden');
-    document.getElementById('loginEmail').value=email;
-  } catch(err){
+    document.getElementById('loginEmail').value = email;
+
+  } catch(err) {
     console.error(err);
-    alert('خطأ: '+err.message);
+    alert('خطأ في إنشاء الحساب: '+err.message);
   }
 });
 </script>
