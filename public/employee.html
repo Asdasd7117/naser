@@ -26,18 +26,19 @@
   </form>
 
   <script>
-    // 🔑 بيانات Supabase (بدلهم بمشروعك)
+    // 🔑 بيانات Supabase
     const SUPABASE_URL = "https://ncjxqfwwswikedaffif.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janhxZnF3c3d3aWtlZGFmZmlmIiwicm9sZSI6InJvbGUiLCJpYXQiOjE3NTc4NDEwNzQsImV4cCI6MjA3MzQxNzA3NH0.lZCcHkDqW7Xhy_yP8P9dxY6U1KFeLrNJSugRMTi4JtU";
 
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // ✅ التصحيح هنا: نستخدم createClient من المكتبة وليس من متغير بنفس الاسم
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // 📌 عرّف المستخدم الحالي (المفروض يجي من تسجيل الدخول)
-    const currentUserId = "delegate-123"; // غيّره للقيمة الفعلية لو عندك auth
+    // 📌 المستخدم الحالي (مؤقت)
+    const currentUserId = "delegate-123"; 
 
     // 🟢 تحميل المهام
     async function loadTasks() {
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from("tasks")
         .select("*")
         .eq("user_id", currentUserId);
@@ -52,14 +53,14 @@
       data.forEach(task => {
         const card = document.createElement("div");
         card.className = "card";
-        card.innerHTML = `<b>${task.title}</b><br>${task.description}`;
+        card.innerHTML = `<b>${task.title || "مهمة"}</b><br>${task.description || ""}`;
         tasksDiv.appendChild(card);
       });
     }
 
-    // 🟢 تحميل الإشعارات (جماعية)
+    // 🟢 تحميل الإشعارات
     async function loadNotifications() {
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from("notifications")
         .select("*")
         .order("created_at", { ascending: false });
@@ -74,17 +75,17 @@
       data.forEach(noti => {
         const card = document.createElement("div");
         card.className = "card";
-        card.textContent = noti.message;
+        card.textContent = noti.message || "إشعار";
         notiDiv.appendChild(card);
       });
     }
 
-    // 🟢 إرسال تقرير (id يتولد تلقائي من القاعدة)
+    // 🟢 إرسال تقرير
     document.getElementById("reportForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const reportText = document.getElementById("reportText").value;
 
-      const { error } = await supabase
+      const { error } = await client
         .from("reports")
         .insert([{ text: reportText, user_id: currentUserId }]);
 
@@ -97,7 +98,7 @@
       }
     });
 
-    // ⏳ تحميل أولي
+    // 🚀 تشغيل أولي
     loadTasks();
     loadNotifications();
   </script>
