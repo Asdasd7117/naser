@@ -26,10 +26,10 @@ button:hover { background:#0277bd; }
 <div class="container">
   <h2>لوحة المندوب</h2>
   <nav>
-    <button id="tasksTab" class="active">مهامي</button>
-    <button id="notificationsTab">الإشعارات</button>
-    <button id="reportTab">رفع تقرير</button>
-    <button id="mapTab">خريطة المهام</button>
+    <button data-tab="tasksSection" class="tabBtn active">مهامي</button>
+    <button data-tab="notificationsSection" class="tabBtn">الإشعارات</button>
+    <button data-tab="reportSection" class="tabBtn">رفع تقرير</button>
+    <button data-tab="mapSection" class="tabBtn">خريطة المهام</button>
   </nav>
 
   <!-- المهام -->
@@ -70,46 +70,39 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 import L from 'https://unpkg.com/leaflet/dist/leaflet.js';
 
 const supabaseUrl = "https://vkativialsvvbifhjrey.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpZVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3MzY3OTEwNX0.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0";
+const supabaseKey = "YOUR_KEY_HERE";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // معرف المندوب بعد تسجيل الدخول
-let agentId = localStorage.getItem('agentId'); 
+let agentId = localStorage.getItem('agentId');
 if(!agentId) alert('خطأ: معرف المندوب غير موجود');
 
-// تبويبات
-const tabs = {
-  tasks: 'tasksSection',
-  notifications: 'notificationsSection',
-  report: 'reportSection',
-  map: 'mapSection'
-};
-
-Object.keys(tabs).forEach(key => {
-  const tabBtn = document.getElementById(key + 'Tab');
-  tabBtn.addEventListener('click', () => {
-    Object.values(tabs).forEach(sectionId => document.getElementById(sectionId).classList.remove('active'));
-    Object.keys(tabs).forEach(k => document.getElementById(k + 'Tab').classList.remove('active'));
-    document.getElementById(tabs[key]).classList.add('active');
-    tabBtn.classList.add('active');
-    if (key==='map') loadMap();
+// --- التبويبات ---
+const tabBtns = document.querySelectorAll('.tabBtn');
+tabBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = btn.dataset.tab;
+    document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+    document.getElementById(target).classList.add('active');
+    tabBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if(target==='mapSection') loadMap();
   });
 });
 
-// تحميل مهام المندوب
-async function loadTasks(){
+// --- تحميل المهام ---
+async function loadTasks() {
   const { data: tasks } = await supabase.from('tasks').select('*').eq('assigned_to', agentId);
   const tbody = document.getElementById('tasksTableBody');
-  tbody.innerHTML='';
+  tbody.innerHTML = '';
   tasks.forEach(t=>{
     const tr = document.createElement('tr');
     tr.innerHTML=`<td>${t.client_name}</td><td>${t.client_address}</td><td>${t.visit_time}</td><td>${t.status}</td>`;
     tbody.appendChild(tr);
   });
-
   // قائمة رفع التقرير
   const taskSelect = document.getElementById('taskSelect');
-  taskSelect.innerHTML='';
+  taskSelect.innerHTML = '';
   tasks.forEach(t=>{
     const opt = document.createElement('option');
     opt.value = t.id;
@@ -118,19 +111,19 @@ async function loadTasks(){
   });
 }
 
-// تحميل الإشعارات الخاصة بالمندوب
-async function loadNotifications(){
-  const { data: notes } = await supabase.from('notifications').select('*').eq('user_id', agentId).order('created_at',{ascending:false});
+// --- تحميل الإشعارات ---
+async function loadNotifications() {
+  const { data: notes } = await supabase.from('notifications').select('*').eq('user_id', agentId).order('created_at', {ascending:false});
   const ul = document.getElementById('notificationsList');
-  ul.innerHTML='';
-  notes.forEach(n=>{
+  ul.innerHTML = '';
+  notes.forEach(n => {
     const li = document.createElement('li');
     li.textContent = n.message;
     ul.appendChild(li);
   });
 }
 
-// رفع تقرير
+// --- رفع تقرير ---
 document.getElementById('reportForm').addEventListener('submit', async e=>{
   e.preventDefault();
   const taskId = document.getElementById('taskSelect').value;
@@ -149,13 +142,13 @@ document.getElementById('reportForm').addEventListener('submit', async e=>{
   e.target.reset();
 });
 
-// الخريطة
+// --- خريطة المهام ---
 let map;
-async function loadMap(){
+async function loadMap() {
   if(!map){
     map = L.map('map').setView([30.0444,31.2357],12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-      attribution:'&copy; OpenStreetMap contributors'
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
   }
   const { data: tasks } = await supabase.from('tasks').select('*').eq('assigned_to', agentId);
@@ -167,10 +160,11 @@ async function loadMap(){
   });
 }
 
-// تحميل البيانات عند البداية
+// --- تحميل البيانات عند البداية ---
 loadTasks();
 loadNotifications();
 loadMap();
+
 </script>
 </body>
 </html>
