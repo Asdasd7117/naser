@@ -3,150 +3,159 @@
 <head>
 <meta charset="UTF-8">
 <title>لوحة المندوب</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <style>
-body { font-family: Arial, sans-serif; background:#e0f7fa; margin:0; padding:0; }
-.container { max-width: 1000px; margin:20px auto; padding:20px; background:#fff; border-radius:12px; box-shadow:0 8px 20px rgba(0,0,0,0.1);}
-h2 { text-align:center; color:#0277bd; margin-bottom:20px; }
-section { margin-bottom:30px; padding:15px; background:#f1f8e9; border-radius:10px;}
-table { width:100%; border-collapse: collapse; margin-top:10px;}
-th, td { border:1px solid #ccc; padding:8px; text-align:center;}
-button { padding:5px 10px; margin:2px; border:none; border-radius:6px; cursor:pointer;}
-button.complete { background:#4caf50; color:#fff;}
-button.delay { background:#ff9800; color:#fff;}
-button.delete { background:#e53935; color:#fff;}
-#notifications { max-height:200px; overflow-y:auto; border:1px solid #ccc; padding:10px; border-radius:6px; background:#fff;}
-#map { height:300px; width:100%; border-radius:12px; margin-top:10px;}
+body { font-family: Arial; margin:0; padding:0; background:#e0f7fa; }
+.container { max-width:1000px; margin:20px auto; padding:20px; }
+h2 { text-align:center; color:#0277bd; }
+nav { display:flex; gap:15px; justify-content:center; margin-bottom:20px; }
+nav button { padding:10px 15px; border:none; border-radius:6px; background:#4dd0e1; cursor:pointer; }
+nav button.active { background:#0288d1; color:#fff; }
+section { display:none; margin-bottom:30px; padding:15px; background:#fff; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.1);}
+section.active { display:block; }
+table { width:100%; border-collapse: collapse; margin-top:10px; }
+table, th, td { border:1px solid #ccc; }
+th, td { padding:8px; text-align:center; }
+input, select, button, textarea { padding:8px; margin:5px 0; border-radius:6px; border:1px solid #ccc; }
+button { background:#0288d1; color:#fff; cursor:pointer; }
+button:hover { background:#0277bd; }
+#map { height:400px; width:100%; margin-top:15px; }
 </style>
 </head>
 <body>
 <div class="container">
-<h2>لوحة المندوب</h2>
+  <h2>لوحة المندوب</h2>
+  <nav>
+    <button id="tasksTab" class="active">مهامي</button>
+    <button id="notificationsTab">الإشعارات</button>
+    <button id="reportTab">رفع تقرير</button>
+    <button id="mapTab">خريطة المهام</button>
+  </nav>
 
-<section>
-<h3>المهام الخاصة بك</h3>
-<table>
-<thead>
-<tr>
-<th>العميل</th>
-<th>العنوان</th>
-<th>الوقت</th>
-<th>الحالة</th>
-<th>إجراءات</th>
-</tr>
-</thead>
-<tbody id="tasksBody"></tbody>
-</table>
-</section>
+  <!-- المهام -->
+  <section id="tasksSection" class="active">
+    <h3>مهامي الحالية</h3>
+    <table>
+      <thead><tr><th>العميل</th><th>العنوان</th><th>الوقت</th><th>الحالة</th></tr></thead>
+      <tbody id="tasksTableBody"></tbody>
+    </table>
+  </section>
 
-<section>
-<h3>الإشعارات</h3>
-<div id="notifications"></div>
-</section>
+  <!-- الإشعارات -->
+  <section id="notificationsSection">
+    <h3>الإشعارات</h3>
+    <ul id="notificationsList"></ul>
+  </section>
 
-<section>
-<h3>التقارير المختصرة</h3>
-<p>المهام المكتملة: <span id="completedCount">0</span></p>
-<p>المهام المؤجلة: <span id="delayedCount">0</span></p>
-<p>نسبة الإنجاز: <span id="percentDone">0%</span></p>
-</section>
+  <!-- رفع تقرير -->
+  <section id="reportSection">
+    <h3>رفع تقرير المهمة</h3>
+    <form id="reportForm">
+      <select id="taskSelect" required></select>
+      <textarea id="reportText" placeholder="اكتب تقريرك هنا..." required></textarea>
+      <input type="file" id="reportImage" accept="image/*" required>
+      <button type="submit">رفع التقرير</button>
+    </form>
+  </section>
 
-<section>
-<h3>خريطة موقع العميل</h3>
-<div id="map"></div>
-</section>
+  <!-- خريطة المهام -->
+  <section id="mapSection">
+    <h3>خريطة المهام</h3>
+    <div id="map"></div>
+  </section>
+</div>
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+import L from 'https://unpkg.com/leaflet/dist/leaflet.js';
 
 const supabaseUrl = "https://vkativialsvvbifhjrey.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3MzY3OTEwNX0.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpZVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3MzY3OTEwNX0.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-const agentUUID = localStorage.getItem('agent_uuid');
-if(!agentUUID) { alert('لم يتم العثور على UUID للمندوب!'); window.location.href='login.html'; }
+// معرف المندوب بعد تسجيل الدخول
+let agentId = localStorage.getItem('agentId'); // افترض أنه مخزن عند تسجيل الدخول
+if(!agentId) alert('خطأ: معرف المندوب غير موجود');
 
-const tasksBody = document.getElementById('tasksBody');
-const notificationsDiv = document.getElementById('notifications');
-const completedCountEl = document.getElementById('completedCount');
-const delayedCountEl = document.getElementById('delayedCount');
-const percentDoneEl = document.getElementById('percentDone');
-
-// --- تحميل المهام ---
-async function loadTasks(){
-  const { data: tasks, error } = await supabase.from('tasks').select('*').eq('assigned_to', agentUUID);
-  if(error) return console.error(error);
-
-  tasksBody.innerHTML='';
-  let completed = 0, delayed = 0;
-  tasks.forEach(t=>{
-    if(t.status==='completed') completed++;
-    if(t.status==='delayed') delayed++;
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${t.client_name}</td>
-      <td>${t.client_address}</td>
-      <td>${t.visit_time}</td>
-      <td>${t.status}</td>
-      <td>
-        <button class="complete" data-id="${t.id}">تم الانجاز</button>
-        <button class="delay" data-id="${t.id}">مؤجل</button>
-        <button class="delete" data-id="${t.id}">حذف</button>
-      </td>
-    `;
-    tasksBody.appendChild(tr);
+// التنقل بين الأقسام
+const tabs = { tasks:'tasksSection', notifications:'notificationsSection', report:'reportSection', map:'mapSection' };
+Object.keys(tabs).forEach(key=>{
+  document.getElementById(key+'Tab').addEventListener('click', ()=>{
+    Object.values(tabs).forEach(s=>document.getElementById(s).classList.remove('active'));
+    document.getElementById(tabs[key]).classList.add('active');
+    Object.keys(tabs).forEach(k=>document.getElementById(k+'Tab').classList.remove('active'));
+    document.getElementById(key+'Tab').classList.add('active');
+    if(key==='map') loadMap();
   });
-
-  const total = tasks.length;
-  const percent = total ? Math.round((completed/total)*100) : 0;
-  completedCountEl.textContent = completed;
-  delayedCountEl.textContent = delayed;
-  percentDoneEl.textContent = percent + '%';
-}
-
-// --- تغيير حالة المهمة ---
-tasksBody.addEventListener('click', async e=>{
-  const id = e.target.dataset.id;
-  if(!id) return;
-
-  if(e.target.classList.contains('complete')){
-    await supabase.from('tasks').update({ status:'completed' }).eq('id', id);
-  } else if(e.target.classList.contains('delay')){
-    await supabase.from('tasks').update({ status:'delayed' }).eq('id', id);
-  } else if(e.target.classList.contains('delete')){
-    if(confirm('هل أنت متأكد من حذف المهمة؟')){
-      await supabase.from('tasks').delete().eq('id', id);
-    } else return;
-  }
-  loadTasks();
-  loadNotifications();
 });
 
-// --- تحميل الإشعارات ---
+// تحميل مهام المندوب
+async function loadTasks(){
+  const { data: tasks } = await supabase.from('tasks').select('*').eq('assigned_to', agentId);
+  const tbody=document.getElementById('tasksTableBody');
+  tbody.innerHTML='';
+  tasks.forEach(t=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${t.client_name}</td><td>${t.client_address}</td><td>${t.visit_time}</td><td>${t.status}</td>`;
+    tbody.appendChild(tr);
+  });
+  // ملء قائمة رفع التقرير
+  const taskSelect=document.getElementById('taskSelect');
+  taskSelect.innerHTML='';
+  tasks.forEach(t=>{ const opt=document.createElement('option'); opt.value=t.id; opt.text=t.client_name; taskSelect.appendChild(opt); });
+}
+
+// تحميل الإشعارات
 async function loadNotifications(){
-  const { data: notes, error } = await supabase.from('notifications').select('*').eq('user_id', agentUUID).order('created_at', {ascending:false});
-  if(error) return console.error(error);
-  notificationsDiv.innerHTML='';
+  const { data: notes } = await supabase.from('notifications').select('*').eq('user_id', agentId).order('created_at',{ascending:false});
+  const ul=document.getElementById('notificationsList');
+  ul.innerHTML='';
   notes.forEach(n=>{
-    const p = document.createElement('p');
-    p.textContent = n.message + ' (' + new Date(n.created_at).toLocaleString() + ')';
-    notificationsDiv.appendChild(p);
+    const li=document.createElement('li'); li.textContent=n.message; ul.appendChild(li);
   });
 }
 
-// --- تحميل خريطة العميل (مثال لخريطة القاهرة) ---
-function loadMap(){
-  const mapDiv = document.getElementById('map');
-  mapDiv.innerHTML='';
-  const iframe = document.createElement('iframe');
-  iframe.width='100%';
-  iframe.height='300';
-  iframe.style.border='0';
-  iframe.src='https://maps.google.com/maps?q=Cairo&t=&z=12&ie=UTF8&iwloc=&output=embed';
-  mapDiv.appendChild(iframe);
+// رفع تقرير
+document.getElementById('reportForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const taskId=document.getElementById('taskSelect').value;
+  const reportText=document.getElementById('reportText').value;
+  const file=document.getElementById('reportImage').files[0];
+  if(!file) return alert('اختر صورة');
+
+  // رفع الصورة إلى Supabase Storage
+  const fileExt = file.name.split('.').pop();
+  const fileName = `reports/${taskId}_${Date.now()}.${fileExt}`;
+  const { data, error } = await supabase.storage.from('reports').upload(fileName, file);
+  if(error) return alert('خطأ رفع الصورة: '+error.message);
+
+  const imageUrl = `https://vkativialsvvbifhjrey.supabase.co/storage/v1/object/public/reports/${fileName}`;
+
+  // حفظ التقرير
+  await supabase.from('reports').insert([{ task_id:taskId, agent_id:agentId, report_text:reportText, image_url:imageUrl }]);
+  alert('تم رفع التقرير بنجاح');
+  document.getElementById('reportForm').reset();
+});
+
+// الخريطة
+let map;
+async function loadMap(){
+  if(!map){
+    map=L.map('map').setView([30.0444,31.2357],12); // القاهرة
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      attribution:'&copy; OpenStreetMap contributors'
+    }).addTo(map);
+  }
+  const { data: tasks } = await supabase.from('tasks').select('*').eq('assigned_to', agentId);
+  map.eachLayer(l=>{ if(l instanceof L.Marker) map.removeLayer(l); });
+  tasks.forEach(t=>{
+    if(t.client_address){ 
+      L.marker([30.0444,31.2357]).addTo(map).bindPopup(`${t.client_name}<br>${t.client_address}`);
+    }
+  });
 }
 
-// --- تحميل كل البيانات عند البداية ---
+// تحميل البيانات عند البداية
 loadTasks();
 loadNotifications();
 loadMap();
