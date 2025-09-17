@@ -139,13 +139,13 @@ async function loadReports(){
   const tbody = document.getElementById('reportsTableBody')
   tbody.innerHTML = ''
   users.forEach(u=>{
-    const userTasks = tasks.filter(t=>t.assigned_to===u.id)
+    const userTasks = tasks.filter(t=>t.assigned_to===u.agent_uuid)
     const completed = userTasks.filter(t=>t.status==='completed').length
     const delayed = userTasks.filter(t=>t.status==='delayed').length
     const total = userTasks.length
     const percent = total ? Math.round((completed/total)*100) : 0
     const tr = document.createElement('tr')
-    tr.innerHTML = `<td>${u.email_or_phone}</td><td>${completed}</td><td>${delayed}</td><td>${percent}%</td>`
+    tr.innerHTML = `<td>${u.email}</td><td>${completed}</td><td>${delayed}</td><td>${percent}%</td>`
     tbody.appendChild(tr)
   })
 }
@@ -157,13 +157,13 @@ async function loadAttendance(){
   const container = document.getElementById('attendanceCards')
   container.innerHTML = ''
   users.forEach(u=>{
-    const record = attendance.find(a=>a.user_id===u.id)
+    const record = attendance.find(a=>a.user_id===u.agent_uuid)
     const loginTime = record?.login_time || 'غير موجود'
     const logoutTime = record?.logout_time || 'غير موجود'
     const card = document.createElement('div')
     card.className = 'card'
     if(!record) card.classList.add('red')
-    card.innerHTML = `<strong>${u.email_or_phone}</strong><br>دخول: ${loginTime}<br>خروج: ${logoutTime}`
+    card.innerHTML = `<strong>${u.email}</strong><br>دخول: ${loginTime}<br>خروج: ${logoutTime}`
     container.appendChild(card)
   })
 }
@@ -175,7 +175,7 @@ async function loadAgents(){
   select.innerHTML='<option value="">اختر مندوب</option>'
   agents.forEach(a=>{
     const opt = document.createElement('option')
-    opt.value = a.id; opt.text = a.email_or_phone
+    opt.value = a.agent_uuid; opt.text = a.email
     select.appendChild(opt)
   })
 }
@@ -187,13 +187,13 @@ async function loadTasks(){
   const tbody = document.getElementById('tasksTableBody')
   tbody.innerHTML = ''
   tasks.forEach(t=>{
-    const agent = agents.find(a=>a.id===t.assigned_to)
+    const agent = agents.find(a=>a.agent_uuid===t.assigned_to)
     const tr = document.createElement('tr')
     tr.innerHTML = `
       <td>${t.client_name}</td>
       <td>${t.client_address}</td>
       <td>${t.visit_time}</td>
-      <td>${agent?.email_or_phone||'-'}</td>
+      <td>${agent?.email||'-'}</td>
       <td>${t.status}</td>
       <td>
         <button class="deleteBtn" data-id="${t.id}">حذف</button>
@@ -236,7 +236,7 @@ document.getElementById('sendNotificationBtn').addEventListener('click', async (
   if(!message) return alert('أدخل الرسالة')
   const { data: agents } = await supabase.from('users').select('*').eq('role','agent')
   for(const a of agents){
-    await supabase.from('notifications').insert([{ user_id: a.id, message }])
+    await supabase.from('notifications').insert([{ user_id: a.agent_uuid, message }])
   }
   alert('تم إرسال الإشعار لجميع المندوبين')
   document.getElementById('notificationMessage').value=''
