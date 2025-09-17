@@ -3,188 +3,216 @@
 <head>
 <meta charset="UTF-8">
 <title>لوحة المدير</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <style>
-body { font-family: Arial,sans-serif; margin:0; padding:0; background:#e0f7fa; }
+body { font-family: Arial; margin:0; padding:0; background:#e0f7fa; }
 .container { max-width:1200px; margin:20px auto; padding:20px; }
 h2 { text-align:center; color:#0277bd; }
-section { margin-bottom:30px; padding:15px; background:#fff; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.1);}
-.cards { display:flex; flex-wrap:wrap; gap:15px; }
-.card { flex:1 1 200px; padding:15px; border-radius:10px; background:#b3e5fc; box-shadow:0 3px 8px rgba(0,0,0,0.1);}
-.card.red { background:#ffcdd2; } 
-.card.yellow { background:#fff9c4; }
-.card.green { background:#c8e6c9; }
-button { padding:10px 15px; background:#0288d1; color:#fff; border:none; border-radius:8px; cursor:pointer; margin-top:10px;}
-button:hover { background:#0277bd; }
+nav { display:flex; gap:15px; justify-content:center; margin-bottom:20px; }
+nav button { padding:10px 15px; border:none; border-radius:6px; background:#4dd0e1; cursor:pointer; }
+nav button.active { background:#0288d1; color:#fff; }
+section { display:none; margin-bottom:30px; padding:15px; background:#fff; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.1);}
+section.active { display:block; }
 table { width:100%; border-collapse: collapse; margin-top:10px; }
 table, th, td { border:1px solid #ccc; }
 th, td { padding:8px; text-align:center; }
-nav { display:flex; gap:15px; margin-bottom:20px; justify-content:center;}
-nav button { background:#4dd0e1; }
-nav button.active { background:#0288d1; color:#fff; }
-.hidden { display:none; }
-input, select { padding:8px; margin:5px 0; width:100%; border-radius:6px; border:1px solid #ccc; }
-.deleteBtn { background:#e53935 !important; margin-left:5px; }
-.deleteBtn:hover { background:#c62828 !important; }
+input, select, button { padding:8px; margin:5px 0; border-radius:6px; border:1px solid #ccc; }
+button { background:#0288d1; color:#fff; cursor:pointer; }
+button:hover { background:#0277bd; }
+.deleteBtn { background:#e53935 !important; }
+#map { height:400px; width:100%; margin-top:15px; }
 </style>
 </head>
 <body>
 <div class="container">
-<h2>لوحة المدير / الموارد البشرية</h2>
+  <h2>لوحة المدير</h2>
+  <nav>
+    <button id="tasksTab" class="active">المهام</button>
+    <button id="reportsTab">التقارير</button>
+    <button id="attendanceTab">الحضور</button>
+    <button id="mapTab">خريطة العملاء</button>
+  </nav>
 
-<nav>
-<button id="reportsTab" class="active">التقارير والتحليلات</button>
-<button id="controlTab">لوحة التحكم</button>
-</nav>
+  <!-- المهام -->
+  <section id="tasksSection" class="active">
+    <h3>إدارة المهام</h3>
+    <form id="taskForm">
+      <input type="text" id="clientName" placeholder="اسم العميل" required>
+      <input type="text" id="clientAddress" placeholder="عنوان العميل" required>
+      <input type="time" id="visitTime" required>
+      <select id="assignedTo" required></select>
+      <button type="submit">حفظ المهمة</button>
+    </form>
 
-<!-- التقارير والتحليلات -->
-<section id="reportsSection">
-<h3>التقارير والتحليلات</h3>
-<table>
-<thead>
-<tr>
-<th>المندوب</th>
-<th>المهام المكتملة</th>
-<th>المهام المؤجلة</th>
-<th>نسبة الإنجاز</th>
-</tr>
-</thead>
-<tbody id="reportsTableBody"></tbody>
-</table>
-</section>
+    <h4>المهام الحالية</h4>
+    <table>
+      <thead><tr><th>العميل</th><th>العنوان</th><th>الوقت</th><th>المندوب</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+      <tbody id="tasksTableBody"></tbody>
+    </table>
 
-<!-- لوحة التحكم -->
-<section id="controlSection" class="hidden">
-<h3>إدارة المهام والمندوبين</h3>
+    <h4>إرسال إشعارات جماعية</h4>
+    <input type="text" id="notificationMessage" placeholder="رسالة الإشعار">
+    <button id="sendNotificationBtn">إرسال إشعار</button>
+  </section>
 
-<form id="taskForm">
-<input type="text" id="clientName" placeholder="اسم العميل" required>
-<input type="text" id="clientAddress" placeholder="عنوان العميل" required>
-<input type="time" id="visitTime" required>
-<select id="assignedTo" required>
-<option value="">اختر مندوب</option>
-</select>
-<button type="submit">حفظ المهمة</button>
-</form>
+  <!-- التقارير -->
+  <section id="reportsSection">
+    <h3>التقارير</h3>
+    <table>
+      <thead><tr><th>المندوب</th><th>المهام المكتملة</th><th>المهام المؤجلة</th><th>نسبة الإنجاز</th></tr></thead>
+      <tbody id="reportsTableBody"></tbody>
+    </table>
+  </section>
 
-<h4>المهام الحالية</h4>
-<table>
-<thead>
-<tr>
-<th>العميل</th>
-<th>العنوان</th>
-<th>الوقت</th>
-<th>المندوب</th>
-<th>الحالة</th>
-<th>إجراءات</th>
-</tr>
-</thead>
-<tbody id="tasksTableBody"></tbody>
-</table>
-</section>
+  <!-- الحضور -->
+  <section id="attendanceSection">
+    <h3>الحضور والانصراف</h3>
+    <table>
+      <thead><tr><th>المندوب</th><th>وقت الدخول</th><th>وقت الخروج</th></tr></thead>
+      <tbody id="attendanceTableBody"></tbody>
+    </table>
+  </section>
+
+  <!-- خريطة العملاء -->
+  <section id="mapSection">
+    <h3>خريطة العملاء</h3>
+    <div id="map"></div>
+  </section>
 </div>
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+import L from 'https://unpkg.com/leaflet/dist/leaflet.js';
 
 const supabaseUrl = "https://vkativialsvvbifhjrey.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3MzY3OTEwNX0.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpZVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3MzY3OTEwNX0.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// --- التنقل بين الأقسام ---
-const reportsTab = document.getElementById('reportsTab')
-const controlTab = document.getElementById('controlTab')
-const reportsSection = document.getElementById('reportsSection')
-const controlSection = document.getElementById('controlSection')
+// تنقل الأقسام
+const tabs = { tasks:'tasksSection', reports:'reportsSection', attendance:'attendanceSection', map:'mapSection' };
+Object.keys(tabs).forEach(key=>{
+  document.getElementById(key+'Tab').addEventListener('click', ()=>{
+    Object.values(tabs).forEach(s=>document.getElementById(s).classList.remove('active'));
+    document.getElementById(tabs[key]).classList.add('active');
+    Object.keys(tabs).forEach(k=>document.getElementById(k+'Tab').classList.remove('active'));
+    document.getElementById(key+'Tab').classList.add('active');
+    if(key==='map') loadMap();
+  });
+});
 
-reportsTab.addEventListener('click', ()=> { reportsSection.classList.remove('hidden'); controlSection.classList.add('hidden'); reportsTab.classList.add('active'); controlTab.classList.remove('active'); });
-controlTab.addEventListener('click', ()=> { controlSection.classList.remove('hidden'); reportsSection.classList.add('hidden'); controlTab.classList.add('active'); reportsTab.classList.remove('active'); });
-
-// --- تحميل المندوبين للقائمة ---
+// تحميل المندوبين للقائمة
 async function loadAgents(){
   const { data: agents } = await supabase.from('users').select('*').eq('role','agent');
   const select = document.getElementById('assignedTo');
-  select.innerHTML = '<option value="">اختر مندوب</option>';
-  agents.forEach(a=>{
-    const opt = document.createElement('option');
-    opt.value = a.id; opt.text = a.email_or_phone;
-    select.appendChild(opt);
-  });
+  select.innerHTML='<option value="">اختر مندوب</option>';
+  agents.forEach(a=>{ const opt=document.createElement('option'); opt.value=a.id; opt.text=a.email_or_phone; select.appendChild(opt); });
   return agents;
 }
 
-// --- تحميل المهام ---
+// تحميل المهام
 async function loadTasks(){
   const { data: tasks } = await supabase.from('tasks').select('*');
   const agents = await loadAgents();
-  const tbody = document.getElementById('tasksTableBody');
-  tbody.innerHTML = '';
+  const tbody=document.getElementById('tasksTableBody');
+  tbody.innerHTML='';
   tasks.forEach(t=>{
-    const agent = agents.find(a=>a.id===t.assigned_to);
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${t.client_name}</td>
-      <td>${t.client_address}</td>
-      <td>${t.visit_time}</td>
-      <td>${agent?.email_or_phone||'-'}</td>
-      <td>${t.status}</td>
-      <td><button class="deleteBtn" data-id="${t.id}">حذف</button></td>
-    `;
+    const agent=agents.find(a=>a.id===t.assigned_to);
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${t.client_name}</td><td>${t.client_address}</td><td>${t.visit_time}</td><td>${agent?.email_or_phone||'-'}</td><td>${t.status}</td>
+    <td><button class="deleteBtn" data-id="${t.id}">حذف</button></td>`;
     tbody.appendChild(tr);
   });
 }
 
-// --- حذف مهمة ---
-document.getElementById('tasksTableBody').addEventListener('click', async e=>{
-  if(e.target.classList.contains('deleteBtn')){
-    const taskId = e.target.dataset.id;
-    if(confirm('هل أنت متأكد من حذف المهمة؟')){
-      await supabase.from('tasks').delete().eq('id', taskId);
-      loadTasks();
-      loadReports();
-    }
-  }
-});
-
-// --- إضافة مهمة ---
+// إضافة مهمة
 document.getElementById('taskForm').addEventListener('submit', async e=>{
   e.preventDefault();
-  const client_name = document.getElementById('clientName').value;
-  const client_address = document.getElementById('clientAddress').value;
-  const visit_time = document.getElementById('visitTime').value;
-  const assigned_to = document.getElementById('assignedTo').value;
+  const client_name=document.getElementById('clientName').value;
+  const client_address=document.getElementById('clientAddress').value;
+  const visit_time=document.getElementById('visitTime').value;
+  const assigned_to=document.getElementById('assignedTo').value;
   await supabase.from('tasks').insert([{ client_name, client_address, visit_time, assigned_to, status:'pending' }]);
   e.target.reset();
   loadTasks();
   loadReports();
+  loadMap();
 });
 
-// --- تحميل التقارير ---
+// حذف مهمة
+document.getElementById('tasksTableBody').addEventListener('click', async e=>{
+  if(e.target.classList.contains('deleteBtn')){
+    const id=e.target.dataset.id;
+    await supabase.from('tasks').delete().eq('id',id);
+    loadTasks(); loadReports(); loadMap();
+  }
+});
+
+// التقارير
 async function loadReports(){
   const { data: tasks } = await supabase.from('tasks').select('*');
   const { data: agents } = await supabase.from('users').select('*').eq('role','agent');
-  const tbody = document.getElementById('reportsTableBody');
-  tbody.innerHTML = '';
+  const tbody=document.getElementById('reportsTableBody');
+  tbody.innerHTML='';
   agents.forEach(u=>{
-    const userTasks = tasks.filter(t=>t.assigned_to===u.id);
-    const completed = userTasks.filter(t=>t.status==='completed').length;
-    const delayed = userTasks.filter(t=>t.status==='delayed').length;
-    const total = userTasks.length;
-    const percent = total ? Math.round((completed/total)*100) : 0;
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${u.email_or_phone}</td><td>${completed}</td><td>${delayed}</td><td>${percent}%</td>`;
+    const userTasks=tasks.filter(t=>t.assigned_to===u.id);
+    const completed=userTasks.filter(t=>t.status==='completed').length;
+    const delayed=userTasks.filter(t=>t.status==='delayed').length;
+    const total=userTasks.length;
+    const percent=total? Math.round((completed/total)*100):0;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${u.email_or_phone}</td><td>${completed}</td><td>${delayed}</td><td>${percent}%</td>`;
     tbody.appendChild(tr);
   });
 }
 
-// --- التحديث اللحظي عبر Realtime ---
-supabase.channel('realtime')
-  .on('postgres_changes',{ event:'*', schema:'public', table:'tasks' }, loadTasks)
-  .subscribe();
+// الحضور
+async function loadAttendance(){
+  const { data: attendance } = await supabase.from('attendance').select('*');
+  const { data: agents } = await supabase.from('users').select('*').eq('role','agent');
+  const tbody=document.getElementById('attendanceTableBody');
+  tbody.innerHTML='';
+  agents.forEach(u=>{
+    const rec=attendance.find(a=>a.user_id===u.id);
+    tbody.innerHTML+=`<tr><td>${u.email_or_phone}</td><td>${rec?.login_time||'-'}</td><td>${rec?.logout_time||'-'}</td></tr>`;
+  });
+}
 
-// --- التشغيل عند البداية ---
+// الإشعارات
+document.getElementById('sendNotificationBtn').addEventListener('click', async ()=>{
+  const msg=document.getElementById('notificationMessage').value;
+  if(!msg) return alert('أدخل الرسالة');
+  const { data: agents } = await supabase.from('users').select('*').eq('role','agent');
+  for(const a of agents){
+    await supabase.from('notifications').insert([{ user_id:a.id, message:msg }]);
+  }
+  alert('تم إرسال الإشعارات');
+  document.getElementById('notificationMessage').value='';
+});
+
+// خريطة العملاء
+let map;
+async function loadMap(){
+  if(!map){
+    map=L.map('map').setView([30.0444,31.2357],12); // القاهرة
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      attribution:'&copy; OpenStreetMap contributors'
+    }).addTo(map);
+  }
+  const { data: tasks } = await supabase.from('tasks').select('*');
+  map.eachLayer(l=>{ if(l instanceof L.Marker) map.removeLayer(l); });
+  tasks.forEach(t=>{
+    if(t.client_address){ 
+      L.marker([30.0444,31.2357]).addTo(map).bindPopup(`${t.client_name}<br>${t.client_address}`);
+    }
+  });
+}
+
+// تحميل البيانات عند البداية
 loadAgents();
 loadTasks();
 loadReports();
+loadAttendance();
+loadMap();
 
 </script>
 </body>
