@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>لوحة المدير / الموارد البشرية</title>
+<link rel="stylesheet" href="style.css">
+<style>
+body { font-family: Arial, sans-serif; background: #e0f7fa; margin: 0; padding: 0; }
+.container { max-width: 1200px; margin: 20px auto; padding: 20px; }
+h2 { text-align: center; color: #0277bd; }
+section { margin-bottom: 30px; padding: 15px; background: #fff; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);}
+.cards { display: flex; flex-wrap: wrap; gap: 15px; }
+.card { flex: 1 1 200px; padding: 15px; border-radius: 10px; background:#b3e5fc; box-shadow:0 3px 8px rgba(0,0,0,0.1);}
+.card.red { background:#ffcdd2; } 
+.card.yellow { background:#fff9c4; } 
+.card.green { background:#c8e6c9; }
+button { padding: 10px 15px; background:#0288d1; color:#fff; border:none; border-radius:8px; cursor:pointer; margin-top:10px;}
+button:hover { background:#0277bd; }
+table { width:100%; border-collapse: collapse; margin-top:10px; }
+table, th, td { border:1px solid #ccc; }
+th, td { padding:8px; text-align:center; }
+nav { display:flex; gap:15px; margin-bottom:20px; justify-content:center;}
+nav button { background:#4dd0e1; }
+nav button.active { background:#0288d1; color:#fff; }
+.hidden { display:none; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>لوحة المدير / الموارد البشرية</h2>
+
+  <!-- التنقل بين الأقسام -->
+  <nav>
+    <button id="reportsTab" class="active">التقارير والتحليلات</button>
+    <button id="attendanceTab">الحضور والانصراف</button>
+    <button id="controlTab">لوحة التحكم</button>
+  </nav>
+
+  <!-- التقارير والتحليلات -->
+  <section id="reportsSection">
+    <h3>التقارير والتحليلات</h3>
+    <label>تصفية حسب الفترة:
+      <select id="filterPeriod">
+        <option value="daily">يومي</option>
+        <option value="weekly">أسبوعي</option>
+        <option value="monthly">شهري</option>
+      </select>
+    </label>
+    <div id="reportsContainer">
+      <table>
+        <thead>
+          <tr>
+            <th>المندوب</th>
+            <th>المهام المكتملة</th>
+            <th>المهام المؤجلة</th>
+            <th>نسبة الإنجاز</th>
+          </tr>
+        </thead>
+        <tbody id="reportsTableBody">
+          <!-- البيانات ستظهر هنا -->
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- الحضور والانصراف -->
+  <section id="attendanceSection" class="hidden">
+    <h3>الحضور والانصراف</h3>
+    <div class="cards" id="attendanceCards">
+      <!-- بطاقات الحضور لكل مندوب -->
+    </div>
+  </section>
+
+  <!-- لوحة التحكم -->
+  <section id="controlSection" class="hidden">
+    <h3>إدارة المهام والمندوبين</h3>
+    <form id="taskForm">
+      <input type="text" id="clientName" placeholder="اسم العميل" required>
+      <input type="text" id="clientAddress" placeholder="عنوان العميل" required>
+      <input type="time" id="visitTime" required>
+      <select id="assignedTo" required>
+        <option value="">اختر مندوب</option>
+      </select>
+      <button type="submit">حفظ المهمة</button>
+    </form>
+
+    <h4>إرسال إشعارات جماعية</h4>
+    <input type="text" id="notificationMessage" placeholder="رسالة الإشعار">
+    <button id="sendNotificationBtn">إرسال إشعار</button>
+  </section>
+</div>
+
+<script type="module">
+import { supabase, subscribeTable, sendNotification } from './main.js'
+
+// --- التنقل بين الأقسام ---
+const reportsTab=document.getElementById('reportsTab')
+const attendanceTab=document.getElementById('attendanceTab')
+const controlTab=document.getElementById('controlTab')
+const reportsSection=document.getElementById('reportsSection')
+const attendanceSection=document.getElementById('attendanceSection')
+const controlSection=document.getElementById('controlSection')
+
+reportsTab.addEventListener('click',()=>{ showSection('reports') })
+attendanceTab.addEventListener('click',()=>{ showSection('attendance') })
+controlTab.addEventListener('click',()=>{ showSection('control') })
+
+function showSection(section){
+  reportsSection.classList.add('hidden')
+  attendanceSection.classList.add('hidden')
+  controlSection.classList.add('hidden')
+  reportsTab.classList.remove('active')
+  attendanceTab.classList.remove('active')
+  controlTab.classList.remove('active')
+
+  if(section==='reports'){ reportsSection.classList.remove('hidden'); reportsTab.classList.add('active') }
+  if(section==='attendance'){ attendanceSection.classList.remove('hidden'); attendanceTab.classList.add('active') }
+  if(section==='control'){ controlSection.classList.remove('hidden'); controlTab.classList.add('active') }
+}
+
+// --- التقارير والتحليلات ---
+async function loadReports(period='daily'){
+  const { data: tasks } = await supabase.from('tasks').select('*')
+  const { data: users } = await supabase.from('users').select('*').eq('role','agent')
+  const tbody=document.getElementById('reportsTableBody')
+  tbody.innerHTML=''
+  users.forEach(u=>{
+    const userTasks = tasks.filter(t=>t.assigned_to===u.id)
+    const completed = userTasks.filter(t=>t.status==='completed').length
+    const delayed = userTasks.filter(t=>t.status==='delayed').length
+    const total = userTasks.length
+    const percent = total? Math.round((completed/total)*100) : 0
+    const tr=document.createElement('tr')
+    tr.innerHTML=`<td>${u.email_or_phone}</td><td>${completed}</td><td>${delayed}</td><td>${percent}%</td>`
+    tbody.appendChild(tr)
+  })
+}
+
+// --- الحضور والانصراف ---
+async function loadAttendance(){
+  const { data: attendance } = await supabase.from('attendance').select('*')
+  const { data: users } = await supabase.from('users').select('*').eq('role','agent')
+  const container=document.getElementById('attendanceCards')
+  container.innerHTML=''
+  users.forEach(u=>{
+    const record = attendance.find(a=>a.user_id===u.id)
+    const loginTime = record?.login_time || 'غير موجود'
+    const logoutTime = record?.logout_time || 'غير موجود'
+    const card = document.createElement('div')
+    card.className='card'
+    if(!record) card.classList.add('red')
+    card.innerHTML=`<strong>${u.email_or_phone}</strong><br>دخول: ${loginTime}<br>خروج: ${logoutTime}`
+    container.appendChild(card)
+  })
+}
+
+// --- لوحة التحكم: جلب المندوبين ---
+async function loadAgents(){
+  const { data: agents } = await supabase.from('users').select('*').eq('role','agent')
+  const select = document.getElementById('assignedTo')
+  select.innerHTML='<option value="">اختر مندوب</option>'
+  agents.forEach(a=>{
+    const opt=document.createElement('option')
+    opt.value=a.id; opt.text=a.email_or_phone
+    select.appendChild(opt)
+  })
+}
+
+// --- إضافة مهمة ---
+document.getElementById('taskForm').addEventListener('submit', async (e)=>{
+  e.preventDefault()
+  const client_name=document.getElementById('clientName').value
+  const client_address=document.getElementById('clientAddress').value
+  const visit_time=document.getElementById('visitTime').value
+  const assigned_to=document.getElementById('assignedTo').value
+  await supabase.from('tasks').insert([{ client_name, client_address, visit_time, assigned_to, status:'pending' }])
+  e.target.reset()
+})
+
+// --- إرسال إشعار جماعي ---
+document.getElementById('sendNotificationBtn').addEventListener('click', async ()=>{
+  const message=document.getElementById('notificationMessage').value
+  const { data: agents } = await supabase.from('users').select('*').eq('role','agent')
+  agents.forEach(a=>sendNotification(a.id,message))
+  alert('تم إرسال الإشعار لجميع المندوبين')
+  document.getElementById('notificationMessage').value=''
+})
+
+// --- تحديث تلقائي ---
+subscribeTable('tasks',()=>{ loadReports(); loadAttendance() })
+subscribeTable('attendance', loadAttendance)
+
+loadReports()
+loadAttendance()
+loadAgents()
+</script>
+</body>
+</html>
