@@ -3,224 +3,185 @@
 <head>
 <meta charset="UTF-8">
 <title>لوحة المدير</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <style>
-body { font-family: Arial, sans-serif; background:#e0f7fa; margin:0; padding:0;}
-.container { max-width:1200px; margin:20px auto; padding:20px;}
-h2 { text-align:center; color:#0277bd; }
-nav { display:flex; gap:15px; justify-content:center; margin-bottom:20px;}
-nav button { padding:10px 15px; cursor:pointer; background:#4dd0e1; border:none; border-radius:8px;}
-nav button.active { background:#0288d1; color:#fff;}
-section { display:none; background:#fff; padding:15px; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.1); margin-bottom:20px;}
+body { font-family: Arial; margin:0; padding:0; background:#e0f7fa; }
+.container { max-width:1200px; margin:20px auto; padding:20px; }
+nav { display:flex; gap:10px; justify-content:center; margin-bottom:20px; }
+nav button { padding:10px 20px; cursor:pointer; border:none; border-radius:8px; background:#4dd0e1; color:#000; }
+nav button.active { background:#0288d1; color:#fff; }
+section { display:none; background:#fff; padding:15px; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.1); }
 section.active { display:block; }
-table { width:100%; border-collapse: collapse; margin-top:10px;}
-table, th, td { border:1px solid #ccc;}
-th, td { padding:8px; text-align:center;}
-#map { height:400px; border-radius:12px; margin-top:10px;}
+table { width:100%; border-collapse:collapse; margin-top:10px; }
+th,td { border:1px solid #ccc; padding:8px; text-align:center; }
+input, select, button { padding:8px; margin:5px 0; border-radius:6px; border:1px solid #ccc; }
+button.primary { background:#0288d1; color:#fff; border:none; cursor:pointer; }
 </style>
 </head>
 <body>
 <div class="container">
-  <h2>لوحة المدير</h2>
-  <nav>
-    <button id="reportsTab" class="active">التقارير</button>
-    <button id="attendanceTab">الحضور</button>
-    <button id="tasksTab">المهام</button>
-    <button id="mapTab">خريطة العملاء</button>
-  </nav>
+<h2>لوحة المدير</h2>
 
-  <!-- التقارير -->
-  <section id="reportsSection" class="active">
-    <h3>التقارير</h3>
-    <table>
-      <thead>
-        <tr><th>المندوب</th><th>المهام المكتملة</th><th>المهام المؤجلة</th><th>نسبة الإنجاز</th></tr>
-      </thead>
-      <tbody id="reportsTable"></tbody>
-    </table>
-  </section>
+<nav>
+  <button id="reportsTab" class="active">التقارير</button>
+  <button id="attendanceTab">الحضور</button>
+  <button id="tasksTab">المهام</button>
+  <button id="mapTab">خريطة العملاء</button>
+</nav>
 
-  <!-- الحضور -->
-  <section id="attendanceSection">
-    <h3>الحضور والانصراف</h3>
-    <table>
-      <thead>
-        <tr><th>المندوب</th><th>دخول</th><th>خروج</th></tr>
-      </thead>
-      <tbody id="attendanceTable"></tbody>
-    </table>
-  </section>
+<!-- التقارير -->
+<section id="reportsSection" class="active">
+  <h3>تقارير المهام</h3>
+  <table>
+    <thead>
+      <tr><th>المندوب</th><th>المهام المكتملة</th><th>المهام المؤجلة</th><th>نسبة الإنجاز</th></tr>
+    </thead>
+    <tbody id="reportsTableBody"></tbody>
+  </table>
+</section>
 
-  <!-- المهام -->
-  <section id="tasksSection">
-    <h3>المهام</h3>
-    <form id="taskForm">
-      <input type="text" id="clientName" placeholder="اسم العميل" required>
-      <input type="text" id="clientAddress" placeholder="عنوان العميل" required>
-      <input type="time" id="visitTime" required>
-      <select id="assignedTo" required></select>
-      <input type="file" id="taskImage">
-      <button type="submit">إضافة مهمة</button>
-    </form>
-    <table>
-      <thead>
-        <tr><th>العميل</th><th>العنوان</th><th>الوقت</th><th>المندوب</th><th>الحالة</th></tr>
-      </thead>
-      <tbody id="tasksTable"></tbody>
-    </table>
-    <input type="text" id="notificationMessage" placeholder="رسالة الإشعار">
-    <button id="sendNotification">إرسال إشعار</button>
-  </section>
+<!-- الحضور -->
+<section id="attendanceSection">
+  <h3>الحضور والانصراف</h3>
+  <div id="attendanceCards"></div>
+</section>
 
-  <!-- الخريطة -->
-  <section id="mapSection">
-    <h3>خريطة العملاء - القاهرة</h3>
-    <div id="map"></div>
-  </section>
+<!-- المهام -->
+<section id="tasksSection">
+  <h3>إدارة المهام</h3>
+  <form id="taskForm">
+    <input type="text" id="clientName" placeholder="اسم العميل" required>
+    <input type="text" id="clientAddress" placeholder="عنوان العميل" required>
+    <input type="time" id="visitTime" required>
+    <select id="assignedTo" required><option value="">اختر مندوب</option></select>
+    <button type="submit" class="primary">حفظ المهمة</button>
+  </form>
+
+  <h4>المهام الحالية</h4>
+  <table>
+    <thead>
+      <tr><th>العميل</th><th>العنوان</th><th>الوقت</th><th>المندوب</th><th>الحالة</th></tr>
+    </thead>
+    <tbody id="tasksTableBody"></tbody>
+  </table>
+
+  <h4>إرسال إشعار جماعي</h4>
+  <input type="text" id="notificationMessage" placeholder="رسالة الإشعار">
+  <button id="sendNotificationBtn" class="primary">إرسال إشعار</button>
+</section>
+
+<!-- خريطة العملاء -->
+<section id="mapSection">
+  <h3>خريطة العملاء (القاهرة)</h3>
+  <div id="map" style="height:400px;"></div>
+</section>
 </div>
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-// ===== Supabase =====
-const supabaseUrl = 'https://vkativialsvvbifhjrey.supabase.co'
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3MzY3OTEwNX0.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0'
-const supabase = createClient(supabaseUrl, supabaseKey)
+const supabase = createClient(
+  'https://vkativialsvvbifhjrey.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3MzY3OTEwNX0.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0'
+)
 
-// ===== التبويبات =====
-const reportsTab = document.getElementById('reportsTab')
-const attendanceTab = document.getElementById('attendanceTab')
-const tasksTab = document.getElementById('tasksTab')
-const mapTab = document.getElementById('mapTab')
-const reportsSection = document.getElementById('reportsSection')
-const attendanceSection = document.getElementById('attendanceSection')
-const tasksSection = document.getElementById('tasksSection')
-const mapSection = document.getElementById('mapSection')
-
-function showSection(sec){
-  [reportsSection,attendanceSection,tasksSection,mapSection].forEach(s=>s.classList.remove('active'))
-  [reportsTab,attendanceTab,tasksTab,mapTab].forEach(b=>b.classList.remove('active'))
-  if(sec==='reports'){reportsSection.classList.add('active'); reportsTab.classList.add('active')}
-  if(sec==='attendance'){attendanceSection.classList.add('active'); attendanceTab.classList.add('active')}
-  if(sec==='tasks'){tasksSection.classList.add('active'); tasksTab.classList.add('active')}
-  if(sec==='map'){mapSection.classList.add('active'); mapTab.classList.add('active')}
-}
-reportsTab.addEventListener('click', ()=>showSection('reports'))
-attendanceTab.addEventListener('click', ()=>showSection('attendance'))
-tasksTab.addEventListener('click', ()=>showSection('tasks'))
-mapTab.addEventListener('click', ()=>showSection('map'))
-
-// ===== تحميل البيانات =====
-async function loadUsers(){ return (await supabase.from('users').select('*')).data || [] }
-async function loadTasks(){ return (await supabase.from('tasks').select('*')).data || [] }
-async function loadAttendance(){ return (await supabase.from('attendance').select('*')).data || [] }
-
-// ===== التقارير =====
-async function showReports(){
-  const users = await loadUsers()
-  const tasks = await loadTasks()
-  const tbody = document.getElementById('reportsTable')
-  tbody.innerHTML=''
-  users.filter(u=>u.role==='agent').forEach(u=>{
-    const userTasks = tasks.filter(t=>t.assigned_to===u.id)
-    const completed = userTasks.filter(t=>t.status==='completed').length
-    const delayed = userTasks.filter(t=>t.status==='delayed').length
-    const percent = userTasks.length ? Math.round((completed/userTasks.length)*100) : 0
-    const tr = document.createElement('tr')
-    tr.innerHTML=`<td>${u.email_or_phone}</td><td>${completed}</td><td>${delayed}</td><td>${percent}%</td>`
-    tbody.appendChild(tr)
+document.addEventListener('DOMContentLoaded', async ()=>{
+  // تبويبات
+  const tabs = ['reports','attendance','tasks','map']
+  tabs.forEach(tab=>{
+    document.getElementById(tab+'Tab').addEventListener('click', ()=>{
+      tabs.forEach(t=>document.getElementById(t+'Section').classList.remove('active'))
+      tabs.forEach(t=>document.getElementById(t+'Tab').classList.remove('active'))
+      document.getElementById(tab+'Section').classList.add('active')
+      document.getElementById(tab+'Tab').classList.add('active')
+    })
   })
-}
 
-// ===== الحضور =====
-async function showAttendance(){
-  const users = await loadUsers()
-  const attendance = await loadAttendance()
-  const tbody = document.getElementById('attendanceTable')
-  tbody.innerHTML=''
-  users.filter(u=>u.role==='agent').forEach(u=>{
-    const record = attendance.find(a=>a.user_id===u.id)
-    const loginTime = record?.login_time || '-'
-    const logoutTime = record?.logout_time || '-'
-    const tr = document.createElement('tr')
-    tr.innerHTML=`<td>${u.email_or_phone}</td><td>${loginTime}</td><td>${logoutTime}</td>`
-    tbody.appendChild(tr)
-  })
-}
-
-// ===== المهام =====
-async function showTasks(){
-  const users = await loadUsers()
-  const tasks = await loadTasks()
-  const tbody = document.getElementById('tasksTable')
-  tbody.innerHTML=''
-  tasks.forEach(t=>{
-    const agent = users.find(u=>u.id===t.assigned_to)
-    const tr = document.createElement('tr')
-    tr.innerHTML=`<td>${t.client_name}</td><td>${t.client_address}</td><td>${t.visit_time}</td><td>${agent?.email_or_phone||'-'}</td><td>${t.status}</td>`
-    tbody.appendChild(tr)
-  })
-  // قائمة المندوبين في النموذج
+  // تحميل المندوبين للقائمة
+  const { data: agents } = await supabase.from('users').select('*').eq('role','agent')
   const select = document.getElementById('assignedTo')
-  select.innerHTML='<option value="">اختر مندوب</option>'
-  users.filter(u=>u.role==='agent').forEach(u=>{
-    const opt = document.createElement('option'); opt.value=u.id; opt.text=u.email_or_phone; select.appendChild(opt)
+  agents.forEach(a=>{
+    const opt = document.createElement('option')
+    opt.value=a.id
+    opt.text=a.email
+    select.appendChild(opt)
   })
-}
 
-// ===== إضافة مهمة =====
-document.getElementById('taskForm').addEventListener('submit', async e=>{
-  e.preventDefault()
-  const client_name=document.getElementById('clientName').value
-  const client_address=document.getElementById('clientAddress').value
-  const visit_time=document.getElementById('visitTime').value
-  const assigned_to=document.getElementById('assignedTo').value
-  const file=document.getElementById('taskImage').files[0]
-
-  let image_url = null
-  if(file){
-    const { data, error } = await supabase.storage.from('tasks-images').upload('public/'+file.name, file)
-    if(!error) image_url = `https://vkativialsvvbifhjrey.supabase.co/storage/v1/object/public/tasks-images/${file.name}`
+  // تحميل المهام
+  async function loadTasks(){
+    const { data: tasks } = await supabase.from('tasks').select('*')
+    const tbody = document.getElementById('tasksTableBody')
+    tbody.innerHTML=''
+    tasks.forEach(t=>{
+      const agent = agents.find(a=>a.id===t.assigned_to)
+      const tr=document.createElement('tr')
+      tr.innerHTML=`<td>${t.client_name}</td><td>${t.client_address}</td><td>${t.visit_time}</td><td>${agent?.email||'-'}</td><td>${t.status}</td>`
+      tbody.appendChild(tr)
+    })
   }
 
-  await supabase.from('tasks').insert([{client_name,client_address,visit_time,assigned_to,status:'pending',image_url}])
-  alert('تم إضافة المهمة')
-  e.target.reset()
-  showTasks()
-  showReports()
-})
+  // حفظ مهمة جديدة
+  document.getElementById('taskForm').addEventListener('submit', async e=>{
+    e.preventDefault()
+    const client_name=document.getElementById('clientName').value
+    const client_address=document.getElementById('clientAddress').value
+    const visit_time=document.getElementById('visitTime').value
+    const assigned_to=document.getElementById('assignedTo').value
+    await supabase.from('tasks').insert([{client_name, client_address, visit_time, assigned_to, status:'pending'}])
+    e.target.reset()
+    loadTasks()
+    loadReports()
+  })
 
-// ===== إرسال إشعارات =====
-document.getElementById('sendNotification').addEventListener('click', async ()=>{
-  const message=document.getElementById('notificationMessage').value
-  if(!message) return alert('أدخل الرسالة')
-  const users = await loadUsers()
-  for(const u of users.filter(u=>u.role==='agent')){
-    await supabase.from('notifications').insert([{user_id:u.id,message}])
+  // تحميل التقارير
+  async function loadReports(){
+    const { data: tasks } = await supabase.from('tasks').select('*')
+    const tbody=document.getElementById('reportsTableBody')
+    tbody.innerHTML=''
+    agents.forEach(u=>{
+      const userTasks=tasks.filter(t=>t.assigned_to===u.id)
+      const completed=userTasks.filter(t=>t.status==='completed').length
+      const delayed=userTasks.filter(t=>t.status==='delayed').length
+      const total=userTasks.length
+      const percent=total?Math.round((completed/total)*100):0
+      const tr=document.createElement('tr')
+      tr.innerHTML=`<td>${u.email}</td><td>${completed}</td><td>${delayed}</td><td>${percent}%</td>`
+      tbody.appendChild(tr)
+    })
   }
-  alert('تم إرسال الإشعار')
-  document.getElementById('notificationMessage').value=''
-})
 
-// ===== الخريطة =====
-import L from 'https://cdn.jsdelivr.net/npm/leaflet/dist/leaflet-src.esm.js'
-const map = L.map('map').setView([30.0444,31.2357],12) // القاهرة
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap'}).addTo(map)
-
-async function showMap(){
-  const tasks = await loadTasks()
-  tasks.forEach(t=>{
-    if(t.lat && t.lng){
-      L.marker([t.lat,t.lng]).addTo(map).bindPopup(`${t.client_name}<br>${t.client_address}`)
+  // إرسال إشعار
+  document.getElementById('sendNotificationBtn').addEventListener('click', async ()=>{
+    const msg=document.getElementById('notificationMessage').value
+    if(!msg) return alert('ادخل رسالة')
+    for(const a of agents){
+      await supabase.from('notifications').insert([{user_id:a.id,message:msg}])
     }
+    alert('تم إرسال الإشعار')
+    document.getElementById('notificationMessage').value=''
   })
-}
 
-// ===== تحميل كل شيء عند البداية =====
-showReports()
-showAttendance()
-showTasks()
-showMap()
+  // الحضور
+  async function loadAttendance(){
+    const { data: attendance } = await supabase.from('attendance').select('*')
+    const container=document.getElementById('attendanceCards')
+    container.innerHTML=''
+    agents.forEach(u=>{
+      const record=attendance.find(a=>a.user_id===u.id)
+      const loginTime=record?.login_time||'-'
+      const logoutTime=record?.logout_time||'-'
+      const card=document.createElement('div')
+      card.innerHTML=`<strong>${u.email}</strong><br>دخول: ${loginTime}<br>خروج: ${logoutTime}`
+      container.appendChild(card)
+    })
+  }
+
+  // تحميل جميع البيانات عند البداية
+  loadTasks()
+  loadReports()
+  loadAttendance()
+
+  // --- ملاحظة: لإضافة خريطة يمكنك استخدام Leaflet ---
+})
 </script>
 </body>
 </html>
