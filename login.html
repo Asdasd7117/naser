@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>تسجيل الدخول</title>
+<style>
+body { font-family: Arial,sans-serif; background:#e0f7fa; display:flex; justify-content:center; align-items:center; height:100vh; margin:0;}
+.login-container { background:#fff; padding:30px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.1); width:320px;}
+h2 { text-align:center; color:#0277bd; margin-bottom:20px;}
+input { width:100%; padding:10px; margin-bottom:15px; border-radius:6px; border:1px solid #ccc;}
+button { width:100%; padding:10px; border:none; border-radius:6px; background:#0288d1; color:#fff; cursor:pointer; font-size:16px;}
+button:hover { background:#0277bd; }
+a { display:block; text-align:center; margin-top:10px; color:#0288d1; text-decoration:none; }
+a:hover { text-decoration:underline; }
+</style>
+</head>
+<body>
+<div class="login-container">
+  <h2>تسجيل الدخول</h2>
+  <input type="text" id="emailOrPhone" placeholder="رقم الهاتف أو البريد الإلكتروني">
+  <input type="password" id="password" placeholder="كلمة المرور">
+  <button id="loginBtn">تسجيل الدخول</button>
+  <a href="signup.html">إنشاء حساب جديد</a>
+  <p id="msg" style="color:red;text-align:center;"></p>
+</div>
+
+<script type="module">
+import { supabase } from './main.js';
+
+const loginBtn = document.getElementById('loginBtn');
+const msg = document.getElementById('msg');
+
+loginBtn.addEventListener('click', async ()=>{
+    msg.textContent='';
+    const emailOrPhone = document.getElementById('emailOrPhone').value.trim();
+    const password = document.getElementById('password').value.trim();
+    if(!emailOrPhone || !password){ msg.textContent='الرجاء ملء جميع الحقول'; return; }
+
+    try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: emailOrPhone.includes('@') ? emailOrPhone : undefined,
+            password
+        });
+        if(error){ msg.textContent=error.message; return; }
+
+        // الحصول على الدور من جدول users
+        const { data: userData } = await supabase.from('users').select('*').eq('id', data.user.id).single();
+        if(!userData){ msg.textContent='المستخدم غير موجود'; return; }
+
+        // تحويل تلقائي حسب الدور
+        if(userData.role==='manager') window.location.href='manager.html';
+        else if(userData.role==='supervisor') window.location.href='supervisor.html';
+        else if(userData.role==='agent') window.location.href='agent.html';
+        else msg.textContent='الدور غير معرف';
+    } catch(err){
+        msg.textContent=err.message;
+    }
+});
+</script>
+</body>
+</html>
