@@ -16,7 +16,7 @@ section.active { display:block; }
 table { width:100%; border-collapse: collapse; margin-top:10px; }
 table, th, td { border:1px solid #ccc; }
 th, td { padding:8px; text-align:center; }
-input, select, button, textarea { padding:8px; margin:5px 0; border-radius:6px; border:1px solid #ccc; width:100%; }
+input, select, button, textarea { padding:8px; margin:5px 0; border-radius:6px; border:1px solid #ccc; }
 button { background:#0288d1; color:#fff; cursor:pointer; }
 button:hover { background:#0277bd; }
 #map { height:400px; width:100%; margin-top:15px; }
@@ -74,48 +74,58 @@ const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpZVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // معرف المندوب بعد تسجيل الدخول
-let agentId = localStorage.getItem('agentId');
+let agentId = localStorage.getItem('agentId'); 
 if(!agentId) alert('خطأ: معرف المندوب غير موجود');
 
 // تبويبات
-const tabs = { tasks:'tasksSection', notifications:'notificationsSection', report:'reportSection', map:'mapSection' };
-Object.keys(tabs).forEach(key=>{
-  document.getElementById(key+'Tab').addEventListener('click', ()=>{
-    Object.values(tabs).forEach(s=>document.getElementById(s).classList.remove('active'));
+const tabs = {
+  tasks: 'tasksSection',
+  notifications: 'notificationsSection',
+  report: 'reportSection',
+  map: 'mapSection'
+};
+
+Object.keys(tabs).forEach(key => {
+  const tabBtn = document.getElementById(key + 'Tab');
+  tabBtn.addEventListener('click', () => {
+    Object.values(tabs).forEach(sectionId => document.getElementById(sectionId).classList.remove('active'));
+    Object.keys(tabs).forEach(k => document.getElementById(k + 'Tab').classList.remove('active'));
     document.getElementById(tabs[key]).classList.add('active');
-    Object.keys(tabs).forEach(k=>document.getElementById(k+'Tab').classList.remove('active'));
-    document.getElementById(key+'Tab').classList.add('active');
-    if(key==='map') loadMap();
+    tabBtn.classList.add('active');
+    if (key==='map') loadMap();
   });
 });
 
 // تحميل مهام المندوب
 async function loadTasks(){
   const { data: tasks } = await supabase.from('tasks').select('*').eq('assigned_to', agentId);
-  const tbody=document.getElementById('tasksTableBody');
+  const tbody = document.getElementById('tasksTableBody');
   tbody.innerHTML='';
-  const taskSelect=document.getElementById('taskSelect');
-  taskSelect.innerHTML='';
   tasks.forEach(t=>{
-    const tr=document.createElement('tr');
+    const tr = document.createElement('tr');
     tr.innerHTML=`<td>${t.client_name}</td><td>${t.client_address}</td><td>${t.visit_time}</td><td>${t.status}</td>`;
     tbody.appendChild(tr);
+  });
 
-    const opt=document.createElement('option');
-    opt.value=t.id;
-    opt.text=t.client_name;
+  // قائمة رفع التقرير
+  const taskSelect = document.getElementById('taskSelect');
+  taskSelect.innerHTML='';
+  tasks.forEach(t=>{
+    const opt = document.createElement('option');
+    opt.value = t.id;
+    opt.text = t.client_name;
     taskSelect.appendChild(opt);
   });
 }
 
-// تحميل الإشعارات
+// تحميل الإشعارات الخاصة بالمندوب
 async function loadNotifications(){
   const { data: notes } = await supabase.from('notifications').select('*').eq('user_id', agentId).order('created_at',{ascending:false});
-  const ul=document.getElementById('notificationsList');
+  const ul = document.getElementById('notificationsList');
   ul.innerHTML='';
   notes.forEach(n=>{
-    const li=document.createElement('li'); 
-    li.textContent=n.message;
+    const li = document.createElement('li');
+    li.textContent = n.message;
     ul.appendChild(li);
   });
 }
@@ -123,36 +133,35 @@ async function loadNotifications(){
 // رفع تقرير
 document.getElementById('reportForm').addEventListener('submit', async e=>{
   e.preventDefault();
-  const taskId=document.getElementById('taskSelect').value;
-  const reportText=document.getElementById('reportText').value;
-  const file=document.getElementById('reportImage').files[0];
+  const taskId = document.getElementById('taskSelect').value;
+  const reportText = document.getElementById('reportText').value;
+  const file = document.getElementById('reportImage').files[0];
   if(!file) return alert('اختر صورة');
 
   const fileExt = file.name.split('.').pop();
   const fileName = `reports/${taskId}_${Date.now()}.${fileExt}`;
-  const { data, error } = await supabase.storage.from('reports').upload(fileName, file);
+  const { error } = await supabase.storage.from('reports').upload(fileName, file);
   if(error) return alert('خطأ رفع الصورة: '+error.message);
 
   const imageUrl = `https://vkativialsvvbifhjrey.supabase.co/storage/v1/object/public/reports/${fileName}`;
   await supabase.from('reports').insert([{ task_id:taskId, agent_id:agentId, report_text:reportText, image_url:imageUrl }]);
   alert('تم رفع التقرير بنجاح');
-  document.getElementById('reportForm').reset();
+  e.target.reset();
 });
 
 // الخريطة
 let map;
 async function loadMap(){
   if(!map){
-    map=L.map('map').setView([30.0444,31.2357],12); // القاهرة
+    map = L.map('map').setView([30.0444,31.2357],12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
       attribution:'&copy; OpenStreetMap contributors'
     }).addTo(map);
   }
   const { data: tasks } = await supabase.from('tasks').select('*').eq('assigned_to', agentId);
-  map.eachLayer(l=>{ if(l instanceof L.Marker) map.removeLayer(l); });
+  map.eachLayer(l => { if(l instanceof L.Marker) map.removeLayer(l); });
   tasks.forEach(t=>{
     if(t.client_address){
-      // كل العناوين افتراضية للقاهرة
       L.marker([30.0444,31.2357]).addTo(map).bindPopup(`${t.client_name}<br>${t.client_address}`);
     }
   });
@@ -162,7 +171,6 @@ async function loadMap(){
 loadTasks();
 loadNotifications();
 loadMap();
-
 </script>
 </body>
 </html>
