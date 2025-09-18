@@ -91,8 +91,17 @@ loginForm.addEventListener('submit', async e=>{
   // حفظ معرف المستخدم ودوره في localStorage
   localStorage.setItem('userId', user.id);
   localStorage.setItem('userRole', user.role);
-  alert(`تم تسجيل الدخول كـ ${user.role}`);
-  // هنا يمكنك تحويل المستخدم للوحة المناسبة حسب الدور
+
+  // تحويل المستخدم حسب الدور
+  if(user.role === 'admin'){
+    window.location.href = 'admin.html';
+  } else if(user.role === 'agent'){
+    window.location.href = 'agent.html';
+  } else if(user.role === 'supervisor'){
+    window.location.href = 'supervisor.html';
+  } else {
+    alert('دور غير معروف');
+  }
 });
 
 // إنشاء حساب جديد
@@ -111,7 +120,6 @@ signupForm.addEventListener('submit', async e=>{
   if(error){ alert('خطأ: ' + error.message); return; }
 
   alert('تم إنشاء الحساب بنجاح');
-  // بعد إنشاء الحساب، العودة لتسجيل الدخول
   toggleForm.click();
 });
 </script>
