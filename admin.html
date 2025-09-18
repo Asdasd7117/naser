@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     }
   })
 
-  // إنشاء مستخدم جديد متوافق مع Supabase v2
+  // ✅ إنشاء مستخدم نهائي (Auth + Users Table)
   document.getElementById('createUserForm').addEventListener('submit', async e => {
     e.preventDefault();
     const email = document.getElementById('newUserEmail').value.trim();
@@ -239,19 +239,23 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     if (!email || !password || !role) return alert('أكمل جميع الحقول');
 
     try {
-      const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
-      if (signUpError) throw signUpError;
+      // تسجيل المستخدم في Auth
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) throw error;
 
       const userId = data.user?.id;
-      if (!userId) throw new Error('حدث خطأ في استرجاع معرف المستخدم');
+      if (!userId) throw new Error('لم يتم الحصول على معرف المستخدم من Auth');
 
-      await supabase.from('users').insert([{ id: userId, email, role }]);
+      // إدراج المستخدم في جدول users مع تجنب أي أعمدة إلزامية إضافية
+      const { error: insertError } = await supabase.from('users').insert([{ id: userId, email, role }]);
+      if (insertError) throw insertError;
 
       alert('تم إنشاء الحساب بنجاح');
       e.target.reset();
       await loadUsers();
       await loadAgents();
       await loadTasks();
+
     } catch (err) {
       console.error('خطأ إنشاء المستخدم:', err);
       alert('حدث خطأ: ' + err.message);
