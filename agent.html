@@ -1,382 +1,181 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8" />
+<meta charset="UTF-8">
 <title>لوحة المندوب</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <style>
-  body { font-family: Arial, sans-serif; margin:0; padding:0; background:#eaf6fb; color:#0b2545; }
-  .container{ max-width:1000px; margin:18px auto; padding:18px; }
-  h2{ text-align:center; color:#0277bd; margin:6px 0 18px; }
-  nav{ display:flex; gap:10px; justify-content:center; margin-bottom:18px; flex-wrap:wrap; }
-  nav button{ padding:10px 14px; border:none; border-radius:8px; background:#bfeaf6; cursor:pointer; }
-  nav button.active{ background:#0288d1; color:#fff; }
-  section{ display:none; background:#fff; padding:14px; border-radius:10px; box-shadow:0 6px 18px rgba(0,0,0,0.06); }
-  section.active{ display:block; }
-  table{ width:100%; border-collapse:collapse; margin-top:10px; }
-  th, td{ border:1px solid #e6eef2; padding:8px; text-align:center; font-size:14px; }
-  select,input,textarea,button{ padding:8px; border-radius:8px; border:1px solid #cfeaf2; font-size:14px; }
-  textarea{ min-height:100px; resize:vertical; }
-  .muted{ color:#666; font-size:13px; }
-  #map{ height:420px; border-radius:8px; margin-top:10px; }
-  .btn-primary{ background:#0288d1; color:#fff; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; }
-  .btn-primary:disabled{ opacity:0.6; cursor:not-allowed; }
-  ul.notifications{ list-style:none; padding:0; margin:0; }
-  ul.notifications li{ background:#f7feff; margin-bottom:8px; padding:10px; border-radius:8px; box-shadow:0 2px 6px rgba(2,136,209,0.06); }
-  .status-select{ padding:6px; border-radius:6px; }
-  .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+body { font-family: Arial; margin:0; padding:0; background:#e0f7fa; }
+.container { max-width:1000px; margin:20px auto; padding:20px; }
+h2 { text-align:center; color:#0277bd; }
+nav { display:flex; gap:15px; justify-content:center; margin-bottom:20px; }
+nav button { padding:10px 15px; border:none; border-radius:6px; background:#4dd0e1; cursor:pointer; }
+nav button.active { background:#0288d1; color:#fff; }
+section { display:none; margin-bottom:30px; padding:15px; background:#fff; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.1);}
+section.active { display:block; }
+table { width:100%; border-collapse: collapse; margin-top:10px; }
+table, th, td { border:1px solid #ccc; }
+th, td { padding:8px; text-align:center; }
+input, select, button, textarea { padding:8px; margin:5px 0; border-radius:6px; border:1px solid #ccc; }
+button { background:#0288d1; color:#fff; cursor:pointer; }
+button:hover { background:#0277bd; }
+#map { height:400px; width:100%; margin-top:15px; }
 </style>
 </head>
 <body>
 <div class="container">
   <h2>لوحة المندوب</h2>
-
-  <nav id="mainNav">
-    <button data-target="tasksSection" class="active">مهامي</button>
-    <button data-target="notificationsSection">الإشعارات</button>
-    <button data-target="reportSection">رفع تقرير</button>
-    <button data-target="mapSection">خريطة المهام</button>
+  <nav>
+    <button id="tasksTab" class="active">مهامي</button>
+    <button id="notificationsTab">الإشعارات</button>
+    <button id="reportTab">رفع تقرير</button>
+    <button id="mapTab">خريطة المهام</button>
   </nav>
 
-  <!-- مهامي -->
+  <!-- المهام -->
   <section id="tasksSection" class="active">
     <h3>مهامي الحالية</h3>
-    <div class="muted">تستطيع تغيير حالة المهمة من عمود الحالة.</div>
     <table>
-      <thead>
-        <tr><th>العميل</th><th>العنوان</th><th>الوقت</th><th>الحالة</th><th>إجراء</th></tr>
-      </thead>
-      <tbody id="tasksTableBody">
-        <!-- يتم ملؤها بواسطة JS -->
-      </tbody>
+      <thead><tr><th>العميل</th><th>العنوان</th><th>الوقت</th><th>الحالة</th></tr></thead>
+      <tbody id="tasksTableBody"></tbody>
     </table>
   </section>
 
-  <!-- إشعارات -->
+  <!-- الإشعارات -->
   <section id="notificationsSection">
     <h3>الإشعارات</h3>
-    <ul id="notificationsList" class="notifications"></ul>
+    <ul id="notificationsList"></ul>
   </section>
 
   <!-- رفع تقرير -->
   <section id="reportSection">
-    <h3>رفع تقرير لمهمة</h3>
-    <form id="reportForm" class="row" style="flex-direction:column;">
-      <label>اختر المهمة:
-        <select id="taskSelect" required>
-          <option value="">-- اختر مهمة --</option>
-        </select>
-      </label>
-
-      <label>تفاصيل التقرير:</label>
-      <textarea id="reportText" placeholder="اكتب ملاحظات الزيارة..."></textarea>
-
-      <label>إضافة صورة (اختياري):</label>
-      <input type="file" id="reportImage" accept="image/*">
-
-      <div style="display:flex; gap:10px;">
-        <button type="submit" class="btn-primary">إرسال التقرير</button>
-        <button type="button" id="clearReport" class="btn-primary" style="background:#90caf9">مسح الحقول</button>
-      </div>
+    <h3>رفع تقرير المهمة</h3>
+    <form id="reportForm">
+      <select id="taskSelect" required></select>
+      <textarea id="reportText" placeholder="اكتب تقريرك هنا..." required></textarea>
+      <input type="file" id="reportImage" accept="image/*" required>
+      <button type="submit">رفع التقرير</button>
     </form>
   </section>
 
-  <!-- خريطة -->
+  <!-- خريطة المهام -->
   <section id="mapSection">
-    <h3>خريطة المهام (القاهرة افتراضياً)</h3>
+    <h3>خريطة المهام (القاهرة)</h3>
     <div id="map"></div>
-    <div class="muted" style="margin-top:8px;">إذا لم يكن لدى المهمة إحداثيات، فسوف تُعرض عند مركز القاهرة.</div>
   </section>
 </div>
 
-<!-- Leaflet (تضمين كسكربت مُباشر لوجود المتغير العالمي L) -->
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
 <script type="module">
-/*
-  agent.html (مصحح)
-  - تضمن: تبويبات تعمل، فلترة الاشعارات للمندوب، خريطة القاهرة افتراضياً،
-    رفع تقارير مع صورة عبر Supabase Storage، تغيير حالة المهمة من الجدول.
-  - تأكد وجود bucket باسم "reports" في Supabase Storage (أو غيّره في upload).
-*/
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+import L from 'https://unpkg.com/leaflet/dist/leaflet.js';
 
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+const supabaseUrl = "https://vkativialsvvbifhjrey.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3MzY3OTEwNX0.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0";
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-// ====== إعداد Supabase ======
-const SUPABASE_URL = 'https://vkativialsvvbifhjrey.supabase.co'
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3MzY3OTEwNX0.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0'
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
-
-// ====== مساعدات عامة ======
-function $(id){ return document.getElementById(id) }
-function logErr(e){ console.error(e); }
-
-// ====== التعرف على المندوب الحالي ======
-let agentId = null
-
-async function resolveAgentId(){
-  try{
-    // أولاً حاول جلب المستخدم من جلسة Supabase Auth
-    const { data } = await supabase.auth.getUser()
-    const user = data?.user ?? null
-    if(user && user.id){
-      agentId = user.id
-      return agentId
-    }
-  }catch(err){
-    console.warn('supabase.auth.getUser() failed:', err)
-  }
-
-  // احتياط: حاول قراءة من localStorage (لو كنت تحفظه عند تسجيل الدخول)
-  agentId = localStorage.getItem('agentId') || null
-  return agentId
+// جلب معرف المندوب من localStorage
+let agentId = localStorage.getItem('userId');
+if(!agentId){
+  alert('يجب تسجيل الدخول أولاً');
+  window.location.href = 'index.html';
 }
 
-// ====== تبويبات ثابتة (عمل آمن بعد DOM) ======
-document.addEventListener('DOMContentLoaded', ()=>{
+// التبويبات
+const tabs = { tasks:'tasksSection', notifications:'notificationsSection', report:'reportSection', map:'mapSection' };
+Object.keys(tabs).forEach(key=>{
+  document.getElementById(key+'Tab').addEventListener('click', ()=>{
+    Object.values(tabs).forEach(s=>document.getElementById(s).classList.remove('active'));
+    document.getElementById(tabs[key]).classList.add('active');
+    Object.keys(tabs).forEach(k=>document.getElementById(k+'Tab').classList.remove('active'));
+    document.getElementById(key+'Tab').classList.add('active');
+    if(key==='map') loadMap();
+  });
+});
 
-  // تبويبات: اعمل حدث عام لأي زر داخل nav
-  const nav = document.getElementById('mainNav')
-  nav.addEventListener('click', (ev)=>{
-    const btn = ev.target.closest('button')
-    if(!btn) return
-    const target = btn.dataset.target
-    if(!target) return
-    // إزالة الفعالية
-    Array.from(nav.querySelectorAll('button')).forEach(b=>b.classList.remove('active'))
-    btn.classList.add('active')
-    // اظهار القسم الصحيح
-    document.querySelectorAll('section').forEach(s=>s.classList.remove('active'))
-    const sec = document.getElementById(target)
-    if(sec) sec.classList.add('active')
-    // عند الخريطة نعيد تحميلها
-    if(target === 'mapSection') loadMap().catch(logErr)
-  })
-
-  // أزرار في نموذج التقارير
-  $('clearReport').addEventListener('click', ()=>{ $('reportForm').reset() })
-
-  // حدث إرسال التقرير
-  $('reportForm').addEventListener('submit', async (e)=>{
-    e.preventDefault()
-    await submitReportHandler()
-  })
-
-  // تفويض أحداث تغيير حالة المهمة (event delegation)
-  $('tasksTableBody').addEventListener('change', async (e)=>{
-    if(e.target && e.target.classList.contains('status-select')){
-      const taskId = e.target.dataset.taskId
-      const newStatus = e.target.value
-      try{
-        const { error } = await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId)
-        if(error) throw error
-        // نجاح -> إعادة تحميل المهام و التقارير
-        await loadTasks()
-        await loadReportsSummary()
-      }catch(err){
-        alert('خطأ أثناء تحديث الحالة: '+err.message)
-        console.error(err)
-      }
-    }
-  })
-
-  // تشغيل التحميل الابتدائي
-  initAll().catch(logErr)
-})
-
-// ====== تحميل كل شيء أولياً ======
-async function initAll(){
-  const id = await resolveAgentId()
-  if(!id){
-    alert('لم يتم التعرف على المندوب (agentId). تأكد أنك مسجل الدخول أو أن localStorage يحتوي على agentId.')
-    return
-  }
-
-  await Promise.all([ loadTasks(), loadNotifications(), loadReportsSummary(), loadMap() ])
-}
-
-// ====== جلب وعرض المهام الخاصة بالمندوب ======
+// تحميل المهام
 async function loadTasks(){
-  try{
-    const { data: tasks, error } = await supabase
-      .from('tasks')
-      .select('*')
-      .eq('assigned_to', agentId)
-      .order('created_at', { ascending: false })
+  const { data: tasks, error } = await supabase.from('tasks').select('*').eq('assigned_to', agentId);
+  if(error) return console.error(error);
 
-    if(error) throw error
+  const tbody = document.getElementById('tasksTableBody');
+  tbody.innerHTML = '';
+  const taskSelect = document.getElementById('taskSelect');
+  taskSelect.innerHTML = '';
 
-    const tbody = $('tasksTableBody')
-    tbody.innerHTML = ''
-    tasks.forEach(t=>{
-      // حالة مع dropdown لتغييرها
-      const tr = document.createElement('tr')
-      const statusSelect = `
-        <select class="status-select" data-task-id="${t.id}">
-          <option value="pending" ${t.status === 'pending' ? 'selected':''}>مؤجلة</option>
-          <option value="in_progress" ${t.status === 'in_progress' ? 'selected':''}>قيد التنفيذ</option>
-          <option value="completed" ${t.status === 'completed' ? 'selected':''}>تم التنفيذ</option>
-          <option value="delayed" ${t.status === 'delayed' ? 'selected':''}>مؤجلة/تأخير</option>
-        </select>
-      `
-      tr.innerHTML = `
-        <td>${escapeHtml(t.client_name || '-')}</td>
-        <td>${escapeHtml(t.client_address || '-')}</td>
-        <td>${escapeHtml(t.visit_time || '-')}</td>
-        <td>${statusSelect}</td>
-        <td><button class="btn-primary" data-id="${t.id}" onclick="window.openReport && window.openReport('${t.id}')">عرض تقارير</button></td>
-      `
-      tbody.appendChild(tr)
-    })
+  tasks.forEach(t=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${t.client_name}</td><td>${t.client_address}</td><td>${t.visit_time}</td><td>${t.status}</td>`;
+    tbody.appendChild(tr);
 
-    // تحديث قائمة اختيار المهمة في نموذج التقارير
-    const select = $('taskSelect')
-    select.innerHTML = '<option value="">-- اختر مهمة --</option>'
-    tasks.forEach(t=>{
-      const opt = document.createElement('option')
-      opt.value = t.id
-      opt.textContent = t.client_name || `مهمة ${t.id.slice(0,6)}`
-      select.appendChild(opt)
-    })
-
-  }catch(err){
-    console.error('loadTasks error', err)
-    alert('حدث خطأ عند جلب المهام، راجع Console للمزيد.')
-  }
+    const opt = document.createElement('option');
+    opt.value = t.id;
+    opt.text = t.client_name;
+    taskSelect.appendChild(opt);
+  });
 }
 
-// ====== جلب وعرض الإشعارات الخاصة بالمندوب ======
+// تحميل الإشعارات
 async function loadNotifications(){
-  try{
-    const { data: notes, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', agentId)
-      .order('created_at', { ascending: false })
+  const { data: notes, error } = await supabase.from('notifications').select('*').eq('user_id', agentId).order('created_at',{ascending:false});
+  if(error) return console.error(error);
 
-    if(error) throw error
-
-    const ul = $('notificationsList')
-    ul.innerHTML = ''
-    notes.forEach(n=>{
-      const li = document.createElement('li')
-      li.innerHTML = `<div>${escapeHtml(n.message)}</div><div class="muted">${new Date(n.created_at).toLocaleString()}</div>`
-      ul.appendChild(li)
-    })
-  }catch(err){
-    console.error('loadNotifications error', err)
-  }
+  const ul = document.getElementById('notificationsList');
+  ul.innerHTML = '';
+  notes.forEach(n=>{
+    const li = document.createElement('li');
+    li.textContent = n.message;
+    ul.appendChild(li);
+  });
 }
 
-// ====== إرسال التقرير (رفع صورة + تخزين السجل) ======
-async function submitReportHandler(){
-  try{
-    const taskId = $('taskSelect').value
-    const text = $('reportText').value.trim()
-    const fileInput = $('reportImage')
-    if(!taskId) return alert('اختر مهمة')
-    // رفع الصورة إن وُجدت
-    let imageUrl = null
-    const file = fileInput.files[0]
-    if(file){
-      const ext = file.name.split('.').pop()
-      const filename = `${taskId}_${Date.now()}.${ext}`
-      // تأكد أن لديك bucket اسمه "reports"
-      const { data: uploadData, error: uploadError } = await supabase.storage.from('reports').upload(filename, file, { cacheControl: '3600', upsert: false })
-      if(uploadError){
-        throw uploadError
-      }
-      const { data: publicUrlData } = supabase.storage.from('reports').getPublicUrl(filename)
-      imageUrl = publicUrlData.publicUrl || `${SUPABASE_URL}/storage/v1/object/public/reports/${filename}`
-    }
+// رفع تقرير
+document.getElementById('reportForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const taskId = document.getElementById('taskSelect').value;
+  const reportText = document.getElementById('reportText').value;
+  const file = document.getElementById('reportImage').files[0];
+  if(!file) return alert('اختر صورة');
 
-    const payload = { task_id: taskId, agent_id: agentId, report_text: text || null, image_url: imageUrl || null }
-    const { error: insertError } = await supabase.from('reports').insert([payload])
-    if(insertError) throw insertError
+  const fileExt = file.name.split('.').pop();
+  const fileName = `reports/${taskId}_${Date.now()}.${fileExt}`;
+  const { data, error } = await supabase.storage.from('reports').upload(fileName, file);
+  if(error) return alert('خطأ رفع الصورة: '+error.message);
 
-    // بدّلك تحدّث حالة المهمة تلقائياً إلى completed؟ هذا اختيار — هنا لا نغيّرها.
-    alert('تم رفع التقرير بنجاح')
-    $('reportForm').reset()
-    // إعادة تحميل تقارير (لو أردت عرضها) ولمهام/خريطة
-    await Promise.all([ loadTasks(), loadReportsSummary(), loadMap() ])
-  }catch(err){
-    console.error('submitReportHandler error', err)
-    alert('خطأ أثناء رفع التقرير: ' + (err.message || err))
-  }
-}
+  const imageUrl = `https://vkativialsvvbifhjrey.supabase.co/storage/v1/object/public/reports/${fileName}`;
 
-// ====== إظهار ملخص (تقارير/نسبة إنجاز) للمندوب (ممكن عرضها في تبويب آخر) ======
-async function loadReportsSummary(){
-  try{
-    // سنجلب كل المهام لهذا المندوب ونحسب النسب
-    const { data: tasks, error } = await supabase.from('tasks').select('*').eq('assigned_to', agentId)
-    if(error) throw error
-    // لو أردت عرض ملخص عام للمندوب هنا أو في واجهة المدير — نعيد فقط الطباعة في Console
-    const total = tasks.length
-    const completed = tasks.filter(t=>t.status === 'completed').length
-    console.log('ملخص مهام المندوب', { total, completed, percent: total? Math.round((completed/total)*100) : 0 })
-  }catch(err){
-    console.error('loadReportsSummary', err)
-  }
-}
+  await supabase.from('reports').insert([{ task_id:taskId, agent_id:agentId, report_text:reportText, image_url:imageUrl }]);
+  alert('تم رفع التقرير بنجاح');
+  document.getElementById('reportForm').reset();
+});
 
-// ====== الخريطة (القاهرة افتراضياً) ======
-let mapInstance = null
-let mapMarkers = []
+// الخريطة
+let map;
 async function loadMap(){
-  try{
-    // تأكد وجود L (Leaflet) — تم تضمين script قبل هذا module
-    if(typeof L === 'undefined'){
-      console.error('Leaflet غير موجود. تأكد من تضمين leaflet.js قبل ملف هذا الصفحة.')
-      return
-    }
-
-    if(!mapInstance){
-      mapInstance = L.map('map', { preferCanvas: true }).setView([30.0444,31.2357], 12) // القاهرة
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(mapInstance)
-    }
-
-    // إزالة الماركارات السابقة
-    mapMarkers.forEach(m => mapInstance.removeLayer(m))
-    mapMarkers = []
-
-    // جلب المهام للمندوب
-    const { data: tasks, error } = await supabase.from('tasks').select('*').eq('assigned_to', agentId)
-    if(error) throw error
-
-    tasks.forEach(t=>{
-      // إذا كان عندك حقول lat/lng استخدمها، وإلا ضع المركز (القاهرة)
-      const lat = (t.lat && Number(t.lat)) || 30.0444
-      const lng = (t.lng && Number(t.lng)) || 31.2357
-      const marker = L.marker([lat, lng]).addTo(mapInstance).bindPopup(`<b>${escapeHtml(t.client_name || 'مهمة')}</b><br>${escapeHtml(t.client_address || '')}<br>الحالة: ${escapeHtml(t.status || '')}`)
-      mapMarkers.push(marker)
-    })
-  }catch(err){
-    console.error('loadMap error', err)
+  if(!map){
+    map = L.map('map').setView([30.0444,31.2357],12); // القاهرة
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      attribution:'&copy; OpenStreetMap contributors'
+    }).addTo(map);
   }
+
+  const { data: tasks, error } = await supabase.from('tasks').select('*').eq('assigned_to', agentId);
+  if(error) return console.error(error);
+
+  // إزالة العلامات القديمة
+  map.eachLayer(l=>{ if(l instanceof L.Marker) map.removeLayer(l); });
+
+  tasks.forEach(t=>{
+    // استخدم خطوط العرض والطول الفعلية إذا متوفرة، وإلا ضع القاهرة
+    const lat = t.lat || 30.0444;
+    const lng = t.lng || 31.2357;
+    L.marker([lat,lng]).addTo(map).bindPopup(`${t.client_name}<br>${t.client_address}`);
+  });
 }
 
-// ====== دالة مساعدة للهروب من HTML injection البسيط ======
-function escapeHtml(str){
-  if(!str && str !== 0) return ''
-  return String(str)
-    .replaceAll('&','&amp;')
-    .replaceAll('<','&lt;')
-    .replaceAll('>','&gt;')
-    .replaceAll('"','&quot;')
-    .replaceAll("'",'&#039;')
-}
-
-// ====== (اختياري) دالة لفتح صفحة عرض تقارير مرتبطة بالمهمة — تثبيتها عالمياً إن أردت استعمال الزر -->
-window.openReport = (taskId) => {
-  // هنا يمكنك فتح نافذة جديدة لعرض كل التقارير المرتبطة بالمهمة
-  // مثال: window.location.href = `task-reports.html?task=${taskId}`
-  alert('فتح صفحة التقارير للمهمة: ' + taskId)
-}
-
-// ====== إعادة تحميل بعض الموارد بشكل دوري (اختياري) ======
-// setInterval(()=>{ loadNotifications().catch(logErr) }, 30_000) // كل 30 ثانية
+// تحميل البيانات عند البداية
+loadTasks();
+loadNotifications();
+loadMap();
 </script>
 </body>
 </html>
