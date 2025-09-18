@@ -84,6 +84,22 @@
   <!-- إدارة المستخدمين -->
   <section id="usersSection">
     <h3>إدارة حسابات المندوب والمشرف</h3>
+
+    <!-- نموذج إنشاء مستخدم جديد -->
+    <form id="createUserForm">
+      <div class="row">
+        <input type="email" id="newUserEmail" placeholder="البريد الإلكتروني" required>
+        <input type="password" id="newUserPassword" placeholder="كلمة المرور" required>
+      </div>
+      <select id="newUserRole" required>
+        <option value="">اختر الدور</option>
+        <option value="agent">مندوب</option>
+        <option value="supervisor">مشرف</option>
+      </select>
+      <button type="submit" class="primary">إنشاء حساب</button>
+    </form>
+
+    <h4>المستخدمون الحاليون</h4>
     <table>
       <thead><tr><th>البريد الإلكتروني</th><th>الدور</th><th>حذف</th></tr></thead>
       <tbody id="usersTableBody"></tbody>
@@ -101,7 +117,6 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 document.addEventListener('DOMContentLoaded', async ()=>{
 
-  // إدارة التبويبات
   const tabs = { tasks:'tasksSection', notifications:'notificationsSection', reports:'reportsSection', map:'mapSection', users:'usersSection' }
   Object.keys(tabs).forEach(key=>{
     document.getElementById(key+'Tab').addEventListener('click', ()=>{
@@ -114,7 +129,6 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 
   let agents = []
 
-  // جلب المناديب
   async function loadAgents(){
     try{
       const { data, error } = await supabase.from('users').select('id,email,role').eq('role','agent')
@@ -131,7 +145,6 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     }catch(err){ console.error('خطأ جلب المناديب:', err) }
   }
 
-  // تحميل المهام
   async function loadTasks(){
     try{
       const { data: tasks } = await supabase.from('tasks').select('*').order('created_at',{ascending:false})
@@ -146,7 +159,6 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     }catch(err){ console.error('خطأ تحميل المهام:', err) }
   }
 
-  // حذف مهمة
   document.getElementById('tasksTableBody').addEventListener('click', async e=>{
     if(e.target.classList.contains('deleteTaskBtn')){
       const id = e.target.dataset.id
@@ -156,7 +168,6 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     }
   })
 
-  // إضافة مهمة
   document.getElementById('taskForm').addEventListener('submit', async e=>{
     e.preventDefault()
     const client_name = document.getElementById('clientName').value.trim()
@@ -169,7 +180,6 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     await loadTasks()
   })
 
-  // إرسال إشعار
   document.getElementById('sendNotificationBtn').addEventListener('click', async ()=>{
     const msg = document.getElementById('notificationMessage').value.trim()
     const target = document.getElementById('notifySelect').value
@@ -184,7 +194,6 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     alert('تم الإرسال')
   })
 
-  // تحميل التقارير
   async function loadReports(){
     const { data: reports } = await supabase.from('reports').select('*').order('created_at',{ascending:false})
     const { data: tasks } = await supabase.from('tasks').select('id,client_name')
@@ -199,7 +208,6 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     })
   }
 
-  // إدارة المستخدمين
   async function loadUsers(){
     const { data: users } = await supabase.from('users').select('*').in('role',['agent','supervisor'])
     const tbody = document.getElementById('usersTableBody')
@@ -222,12 +230,34 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     }
   })
 
-  // تنفيذ التحميلات
+  // إنشاء مستخدم جديد
+  document.getElementById('createUserForm').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const email = document.getElementById('newUserEmail').value.trim();
+    const password = document.getElementById('newUserPassword').value;
+    const role = document.getElementById('newUserRole').value;
+    if(!email || !password || !role) return alert('أكمل جميع الحقول');
+
+    try {
+      const { user, error: signUpError } = await supabase.auth.signUp({ email, password });
+      if(signUpError) throw signUpError;
+
+      await supabase.from('users').insert([{ id: user.id, email, role }]);
+      alert('تم إنشاء الحساب بنجاح');
+      e.target.reset();
+      await loadUsers();
+      await loadAgents();
+      await loadTasks();
+    } catch(err){
+      console.error('خطأ إنشاء المستخدم:', err);
+      alert('حدث خطأ: '+err.message);
+    }
+  });
+
   await loadAgents()
   await loadTasks()
   await loadReports()
   await loadUsers()
-
 })
 </script>
 </body>
