@@ -1,0 +1,45 @@
+<script>
+document.getElementById('createUserForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const email = document.getElementById('newUserEmail').value.trim();
+  const password = document.getElementById('newUserPassword').value;
+  const role = document.getElementById('newUserRole').value;
+
+  if (!email || !password || !role) return alert('أكمل جميع الحقول');
+
+  try {
+    console.log("🚀 محاولة إنشاء مستخدم جديد:", { email, role });
+
+    // تسجيل المستخدم في Supabase Auth
+    const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
+    console.log("📌 نتيجة signUp:", { data, signUpError });
+
+    if (signUpError) throw signUpError;
+
+    const userId = data.user?.id;
+    console.log("✅ userId المسترجع:", userId);
+
+    if (!userId) throw new Error('❌ لم يتم إنشاء حساب المستخدم بشكل صحيح');
+
+    // إدخال بيانات إضافية في جدول users
+    const { data: insertData, error: insertError } = await supabase
+      .from('users')
+      .insert([{ id: userId, email, role }])
+      .select();
+
+    console.log("📌 نتيجة insert في جدول users:", { insertData, insertError });
+
+    if (insertError) throw insertError;
+
+    alert('✅ تم إنشاء الحساب وإضافته في قاعدة البيانات بنجاح');
+    e.target.reset();
+    await loadUsers();
+    await loadAgents();
+    await loadTasks();
+
+  } catch (err) {
+    console.error('❌ خطأ أثناء إنشاء المستخدم:', err);
+    alert('❌ حدث خطأ: ' + err.message);
+  }
+});
+</script>
