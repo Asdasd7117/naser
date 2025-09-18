@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>لوحة المندوب</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <style>
 body { font-family: Arial; margin:0; padding:0; background:#e0f7fa; }
 .container { max-width:1000px; margin:20px auto; padding:20px; }
@@ -66,17 +66,21 @@ button:hover { background:#0277bd; }
 </div>
 
 <script type="module">
-import * as L from 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+import * as L from 'https://unpkg.com/leaflet/dist/leaflet-src.esm.js';
 
 const supabaseUrl = "https://vkativialsvvbifhjrey.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpZVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3MzY3OTEwNX0.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// معرف المندوب
+// جلب معرف المندوب
 const agentId = localStorage.getItem('agentId');
-if(!agentId) alert('خطأ: معرف المندوب غير موجود');
+if(!agentId){
+  alert('خطأ: معرف المندوب غير موجود، سجل الدخول أولاً');
+  window.location.href = 'login.html';
+}
 
+// التبويبات
 const tabs = { tasks:'tasksSection', notifications:'notificationsSection', report:'reportSection', map:'mapSection' };
 Object.keys(tabs).forEach(key=>{
   document.getElementById(key+'Tab').addEventListener('click', ()=>{
@@ -93,16 +97,16 @@ async function loadTasks(){
   const { data: tasks } = await supabase.from('tasks').select('*').eq('assigned_to', agentId);
   const tbody=document.getElementById('tasksTableBody');
   tbody.innerHTML='';
-  const taskSelect=document.getElementById('taskSelect');
-  taskSelect.innerHTML='';
   tasks.forEach(t=>{
     const tr=document.createElement('tr');
     tr.innerHTML=`<td>${t.client_name}</td><td>${t.client_address}</td><td>${t.visit_time}</td><td>${t.status}</td>`;
     tbody.appendChild(tr);
-    const opt=document.createElement('option');
-    opt.value=t.id; opt.text=t.client_name;
-    taskSelect.appendChild(opt);
   });
+
+  // ملء قائمة رفع التقرير
+  const taskSelect=document.getElementById('taskSelect');
+  taskSelect.innerHTML='';
+  tasks.forEach(t=>{ const opt=document.createElement('option'); opt.value=t.id; opt.text=t.client_name; taskSelect.appendChild(opt); });
 }
 
 // تحميل الإشعارات
@@ -111,8 +115,7 @@ async function loadNotifications(){
   const ul=document.getElementById('notificationsList');
   ul.innerHTML='';
   notes.forEach(n=>{
-    const li=document.createElement('li'); li.textContent=n.message;
-    ul.appendChild(li);
+    const li=document.createElement('li'); li.textContent=n.message; ul.appendChild(li);
   });
 }
 
@@ -126,7 +129,7 @@ document.getElementById('reportForm').addEventListener('submit', async e=>{
 
   const fileExt = file.name.split('.').pop();
   const fileName = `reports/${taskId}_${Date.now()}.${fileExt}`;
-  const { data, error } = await supabase.storage.from('reports').upload(fileName, file);
+  const { error } = await supabase.storage.from('reports').upload(fileName, file);
   if(error) return alert('خطأ رفع الصورة: '+error.message);
 
   const imageUrl = `https://vkativialsvvbifhjrey.supabase.co/storage/v1/object/public/reports/${fileName}`;
