@@ -13,193 +13,223 @@ table, th, td { border:1px solid #ccc; }
 th, td { padding:8px; text-align:center; }
 input, select { padding:8px; margin:5px 0; border-radius:6px; border:1px solid #ccc; }
 img { max-width:150px; max-height:150px; border-radius:6px; }
-.map-container { margin-top:10px; margin-bottom:20px; }
-.map-wrapper { display:flex; align-items:center; gap:15px; margin-bottom:20px; }
-.map-wrapper h4 { width:150px; margin:0; }
-.map-wrapper #map { height:200px; flex:1; }
+.map-container { height:300px; margin-bottom:20px; border:1px solid #ccc; border-radius:6px; }
+.agent-map-title { font-weight:bold; margin-bottom:5px; }
 </style>
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 </head>
 <body>
 <div class="container">
   <h2>لوحة المشرف</h2>
 
-  <!-- تصفية المهام -->
+  <!-- اختيار المندوب -->
   <section>
-    <h3>المهام لجميع المندوبين</h3>
+    <h3>عرض بيانات المندوب</h3>
     <label>اختر المندوب:
-      <select id="filterAgent"><option value="">الكل</option></select>
-    </label>
-    <label>اختر الحالة:
-      <select id="filterStatus">
+      <select id="filterAgent">
         <option value="">الكل</option>
-        <option value="pending">قيد التنفيذ</option>
-        <option value="completed">مكتملة</option>
-        <option value="delayed">مؤجلة</option>
       </select>
     </label>
+  </section>
+
+  <!-- المهام -->
+  <section>
+    <h3>المهام</h3>
     <table>
-      <thead>
-        <tr>
-          <th>المندوب</th>
-          <th>العميل</th>
-          <th>العنوان</th>
-          <th>الوقت</th>
-          <th>الحالة</th>
-        </tr>
-      </thead>
+      <thead id="tasksHeader"></thead>
       <tbody id="tasksTableBody"></tbody>
     </table>
   </section>
 
   <!-- التقارير -->
   <section>
-    <h3>تقارير المندوبين</h3>
+    <h3>التقارير</h3>
     <table>
-      <thead>
-        <tr>
-          <th>المندوب</th>
-          <th>المهمة</th>
-          <th>التقرير</th>
-          <th>الصورة</th>
-          <th>تاريخ الرفع</th>
-        </tr>
-      </thead>
+      <thead id="reportsHeader"></thead>
       <tbody id="reportsTableBody"></tbody>
     </table>
   </section>
 
   <!-- الإشعارات -->
   <section>
-    <h3>الإشعارات الواردة من المدير</h3>
-    <ul id="notificationsList"></ul>
+    <h3>الإشعارات</h3>
+    <table>
+      <thead id="notificationsHeader"></thead>
+      <tbody id="notificationsTableBody"></tbody>
+    </table>
   </section>
 
-  <!-- خريطة كل مندوب -->
+  <!-- الخرائط لكل مندوب -->
   <section>
-    <h3>خرائط المناديب</h3>
-    <div id="mapsContainer" class="map-container"></div>
+    <h3>خرائط المندوبين</h3>
+    <div id="mapsContainer"></div>
   </section>
 </div>
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-import * as L from 'https://unpkg.com/leaflet/dist/leaflet.js';
 
 const supabaseUrl = "https://vkativialsvvbifhjrey.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3MzY3OTEwNX0.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// تحميل قائمة المندوبين للتصفية والخريطة
-async function loadAgents() {
+// تحميل المندوبين
+async function loadAgents(){
   const { data: agents } = await supabase.from('users').select('*').eq('role','agent');
   const select = document.getElementById('filterAgent');
   agents.forEach(a=>{
     const opt = document.createElement('option');
-    opt.value=a.id; opt.text=a.email_or_phone||a.email;
+    opt.value = a.id;
+    opt.text = a.email || a.email_or_phone || a.id;
     select.appendChild(opt);
   });
-  return agents;
 }
 
-// تحميل المهام
-async function loadTasks(agents){
-  const agentFilter = document.getElementById('filterAgent').value;
-  const statusFilter = document.getElementById('filterStatus').value;
-
+// تحميل المهام ديناميكياً
+async function loadTasks(agentId=null){
   let query = supabase.from('tasks').select('*');
-  if(agentFilter) query = query.eq('assigned_to', agentFilter);
-  if(statusFilter) query = query.eq('status', statusFilter);
-
+  if(agentId) query = query.eq('assigned_to', agentId);
   const { data: tasks } = await query;
 
   const tbody = document.getElementById('tasksTableBody');
+  const thead = document.getElementById('tasksHeader');
   tbody.innerHTML='';
-  tasks.forEach(t=>{
-    const agent = agents.find(a=>a.id===t.assigned_to);
-    const tr = document.createElement('tr');
-    tr.innerHTML=`<td>${agent?.email_or_phone||agent?.email||'-'}</td><td>${t.client_name||'-'}</td><td>${t.client_address||'-'}</td><td>${t.visit_time||'-'}</td><td>${t.status||'-'}</td>`;
-    tbody.appendChild(tr);
-  });
+  thead.innerHTML='';
+
+  if(tasks.length){
+    const headerRow = document.createElement('tr');
+    Object.keys(tasks[0]).forEach(k=>{
+      const th = document.createElement('th');
+      th.textContent = k;
+      headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+
+    tasks.forEach(t=>{
+      const tr = document.createElement('tr');
+      Object.keys(t).forEach(k=>{
+        const td = document.createElement('td');
+        td.textContent = t[k] || '-';
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+  }
 }
 
-// تحميل التقارير
-async function loadReports(agents){
-  const { data: reports } = await supabase.from('reports').select('*');
-  const { data: tasks } = await supabase.from('tasks').select('*');
+// تحميل التقارير ديناميكياً
+async function loadReports(agentId=null){
+  let query = supabase.from('reports').select('*');
+  if(agentId) query = query.eq('agent_id', agentId);
+  const { data: reports } = await query;
 
   const tbody = document.getElementById('reportsTableBody');
+  const thead = document.getElementById('reportsHeader');
   tbody.innerHTML='';
-  reports.forEach(r=>{
-    const agent = agents.find(a=>a.id===r.agent_id);
-    const task = tasks.find(t=>t.id===r.task_id);
-    const tr = document.createElement('tr');
-    tr.innerHTML=`<td>${agent?.email_or_phone||agent?.email||'-'}</td><td>${task?.client_name||'-'}</td><td>${r.report_text||'-'}</td><td>${r.image_url ? `<img src="${r.image_url}">`:'-'}</td><td>${r.created_at||'-'}</td>`;
-    tbody.appendChild(tr);
-  });
+  thead.innerHTML='';
+
+  if(reports.length){
+    const headerRow = document.createElement('tr');
+    Object.keys(reports[0]).forEach(k=>{
+      const th = document.createElement('th'); th.textContent = k;
+      headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+
+    reports.forEach(r=>{
+      const tr = document.createElement('tr');
+      Object.keys(r).forEach(k=>{
+        const td = document.createElement('td');
+        td.textContent = r[k] || '-';
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+  }
 }
 
-// تحميل الإشعارات
-async function loadNotifications(agents){
-  const { data: notifications } = await supabase.from('notifications').select('*');
-  const ul = document.getElementById('notificationsList');
-  ul.innerHTML='';
-  notifications.forEach(n=>{
-    const agent = agents.find(a=>a.id===n.user_id||a.id===n.assigned_to);
-    if(agent){
-      const li = document.createElement('li');
-      li.textContent = `[${agent.email_or_phone||agent.email}] ${n.message||n.msg||n.text||'-'}`;
-      ul.appendChild(li);
+// تحميل الإشعارات ديناميكياً
+async function loadNotifications(agentId=null){
+  let query = supabase.from('notifications').select('*');
+  if(agentId) query = query.eq('user_id', agentId);
+  const { data: notifications } = await query;
+
+  const tbody = document.getElementById('notificationsTableBody');
+  const thead = document.getElementById('notificationsHeader');
+  tbody.innerHTML='';
+  thead.innerHTML='';
+
+  if(notifications.length){
+    const headerRow = document.createElement('tr');
+    Object.keys(notifications[0]).forEach(k=>{
+      const th = document.createElement('th'); th.textContent = k;
+      headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+
+    notifications.forEach(n=>{
+      const tr = document.createElement('tr');
+      Object.keys(n).forEach(k=>{
+        const td = document.createElement('td');
+        td.textContent = n[k] || '-';
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+  }
+}
+
+// تحميل الخرائط
+async function loadMaps(){
+  const { data: agents } = await supabase.from('users').select('*').eq('role','agent');
+  const { data: tasks } = await supabase.from('tasks').select('*');
+  const container = document.getElementById('mapsContainer');
+  container.innerHTML='';
+
+  agents.forEach(agent=>{
+    const div = document.createElement('div');
+    div.classList.add('map-container');
+
+    const title = document.createElement('div');
+    title.classList.add('agent-map-title');
+    title.textContent = agent.email || agent.id;
+    div.appendChild(title);
+
+    const mapDiv = document.createElement('div');
+    mapDiv.style.height='250px';
+    div.appendChild(mapDiv);
+    container.appendChild(div);
+
+    // إيجاد أي أعمدة lat/lng
+    const t = tasks.find(task => task.assigned_to===agent.id && (task.lat || task.latitude));
+    if(t){
+      const lat = t.lat || t.latitude;
+      const lng = t.lng || t.longitude;
+      if(lat && lng){
+        import('https://unpkg.com/leaflet/dist/leaflet.js').then(L=>{
+          const map = L.map(mapDiv).setView([lat,lng], 13);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'&copy; OpenStreetMap contributors' }).addTo(map);
+          L.marker([lat,lng]).addTo(map);
+        });
+      }
     }
   });
 }
 
-// تحميل خرائط المناديب
-async function loadMaps(agents){
-  const container = document.getElementById('mapsContainer');
-  container.innerHTML='';
-  agents.forEach(a=>{
-    const wrapper = document.createElement('div');
-    wrapper.className = 'map-wrapper';
-    const title = document.createElement('h4');
-    title.textContent = a.email_or_phone||a.email||'-';
-    const mapDiv = document.createElement('div');
-    mapDiv.id = 'map_'+a.id;
-    mapDiv.style.height = '200px';
-    mapDiv.style.flex = '1';
-    wrapper.appendChild(title);
-    wrapper.appendChild(mapDiv);
-    container.appendChild(wrapper);
-
-    // إنشاء الخريطة
-    const map = L.map(mapDiv.id).setView([30.0444,31.2357],10); // القاهرة افتراضياً
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-      attribution:'&copy; OpenStreetMap contributors'
-    }).addTo(map);
-    // مثال: علامة افتراضية
-    L.marker([30.0444,31.2357]).addTo(map).bindPopup(a.email_or_phone||a.email);
-  });
-}
-
-// التصفية عند تغيير الاختيار
-document.getElementById('filterAgent').addEventListener('change', async ()=>{
-  const agents = await loadAgents();
-  await loadTasks(agents);
-});
-document.getElementById('filterStatus').addEventListener('change', async ()=>{
-  const agents = await loadAgents();
-  await loadTasks(agents);
+// اختيار المندوب
+document.getElementById('filterAgent').addEventListener('change', e=>{
+  const agentId = e.target.value || null;
+  loadTasks(agentId);
+  loadReports(agentId);
+  loadNotifications(agentId);
 });
 
-// تحميل كل البيانات عند البداية
-(async()=>{
-  const agents = await loadAgents();
-  await loadTasks(agents);
-  await loadReports(agents);
-  await loadNotifications(agents);
-  await loadMaps(agents);
-})();
+// تحميل البيانات عند البداية
+loadAgents().then(()=>{
+  loadTasks();
+  loadReports();
+  loadNotifications();
+  loadMaps();
+});
 </script>
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </body>
 </html>
