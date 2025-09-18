@@ -3,9 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <title>لوحة المشرف</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
 body { font-family: Arial; margin:0; padding:0; background:#e0f7fa; }
-.container { max-width:1000px; margin:20px auto; padding:20px; }
+.container { max-width:1200px; margin:20px auto; padding:20px; }
 h2 { text-align:center; color:#0277bd; }
 section { margin-bottom:30px; padding:15px; background:#fff; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.1);}
 table { width:100%; border-collapse: collapse; margin-top:10px; }
@@ -13,6 +14,7 @@ table, th, td { border:1px solid #ccc; }
 th, td { padding:8px; text-align:center; }
 input, select { padding:8px; margin:5px 0; border-radius:6px; border:1px solid #ccc; }
 img { max-width:150px; max-height:150px; border-radius:6px; }
+#map { height:400px; margin-top:10px; border-radius:12px; }
 </style>
 </head>
 <body>
@@ -23,9 +25,7 @@ img { max-width:150px; max-height:150px; border-radius:6px; }
   <section>
     <h3>المهام لجميع المندوبين</h3>
     <label>اختر المندوب:
-      <select id="filterAgent">
-        <option value="">الكل</option>
-      </select>
+      <select id="filterAgent"><option value="">الكل</option></select>
     </label>
     <label>اختر الحالة:
       <select id="filterStatus">
@@ -65,28 +65,38 @@ img { max-width:150px; max-height:150px; border-radius:6px; }
       <tbody id="reportsTableBody"></tbody>
     </table>
   </section>
+
+  <!-- خريطة -->
+  <section>
+    <h3>خريطة المندوبين</h3>
+    <div id="map"></div>
+  </section>
+
 </div>
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
 const supabaseUrl = "https://vkativialsvvbifhjrey.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpZVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3MzY3OTEwNX0.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3MzY3OTEwNX0.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0";
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // تحميل قائمة المندوبين للتصفية
 async function loadAgents(){
-  const { data: agents } = await supabase.from('users').select('*').eq('role','agent');
+  const { data: agents, error } = await supabase.from('users').select('*').eq('role','agent');
+  if(error){ console.error(error); return []; }
   const select = document.getElementById('filterAgent');
   agents.forEach(a=>{
     const opt = document.createElement('option');
-    opt.value=a.id; opt.text=a.email_or_phone;
+    opt.value = a.id; opt.text = a.email;
     select.appendChild(opt);
   });
+  return agents;
 }
 
 // تحميل المهام
-async function loadTasks(){
+async function loadTasks(agents){
   const agentFilter = document.getElementById('filterAgent').value;
   const statusFilter = document.getElementById('filterStatus').value;
 
@@ -94,43 +104,79 @@ async function loadTasks(){
   if(agentFilter) query = query.eq('assigned_to', agentFilter);
   if(statusFilter) query = query.eq('status', statusFilter);
 
-  const { data: tasks } = await query;
-  const { data: agents } = await supabase.from('users').select('*').eq('role','agent');
+  const { data: tasks, error } = await query;
+  if(error){ console.error(error); return; }
 
   const tbody = document.getElementById('tasksTableBody');
   tbody.innerHTML='';
   tasks.forEach(t=>{
-    const agent = agents.find(a=>a.id===t.assigned_to);
+    // إذا الحقل خاطئ استخدم أي عمود مشابه
+    const agent = agents.find(a=>a.id===t.assigned_to || a.id===t.agent_id);
     const tr = document.createElement('tr');
-    tr.innerHTML=`<td>${agent?.email_or_phone||'-'}</td><td>${t.client_name}</td><td>${t.client_address}</td><td>${t.visit_time}</td><td>${t.status}</td>`;
+    tr.innerHTML = `<td>${agent?.email||'-'}</td>
+                    <td>${t.client_name||t.client||'-'}</td>
+                    <td>${t.client_address||'-'}</td>
+                    <td>${t.visit_time||'-'}</td>
+                    <td>${t.status||'-'}</td>`;
     tbody.appendChild(tr);
   });
 }
 
 // تحميل التقارير
-async function loadReports(){
-  const { data: reports } = await supabase.from('reports').select('*');
-  const { data: agents } = await supabase.from('users').select('*').eq('role','agent');
-  const { data: tasks } = await supabase.from('tasks').select('*');
+async function loadReports(agents, tasks){
+  const { data: reports, error } = await supabase.from('reports').select('*');
+  if(error){ console.error(error); return; }
 
   const tbody = document.getElementById('reportsTableBody');
   tbody.innerHTML='';
   reports.forEach(r=>{
-    const agent = agents.find(a=>a.id===r.agent_id);
+    const agent = agents.find(a=>a.id===r.agent_id || a.id===r.user_id);
     const task = tasks.find(t=>t.id===r.task_id);
     const tr = document.createElement('tr');
-    tr.innerHTML=`<td>${agent?.email_or_phone||'-'}</td><td>${task?.client_name||'-'}</td><td>${r.report_text}</td><td>${r.image_url ? `<img src="${r.image_url}">`:'-'}</td><td>${r.created_at}</td>`;
+    tr.innerHTML=`<td>${agent?.email||'-'}</td>
+                  <td>${task?.client_name||r.client_name||'-'}</td>
+                  <td>${r.report_text||r.description||'-'}</td>
+                  <td>${r.image_url ? `<img src="${r.image_url}">`:'-'}</td>
+                  <td>${r.created_at||'-'}</td>`;
     tbody.appendChild(tr);
   });
 }
 
+// تحميل الخريطة
+function loadMap(agents){
+  const map = L.map('map').setView([30.0444,31.2357], 6); // مركز على مصر
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    attribution:'&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  agents.forEach(a=>{
+    if(a.lat && a.lng){ // استخدم أي عمود لإحداثيات المندوب
+      L.marker([a.lat,a.lng]).addTo(map)
+       .bindPopup(`<b>${a.email}</b>`);
+    }
+  });
+}
+
 // التصفية عند تغيير الاختيار
-document.getElementById('filterAgent').addEventListener('change', loadTasks);
-document.getElementById('filterStatus').addEventListener('change', loadTasks);
+document.getElementById('filterAgent').addEventListener('change', async ()=>{
+  const agents = await loadAgents();
+  await loadTasks(agents);
+});
+document.getElementById('filterStatus').addEventListener('change', async ()=>{
+  const agents = await loadAgents();
+  await loadTasks(agents);
+});
 
 // تحميل البيانات عند البداية
-loadAgents().then(loadTasks);
-loadReports();
+(async ()=>{
+  const agents = await loadAgents();
+  const tasks = (await supabase.from('tasks').select('*')).data || [];
+  await loadTasks(agents);
+  await loadReports(agents, tasks);
+  loadMap(agents);
+})();
 </script>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </body>
 </html>
