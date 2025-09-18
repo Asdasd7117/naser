@@ -17,14 +17,14 @@ button:hover { background:#0277bd; }
 <body>
 <div class="container">
   <h2 id="formTitle">تسجيل الدخول</h2>
-  
+
   <!-- نموذج تسجيل الدخول -->
   <form id="loginForm">
     <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" required>
     <input type="password" id="loginPassword" placeholder="كلمة المرور" required>
     <button type="submit">تسجيل الدخول</button>
   </form>
-  
+
   <!-- نموذج إنشاء حساب -->
   <form id="signupForm" style="display:none;">
     <input type="email" id="signupEmail" placeholder="البريد الإلكتروني" required>
@@ -37,7 +37,7 @@ button:hover { background:#0277bd; }
     </select>
     <button type="submit">إنشاء الحساب</button>
   </form>
-  
+
   <div class="toggle" id="toggleForm">ليس لديك حساب؟ أنشئ حساب</div>
 </div>
 
@@ -92,15 +92,13 @@ loginForm.addEventListener('submit', async e=>{
   localStorage.setItem('userId', user.id);
   localStorage.setItem('userRole', user.role);
 
-  // تحويل المستخدم حسب الدور
+  // تحويل المستخدم حسب دوره
   if(user.role === 'admin'){
-    window.location.href = 'admin.html';
+    window.location.href = 'admin.html'; // صفحة المدير
   } else if(user.role === 'agent'){
-    window.location.href = 'agent.html';
+    window.location.href = 'agent.html'; // صفحة المندوب
   } else if(user.role === 'supervisor'){
-    window.location.href = 'supervisor.html';
-  } else {
-    alert('دور غير معروف');
+    window.location.href = 'supervisor.html'; // صفحة المشرف
   }
 });
 
@@ -120,6 +118,7 @@ signupForm.addEventListener('submit', async e=>{
   if(error){ alert('خطأ: ' + error.message); return; }
 
   alert('تم إنشاء الحساب بنجاح');
+  // بعد إنشاء الحساب، العودة لتسجيل الدخول
   toggleForm.click();
 });
 </script>
