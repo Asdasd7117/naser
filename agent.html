@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <title>لوحة المندوب</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <style>
 body { font-family: Arial; margin:0; padding:0; background:#e0f7fa; }
 .container { max-width:1000px; margin:20px auto; padding:20px; }
 h2 { text-align:center; color:#0277bd; }
-nav { display:flex; gap:15px; justify-content:center; margin-bottom:20px; flex-wrap:wrap; }
+nav { display:flex; gap:15px; justify-content:center; margin-bottom:20px; }
 nav button { padding:10px 15px; border:none; border-radius:6px; background:#4dd0e1; cursor:pointer; }
 nav button.active { background:#0288d1; color:#fff; }
 section { display:none; margin-bottom:30px; padding:15px; background:#fff; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.1);}
@@ -60,28 +60,28 @@ button:hover { background:#0277bd; }
 
   <!-- خريطة المهام -->
   <section id="mapSection">
-    <h3>خريطة المهام (القاهرة)</h3>
+    <h3>خريطة المهام</h3>
     <div id="map"></div>
   </section>
 </div>
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-import L from 'https://cdn.jsdelivr.net/npm/leaflet/dist/leaflet.js';
 
 const supabaseUrl = "https://vkativialsvvbifhjrey.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpZVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3MzY3OTEwNX0.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0";
-
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// معرف المندوب من تسجيل الدخول
-let agentId = localStorage.getItem('userId');
-if(!agentId){
-  alert('خطأ: لم يتم العثور على معرف المندوب. يرجى تسجيل الدخول مجددًا.');
-}
+// معرف المندوب بعد تسجيل الدخول
+let agentId = localStorage.getItem('userId'); // حفظ من صفحة تسجيل الدخول
+if(!agentId) alert('خطأ: معرف المندوب غير موجود');
 
-// التنقل بين التبويبات
-const tabs = { tasks:'tasksSection', notifications:'notificationsSection', report:'reportSection', map:'mapSection' };
+const tabs = {
+  tasks:'tasksSection',
+  notifications:'notificationsSection',
+  report:'reportSection',
+  map:'mapSection'
+};
 Object.keys(tabs).forEach(key=>{
   document.getElementById(key+'Tab').addEventListener('click', ()=>{
     Object.values(tabs).forEach(s=>document.getElementById(s).classList.remove('active'));
@@ -102,7 +102,6 @@ async function loadTasks(){
     tr.innerHTML=`<td>${t.client_name}</td><td>${t.client_address}</td><td>${t.visit_time}</td><td>${t.status}</td>`;
     tbody.appendChild(tr);
   });
-
   // ملء قائمة رفع التقرير
   const taskSelect=document.getElementById('taskSelect');
   taskSelect.innerHTML='';
@@ -138,11 +137,11 @@ document.getElementById('reportForm').addEventListener('submit', async e=>{
   document.getElementById('reportForm').reset();
 });
 
-// الخريطة
+// خريطة المهام
 let map;
 async function loadMap(){
   if(!map){
-    map=L.map('map').setView([30.0444,31.2357],12);
+    map=L.map('map').setView([30.0444,31.2357],12); // القاهرة
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
       attribution:'&copy; OpenStreetMap contributors'
     }).addTo(map);
@@ -150,16 +149,18 @@ async function loadMap(){
   const { data: tasks } = await supabase.from('tasks').select('*').eq('assigned_to', agentId);
   map.eachLayer(l=>{ if(l instanceof L.Marker) map.removeLayer(l); });
   tasks.forEach(t=>{
-    if(t.client_address){
+    if(t.client_address){ 
       L.marker([30.0444,31.2357]).addTo(map).bindPopup(`${t.client_name}<br>${t.client_address}`);
     }
   });
 }
 
-// تحميل كل البيانات عند البداية
+// تحميل البيانات عند البداية
 loadTasks();
 loadNotifications();
 loadMap();
 </script>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </body>
 </html>
