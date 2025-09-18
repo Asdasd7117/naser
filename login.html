@@ -4,104 +4,115 @@
 <meta charset="UTF-8">
 <title>تسجيل الدخول / إنشاء حساب</title>
 <style>
-body { font-family: Arial; background:#e0f7fa; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
-.container { background:#fff; padding:30px; border-radius:12px; box-shadow:0 5px 20px rgba(0,0,0,0.2); width:350px; }
+body { font-family: Arial; background:#e0f7fa; margin:0; padding:0; }
+.container { max-width:400px; margin:50px auto; padding:20px; background:#fff; border-radius:10px; box-shadow:0 5px 15px rgba(0,0,0,0.1); }
 h2 { text-align:center; color:#0277bd; }
-form { display:flex; flex-direction:column; }
-input, button { padding:10px; margin:8px 0; border-radius:6px; border:1px solid #ccc; }
-button { background:#0288d1; color:#fff; cursor:pointer; border:none; }
+form { display:flex; flex-direction:column; gap:10px; }
+input, select, button { padding:10px; border-radius:6px; border:1px solid #ccc; }
+button { background:#0288d1; color:#fff; border:none; cursor:pointer; }
 button:hover { background:#0277bd; }
-.toggle { background:none; border:none; color:#0288d1; cursor:pointer; margin-top:5px; text-decoration:underline; }
+.toggle { text-align:center; margin-top:10px; cursor:pointer; color:#0288d1; }
 </style>
 </head>
 <body>
 <div class="container">
   <h2 id="formTitle">تسجيل الدخول</h2>
-  <form id="authForm">
-    <input type="email" id="email" placeholder="البريد الإلكتروني" required>
-    <input type="password" id="password" placeholder="كلمة المرور" required>
-    <select id="role" required style="display:none;">
+  
+  <!-- نموذج تسجيل الدخول -->
+  <form id="loginForm">
+    <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" required>
+    <input type="password" id="loginPassword" placeholder="كلمة المرور" required>
+    <button type="submit">تسجيل الدخول</button>
+  </form>
+  
+  <!-- نموذج إنشاء حساب -->
+  <form id="signupForm" style="display:none;">
+    <input type="email" id="signupEmail" placeholder="البريد الإلكتروني" required>
+    <input type="password" id="signupPassword" placeholder="كلمة المرور" required>
+    <select id="signupRole" required>
       <option value="">اختر الدور</option>
       <option value="admin">مدير</option>
-      <option value="supervisor">مشرف</option>
       <option value="agent">مندوب</option>
+      <option value="supervisor">مشرف</option>
     </select>
-    <button type="submit" id="submitBtn">تسجيل الدخول</button>
+    <button type="submit">إنشاء الحساب</button>
   </form>
-  <button class="toggle" id="toggleBtn">إنشاء حساب جديد</button>
+  
+  <div class="toggle" id="toggleForm">ليس لديك حساب؟ أنشئ حساب</div>
 </div>
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
+// ضع هنا مفتاحك الصحيح
 const supabaseUrl = "https://vkativialsvvbifhjrey.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpZVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3Njc5MTA1fQ.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpZVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3MzY3OTEwNX0.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0";
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-const authForm = document.getElementById('authForm');
-const emailInput = document.getElementById('email');
-const passwordInput = document.getElementById('password');
-const roleSelect = document.getElementById('role');
-const submitBtn = document.getElementById('submitBtn');
-const toggleBtn = document.getElementById('toggleBtn');
+const loginForm = document.getElementById('loginForm');
+const signupForm = document.getElementById('signupForm');
+const toggleForm = document.getElementById('toggleForm');
 const formTitle = document.getElementById('formTitle');
 
-let isLogin = true;
-
-// التبديل بين تسجيل الدخول وإنشاء حساب
-toggleBtn.addEventListener('click', ()=>{
-  isLogin = !isLogin;
-  if(isLogin){
-    formTitle.textContent = "تسجيل الدخول";
-    submitBtn.textContent = "تسجيل الدخول";
-    roleSelect.style.display = "none";
-    toggleBtn.textContent = "إنشاء حساب جديد";
+// تبديل بين تسجيل الدخول وإنشاء حساب
+toggleForm.addEventListener('click', ()=>{
+  if(loginForm.style.display !== 'none'){
+    loginForm.style.display = 'none';
+    signupForm.style.display = 'flex';
+    formTitle.textContent = "إنشاء حساب";
+    toggleForm.textContent = "لديك حساب؟ تسجيل الدخول";
   } else {
-    formTitle.textContent = "إنشاء حساب جديد";
-    submitBtn.textContent = "إنشاء حساب";
-    roleSelect.style.display = "block";
-    toggleBtn.textContent = "لدي حساب بالفعل";
+    loginForm.style.display = 'flex';
+    signupForm.style.display = 'none';
+    formTitle.textContent = "تسجيل الدخول";
+    toggleForm.textContent = "ليس لديك حساب؟ أنشئ حساب";
   }
 });
 
-// التعامل مع النموذج
-authForm.addEventListener('submit', async (e)=>{
+// تسجيل الدخول
+loginForm.addEventListener('submit', async e=>{
   e.preventDefault();
-  const email = emailInput.value;
-  const password = passwordInput.value;
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
 
-  if(isLogin){
-    // تسجيل الدخول
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', email)
-      .eq('password', password)
-      .single();
+  const { data: user, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('email', email)
+    .eq('password', password)
+    .single();
 
-    if(error || !data) return alert('خطأ في البريد أو كلمة المرور');
-    localStorage.setItem('userId', data.id);
-    localStorage.setItem('userRole', data.role);
-    alert(`تم تسجيل الدخول كـ ${data.role}`);
-    // هنا يمكن إعادة التوجيه إلى صفحة المدير/المشرف/المندوب حسب الدور
-  } else {
-    // إنشاء حساب جديد
-    const role = roleSelect.value;
-    if(!role) return alert('اختر دور المستخدم');
-    const { data, error } = await supabase
-      .from('users')
-      .insert([{ email, password, role }])
-      .select()
-      .single();
-
-    if(error) return alert('خطأ إنشاء الحساب: ' + error.message);
-    localStorage.setItem('userId', data.id);
-    localStorage.setItem('userRole', data.role);
-    alert(`تم إنشاء الحساب بنجاح كـ ${data.role}`);
-    // هنا يمكن إعادة التوجيه
+  if(error || !user){
+    alert('خطأ في البريد أو كلمة المرور');
+    return;
   }
 
-  authForm.reset();
+  // حفظ معرف المستخدم ودوره في localStorage
+  localStorage.setItem('userId', user.id);
+  localStorage.setItem('userRole', user.role);
+  alert(`تم تسجيل الدخول كـ ${user.role}`);
+  // هنا يمكنك تحويل المستخدم للوحة المناسبة حسب الدور
+});
+
+// إنشاء حساب جديد
+signupForm.addEventListener('submit', async e=>{
+  e.preventDefault();
+  const email = document.getElementById('signupEmail').value;
+  const password = document.getElementById('signupPassword').value;
+  const role = document.getElementById('signupRole').value;
+
+  if(!role){ alert('اختر الدور'); return; }
+
+  const { data, error } = await supabase
+    .from('users')
+    .insert([{ email, password, role }]);
+
+  if(error){ alert('خطأ: ' + error.message); return; }
+
+  alert('تم إنشاء الحساب بنجاح');
+  // بعد إنشاء الحساب، العودة لتسجيل الدخول
+  toggleForm.click();
 });
 </script>
 </body>
