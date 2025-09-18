@@ -1,1 +1,169 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>لوحة المندوب</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<style>
+body { font-family: Arial; margin:0; padding:0; background:#e0f7fa; }
+.container { max-width:1000px; margin:20px auto; padding:20px; }
+h2 { text-align:center; color:#0277bd; }
+nav { display:flex; gap:15px; justify-content:center; margin-bottom:20px; }
+nav button { padding:10px 15px; border:none; border-radius:6px; background:#4dd0e1; cursor:pointer; }
+nav button.active { background:#0288d1; color:#fff; }
+section { display:none; margin-bottom:30px; padding:15px; background:#fff; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.1);}
+section.active { display:block; }
+table { width:100%; border-collapse: collapse; margin-top:10px; }
+table, th, td { border:1px solid #ccc; }
+th, td { padding:8px; text-align:center; }
+input, select, button, textarea { padding:8px; margin:5px 0; border-radius:6px; border:1px solid #ccc; }
+button { background:#0288d1; color:#fff; cursor:pointer; }
+button:hover { background:#0277bd; }
+#map { height:400px; width:100%; margin-top:15px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>لوحة المندوب</h2>
+  <nav>
+    <button data-tab="tasks" class="active">مهامي</button>
+    <button data-tab="notifications">الإشعارات</button>
+    <button data-tab="report">رفع تقرير</button>
+    <button data-tab="map">خريطة المهام</button>
+  </nav>
 
+  <!-- المهام -->
+  <section id="tasks" class="active">
+    <h3>مهامي الحالية</h3>
+    <table>
+      <thead><tr><th>العميل</th><th>العنوان</th><th>الوقت</th><th>الحالة</th></tr></thead>
+      <tbody id="tasksTableBody"></tbody>
+    </table>
+  </section>
+
+  <!-- الإشعارات -->
+  <section id="notifications">
+    <h3>الإشعارات</h3>
+    <ul id="notificationsList"></ul>
+  </section>
+
+  <!-- رفع تقرير -->
+  <section id="report">
+    <h3>رفع تقرير المهمة</h3>
+    <form id="reportForm">
+      <select id="taskSelect" required></select>
+      <textarea id="reportText" placeholder="اكتب تقريرك هنا..." required></textarea>
+      <input type="file" id="reportImage" accept="image/*" required>
+      <button type="submit">رفع التقرير</button>
+    </form>
+  </section>
+
+  <!-- خريطة المهام -->
+  <section id="map">
+    <h3>خريطة المهام</h3>
+    <div id="mapDiv"></div>
+  </section>
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+import L from 'https://unpkg.com/leaflet/dist/leaflet.js';
+
+// مفتاحك هنا
+const supabaseUrl = "https://vkativialsvvbifhjrey.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpZVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3MzY3OTEwNX0.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0";
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// معرف المندوب بعد تسجيل الدخول
+let agentId = localStorage.getItem('userId'); 
+if(!agentId) alert('خطأ: المندوب غير مسجل الدخول');
+
+// --- تبويبات ---
+document.addEventListener('DOMContentLoaded', ()=>{
+  const buttons = document.querySelectorAll('nav button');
+  buttons.forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const tab = btn.dataset.tab;
+      document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
+      buttons.forEach(b=>b.classList.remove('active'));
+      document.getElementById(tab).classList.add('active');
+      btn.classList.add('active');
+      if(tab==='map') loadMap();
+    });
+  });
+
+  loadTasks();
+  loadNotifications();
+  loadMap();
+});
+
+// --- تحميل المهام ---
+async function loadTasks(){
+  const { data: tasks, error } = await supabase.from('tasks').select('*').eq('assigned_to', agentId);
+  if(error) return console.error(error);
+  const tbody = document.getElementById('tasksTableBody');
+  tbody.innerHTML='';
+  const taskSelect = document.getElementById('taskSelect');
+  taskSelect.innerHTML='';
+  tasks.forEach(t=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML=`<td>${t.client_name}</td><td>${t.client_address}</td><td>${t.visit_time}</td><td>${t.status}</td>`;
+    tbody.appendChild(tr);
+    // لرفع التقرير
+    const opt = document.createElement('option');
+    opt.value=t.id; opt.text=t.client_name;
+    taskSelect.appendChild(opt);
+  });
+}
+
+// --- تحميل الإشعارات ---
+async function loadNotifications(){
+  const { data: notes, error } = await supabase.from('notifications').select('*').eq('user_id', agentId).order('created_at',{ascending:false});
+  if(error) return console.error(error);
+  const ul = document.getElementById('notificationsList');
+  ul.innerHTML='';
+  notes.forEach(n=>{
+    const li = document.createElement('li');
+    li.textContent=n.message;
+    ul.appendChild(li);
+  });
+}
+
+// --- رفع تقرير ---
+document.getElementById('reportForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const taskId = document.getElementById('taskSelect').value;
+  const reportText = document.getElementById('reportText').value;
+  const file = document.getElementById('reportImage').files[0];
+  if(!file) return alert('اختر صورة');
+
+  const fileExt = file.name.split('.').pop();
+  const fileName = `reports/${taskId}_${Date.now()}.${fileExt}`;
+  const { data, error } = await supabase.storage.from('reports').upload(fileName, file);
+  if(error) return alert('خطأ رفع الصورة: '+error.message);
+  const imageUrl = `https://vkativialsvvbifhjrey.supabase.co/storage/v1/object/public/reports/${fileName}`;
+
+  await supabase.from('reports').insert([{ task_id:taskId, agent_id:agentId, report_text:reportText, image_url:imageUrl }]);
+  alert('تم رفع التقرير بنجاح');
+  e.target.reset();
+});
+
+// --- خريطة ---
+let map;
+async function loadMap(){
+  if(!map){
+    map=L.map('mapDiv').setView([30.0444,31.2357],12); // القاهرة
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      attribution:'&copy; OpenStreetMap contributors'
+    }).addTo(map);
+  }
+  const { data: tasks, error } = await supabase.from('tasks').select('*').eq('assigned_to', agentId);
+  if(error) return console.error(error);
+  map.eachLayer(l=>{ if(l instanceof L.Marker) map.removeLayer(l); });
+  tasks.forEach(t=>{
+    L.marker([30.0444,31.2357]).addTo(map).bindPopup(`${t.client_name}<br>${t.client_address}`);
+  });
+}
+</script>
+</body>
+</html>
