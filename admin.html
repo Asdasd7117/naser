@@ -109,11 +109,12 @@ button.primary { background:#0288d1; color:#fff; border:none; cursor:pointer; pa
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
 const SUPABASE_URL = 'https://vkativialsvvbifhjrey.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODEwMzEwNSwiZXhwIjoyMDczNjc5MTA1fQ.xUR96RId88zr0VhJNuxEy55FSKUFTRVqxJQMMHNkoMY';
+const SUPABASE_KEY = 'YOUR_SUPABASE_KEY_HERE';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 document.addEventListener('DOMContentLoaded', async ()=>{
 
+// التبويبات
 const tabs = { tasks:'tasksSection', notifications:'notificationsSection', reports:'reportsSection', map:'mapSection', users:'usersSection' }
 Object.keys(tabs).forEach(key=>{
   document.getElementById(key+'Tab').addEventListener('click', ()=>{
@@ -126,6 +127,7 @@ Object.keys(tabs).forEach(key=>{
 
 let agents = []
 
+// تحميل المندوبين
 async function loadAgents(){
   try{
     const { data, error } = await supabase.from('users').select('id,email,role').eq('role','agent')
@@ -142,6 +144,7 @@ async function loadAgents(){
   }catch(err){ console.error('خطأ جلب المناديب:', err) }
 }
 
+// تحميل المهام
 async function loadTasks(){
   try{
     const { data: tasks } = await supabase.from('tasks').select('*').order('created_at',{ascending:false})
@@ -156,6 +159,7 @@ async function loadTasks(){
   }catch(err){ console.error('خطأ تحميل المهام:', err) }
 }
 
+// حذف مهمة
 document.getElementById('tasksTableBody').addEventListener('click', async e=>{
   if(e.target.classList.contains('deleteTaskBtn')){
     const id = e.target.dataset.id
@@ -165,6 +169,7 @@ document.getElementById('tasksTableBody').addEventListener('click', async e=>{
   }
 })
 
+// إنشاء مهمة
 document.getElementById('taskForm').addEventListener('submit', async e=>{
   e.preventDefault()
   const client_name = document.getElementById('clientName').value.trim()
@@ -177,6 +182,7 @@ document.getElementById('taskForm').addEventListener('submit', async e=>{
   await loadTasks()
 })
 
+// إرسال إشعار
 document.getElementById('sendNotificationBtn').addEventListener('click', async ()=>{
   const msg = document.getElementById('notificationMessage').value.trim()
   const target = document.getElementById('notifySelect').value
@@ -191,6 +197,7 @@ document.getElementById('sendNotificationBtn').addEventListener('click', async (
   alert('تم الإرسال')
 })
 
+// تحميل التقارير
 async function loadReports(){
   const { data: reports } = await supabase.from('reports').select('*').order('created_at',{ascending:false})
   const { data: tasks } = await supabase.from('tasks').select('id,client_name')
@@ -205,6 +212,7 @@ async function loadReports(){
   })
 }
 
+// تحميل المستخدمين
 async function loadUsers(){
   const { data: users } = await supabase.from('users').select('*').in('role',['agent','supervisor'])
   const tbody = document.getElementById('usersTableBody')
@@ -216,6 +224,7 @@ async function loadUsers(){
   })
 }
 
+// حذف مستخدم
 document.getElementById('usersTableBody').addEventListener('click', async e=>{
   if(e.target.classList.contains('deleteUserBtn')){
     const id = e.target.dataset.id
@@ -227,7 +236,7 @@ document.getElementById('usersTableBody').addEventListener('click', async e=>{
   }
 })
 
-// إنشاء مستخدم جديد بطريقة صحيحة مع Supabase Auth
+// إنشاء مستخدم جديد بدون إدخال كلمة مرور في جدول users
 document.getElementById('createUserForm').addEventListener('submit', async e=>{
   e.preventDefault();
   const email = document.getElementById('newUserEmail').value.trim();
@@ -240,16 +249,9 @@ document.getElementById('createUserForm').addEventListener('submit', async e=>{
     const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
     if(signUpError) throw signUpError;
     const userId = data.user?.id;
-    if(!userId) throw new Error('لم يتم الحصول على معرف المستخدم من Auth');
 
-    // إدراج بياناته في جدول users بدون password
-    const { error: insertError } = await supabase.from('users').insert([{
-      id: userId,
-      email,
-      role
-    }]);
-    if(insertError) throw insertError;
-
+    // إدراج بيانات المستخدم في جدول users بدون كلمة مرور
+    await supabase.from('users').insert([{ id: userId, email, role }]);
     alert('تم إنشاء الحساب بنجاح');
     e.target.reset();
     await loadUsers();
@@ -261,10 +263,12 @@ document.getElementById('createUserForm').addEventListener('submit', async e=>{
   }
 });
 
+// تحميل البيانات عند فتح الصفحة
 await loadAgents();
 await loadTasks();
 await loadReports();
 await loadUsers();
+
 });
 </script>
 </body>
