@@ -2,8 +2,8 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>لوحة المندوب المرنة</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<title>لوحة المندوب</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
 body { font-family: Arial; margin:0; padding:0; background:#e0f7fa; }
 .container { max-width:1000px; margin:20px auto; padding:20px; }
@@ -36,7 +36,7 @@ button:hover { background:#0277bd; }
   <section id="tasksSection" class="active">
     <h3>مهامي الحالية</h3>
     <table>
-      <thead id="tasksThead"></thead>
+      <thead><tr><th>العميل</th><th>العنوان</th><th>الوقت</th><th>الحالة</th></tr></thead>
       <tbody id="tasksTableBody"></tbody>
     </table>
   </section>
@@ -65,20 +65,20 @@ button:hover { background:#0277bd; }
   </section>
 </div>
 
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-// ضع هنا رابط ومفتاح Supabase الخاص بك
 const supabaseUrl = "https://vkativialsvvbifhjrey.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpZVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3MzY3OTEwNX0.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3MzY3OTEwNX0.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // معرف المندوب بعد تسجيل الدخول
 let agentId = localStorage.getItem('userId');
 if(!agentId) alert('خطأ: معرف المندوب غير موجود');
 
-// التبويبات
 const tabs = { tasks:'tasksSection', notifications:'notificationsSection', report:'reportSection', map:'mapSection' };
 Object.keys(tabs).forEach(key=>{
   document.getElementById(key+'Tab').addEventListener('click', ()=>{
@@ -90,55 +90,36 @@ Object.keys(tabs).forEach(key=>{
   });
 });
 
-// تحميل المهام بشكل مرن لأي أعمدة موجودة
+// تحميل المهام
 async function loadTasks(){
-  const { data: tasks } = await supabase.from('tasks').select('*').eq('assigned_to', agentId);
-  const tbody=document.getElementById('tasksTableBody');
-  const thead=document.getElementById('tasksThead');
+  const { data: tasks } = await supabase.from('tasks').select('*').or(`assigned_to.eq.${agentId},assigned_to.is.null`);
+  const tbody = document.getElementById('tasksTableBody');
   tbody.innerHTML='';
-  thead.innerHTML='';
+  tasks.forEach(t=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML=`<td>${t.client_name || '-'}</td><td>${t.client_address || '-'}</td><td>${t.visit_time || '-'}</td><td>${t.status || '-'}</td>`;
+    tbody.appendChild(tr);
+  });
 
-  if(tasks.length > 0){
-    // إنشاء رؤوس الجدول ديناميكيًا حسب الأعمدة
-    const trHead=document.createElement('tr');
-    Object.keys(tasks[0]).forEach(col => {
-      const th=document.createElement('th');
-      th.textContent = col;
-      trHead.appendChild(th);
-    });
-    thead.appendChild(trHead);
-
-    // ملء الصفوف
-    tasks.forEach(task=>{
-      const tr=document.createElement('tr');
-      Object.values(task).forEach(val=>{
-        const td=document.createElement('td');
-        td.textContent=val;
-        tr.appendChild(td);
-      });
-      tbody.appendChild(tr);
-    });
-
-    // ملء قائمة رفع التقرير
-    const taskSelect=document.getElementById('taskSelect');
-    taskSelect.innerHTML='';
-    tasks.forEach(t=>{ 
-      const opt=document.createElement('option'); 
-      opt.value=t.id || JSON.stringify(t); 
-      opt.text=t.client_name || t.id || 'مهمة'; 
-      taskSelect.appendChild(opt); 
-    });
-  }
+  // قائمة رفع التقرير
+  const taskSelect = document.getElementById('taskSelect');
+  taskSelect.innerHTML='';
+  tasks.forEach(t=>{
+    const opt = document.createElement('option');
+    opt.value = t.id;
+    opt.text = t.client_name || 'مهمة';
+    taskSelect.appendChild(opt);
+  });
 }
 
-// تحميل الإشعارات لأي أعمدة
+// تحميل الإشعارات
 async function loadNotifications(){
-  const { data: notes } = await supabase.from('notifications').select('*').eq('user_id', agentId).order('created_at',{ascending:false});
-  const ul=document.getElementById('notificationsList');
+  const { data: notes } = await supabase.from('notifications').select('*').or(`user_id.eq.${agentId},user_id.is.null`).order('created_at',{ascending:false});
+  const ul = document.getElementById('notificationsList');
   ul.innerHTML='';
   notes.forEach(n=>{
-    const li=document.createElement('li');
-    li.textContent = Object.values(n).join(' | ');
+    const li = document.createElement('li');
+    li.textContent = n.message || '-';
     ul.appendChild(li);
   });
 }
@@ -146,9 +127,9 @@ async function loadNotifications(){
 // رفع تقرير
 document.getElementById('reportForm').addEventListener('submit', async e=>{
   e.preventDefault();
-  const taskId=document.getElementById('taskSelect').value;
-  const reportText=document.getElementById('reportText').value;
-  const file=document.getElementById('reportImage').files[0];
+  const taskId = document.getElementById('taskSelect').value;
+  const reportText = document.getElementById('reportText').value;
+  const file = document.getElementById('reportImage').files[0];
   if(!file) return alert('اختر صورة');
 
   const fileExt = file.name.split('.').pop();
@@ -157,7 +138,7 @@ document.getElementById('reportForm').addEventListener('submit', async e=>{
   if(error) return alert('خطأ رفع الصورة: '+error.message);
 
   const imageUrl = `https://vkativialsvvbifhjrey.supabase.co/storage/v1/object/public/reports/${fileName}`;
-  await supabase.from('reports').insert([{ task_id:taskId, agent_id:agentId, report_text:reportText, image_url:imageUrl }]);
+  await supabase.from('reports').insert([{ task_id: taskId, agent_id: agentId, report_text: reportText, image_url: imageUrl }]);
   alert('تم رفع التقرير بنجاح');
   document.getElementById('reportForm').reset();
 });
@@ -166,23 +147,25 @@ document.getElementById('reportForm').addEventListener('submit', async e=>{
 let map;
 async function loadMap(){
   if(!map){
-    map=L.map('map').setView([30.0444,31.2357],12); // القاهرة
+    map = L.map('map').setView([30.0444,31.2357],12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
       attribution:'&copy; OpenStreetMap contributors'
     }).addTo(map);
   }
-  const { data: tasks } = await supabase.from('tasks').select('*').eq('assigned_to', agentId);
+  const { data: tasks } = await supabase.from('tasks').select('*').or(`assigned_to.eq.${agentId},assigned_to.is.null`);
   map.eachLayer(l=>{ if(l instanceof L.Marker) map.removeLayer(l); });
   tasks.forEach(t=>{
-    if(t.lat && t.lng){
-      L.marker([t.lat, t.lng]).addTo(map).bindPopup(t.client_name || t.id);
+    if(t.client_address){
+      L.marker([30.0444,31.2357]).addTo(map).bindPopup(`${t.client_name || '-'}<br>${t.client_address || '-'}`);
     }
   });
 }
 
-// تحميل جميع البيانات عند البداية
+// تحميل البيانات عند البداية
 loadTasks();
 loadNotifications();
+loadMap();
+
 </script>
 </body>
 </html>
