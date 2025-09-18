@@ -1,46 +1,42 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <title>لوحة المندوب</title>
-  <style>
-    body { font-family: Arial; background:#f1f8e9; margin:0; padding:0; }
-    .container { max-width: 1000px; margin:20px auto; padding:20px; }
-    nav { display:flex; gap:10px; justify-content:center; margin-bottom:20px; }
-    nav button { padding:10px 20px; cursor:pointer; border:none; border-radius:8px; background:#aed581; }
-    nav button.active { background:#689f38; color:#fff; }
-    section { display:none; background:#fff; padding:15px; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.1); }
-    section.active { display:block; }
-    table { width:100%; border-collapse:collapse; margin-top:10px; }
-    th,td { border:1px solid #ccc; padding:8px; text-align:center; }
-  </style>
+<meta charset="UTF-8">
+<title>لوحة المندوب</title>
+<style>
+body { font-family: Arial; background:#f1f8e9; margin:0; padding:0; }
+.container { max-width:1000px; margin:20px auto; padding:20px; }
+nav { display:flex; gap:10px; justify-content:center; margin-bottom:20px; }
+nav button { padding:10px 20px; cursor:pointer; border:none; border-radius:8px; background:#aed581; }
+nav button.active { background:#689f38; color:#fff; }
+section { display:none; background:#fff; padding:15px; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.1); }
+section.active { display:block; }
+table { width:100%; border-collapse:collapse; margin-top:10px; }
+th,td { border:1px solid #ccc; padding:8px; text-align:center; }
+</style>
 </head>
 <body>
-  <div class="container">
-    <h2>لوحة المندوب</h2>
+<div class="container">
+<h2>لوحة المندوب</h2>
 
-    <nav>
-      <button id="tasksTab" class="active">مهامي</button>
-      <button id="notificationsTab">الإشعارات</button>
-    </nav>
+<nav>
+  <button id="tasksTab" class="active">مهامي</button>
+  <button id="notificationsTab">الإشعارات</button>
+</nav>
 
-    <!-- المهام -->
-    <section id="tasksSection" class="active">
-      <h3>المهام المكلف بها</h3>
-      <table>
-        <thead>
-          <tr><th>العميل</th><th>العنوان</th><th>الوقت</th><th>الحالة</th></tr>
-        </thead>
-        <tbody id="tasksTableBody"></tbody>
-      </table>
-    </section>
+<section id="tasksSection" class="active">
+  <h3>المهام المكلف بها</h3>
+  <table>
+    <thead><tr><th>العميل</th><th>العنوان</th><th>الوقت</th><th>الحالة</th></tr></thead>
+    <tbody id="tasksTableBody"></tbody>
+  </table>
+</section>
 
-    <!-- الإشعارات -->
-    <section id="notificationsSection">
-      <h3>الإشعارات</h3>
-      <ul id="notificationsList"></ul>
-    </section>
-  </div>
+<section id="notificationsSection">
+  <h3>الإشعارات</h3>
+  <ul id="notificationsList"></ul>
+</section>
+</div>
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
@@ -50,84 +46,78 @@ const supabase = createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3MzY3OTEwNX0.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0"
 )
 
-document.addEventListener("DOMContentLoaded", async () => {
-  const agentId = localStorage.getItem("agentId")
-  if (!agentId) {
-    alert("لم يتم العثور على بيانات المندوب! أعد تسجيل الدخول.")
-    window.location.href = "login.html"
-    return
-  }
+// احصل على أي معرف متوفر للمندوب
+let agentId = localStorage.getItem("agentId")
+if(!agentId){
+  agentId = prompt("ادخل معرف المندوب (agentId أو userId) لتجربة استقبال المهام والإشعارات:")
+  localStorage.setItem("agentId", agentId)
+}
 
-  // --- التبويبات ---
-  const tabs = ["tasks","notifications"]
-  tabs.forEach(tab=>{
-    document.getElementById(tab+"Tab").addEventListener("click", ()=>{
-      tabs.forEach(t=>{
-        document.getElementById(t+"Section").classList.remove("active")
-        document.getElementById(t+"Tab").classList.remove("active")
-      })
-      document.getElementById(tab+"Section").classList.add("active")
-      document.getElementById(tab+"Tab").classList.add("active")
+// --- التبويبات ---
+const tabs = ["tasks","notifications"]
+tabs.forEach(tab=>{
+  document.getElementById(tab+"Tab").addEventListener("click", ()=>{
+    tabs.forEach(t=>{
+      document.getElementById(t+"Section").classList.remove("active")
+      document.getElementById(t+"Tab").classList.remove("active")
     })
+    document.getElementById(tab+"Section").classList.add("active")
+    document.getElementById(tab+"Tab").classList.add("active")
   })
+})
 
-  // --- تحميل المهام ---
-  async function loadTasks(){
-    const { data: tasks } = await supabase
-      .from("tasks")
-      .select("*")
-      .eq("assigned_to", agentId)
-
-    const tbody = document.getElementById("tasksTableBody")
-    tbody.innerHTML = ""
-    tasks.forEach(t=>{
+// --- تحميل المهام (مرنة حسب أي عمود موجود) ---
+async function loadTasks(){
+  const { data: tasks } = await supabase.from("tasks").select("*")
+  const tbody = document.getElementById("tasksTableBody")
+  tbody.innerHTML = ""
+  tasks.forEach(t=>{
+    // أي عمود يمكن أن يكون معرف المندوب
+    const assigned = t.assigned_to || t.agentId || t.user_id
+    if(assigned == agentId){
       const tr = document.createElement("tr")
       tr.innerHTML = `
-        <td>${t.client_name}</td>
-        <td>${t.client_address}</td>
-        <td>${t.visit_time}</td>
-        <td>${t.status}</td>
+        <td>${t.client_name || t.client || '-'}</td>
+        <td>${t.client_address || t.address || '-'}</td>
+        <td>${t.visit_time || t.time || '-'}</td>
+        <td>${t.status || '-'}</td>
       `
       tbody.appendChild(tr)
-    })
-  }
+    }
+  })
+}
 
-  // --- تحميل الإشعارات ---
-  async function loadNotifications(){
-    const { data: notifications } = await supabase
-      .from("notifications")
-      .select("*")
-      .eq("user_id", agentId)
-      .order("created_at", { ascending: false })
-
-    const list = document.getElementById("notificationsList")
-    list.innerHTML = ""
-    notifications.forEach(n=>{
+// --- تحميل الإشعارات ---
+async function loadNotifications(){
+  const { data: notifications } = await supabase.from("notifications").select("*")
+  const list = document.getElementById("notificationsList")
+  list.innerHTML = ""
+  notifications.forEach(n=>{
+    const user = n.user_id || n.agentId
+    if(user == agentId){
       const li = document.createElement("li")
-      li.textContent = n.message
+      li.textContent = n.message || n.msg || "-"
       list.appendChild(li)
-    })
-  }
+    }
+  })
+}
 
-  // --- تحديث مباشر (Realtime) ---
-  supabase
-    .channel("tasks-changes")
-    .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, payload => {
-      if(payload.new.assigned_to === agentId) loadTasks()
-    })
-    .subscribe()
+// --- Realtime ---
+supabase.channel("tasks-changes")
+  .on("postgres_changes", { event:"*", schema:"public", table:"tasks" }, payload=>{
+    const assigned = payload.new.assigned_to || payload.new.agentId || payload.new.user_id
+    if(assigned == agentId) loadTasks()
+  }).subscribe()
 
-  supabase
-    .channel("notifications-changes")
-    .on("postgres_changes", { event: "*", schema: "public", table: "notifications" }, payload => {
-      if(payload.new.user_id === agentId) loadNotifications()
-    })
-    .subscribe()
+supabase.channel("notifications-changes")
+  .on("postgres_changes", { event:"*", schema:"public", table:"notifications" }, payload=>{
+    const user = payload.new.user_id || payload.new.agentId
+    if(user == agentId) loadNotifications()
+  }).subscribe()
 
-  // أول تحميل
-  loadTasks()
-  loadNotifications()
-})
+// أول تحميل
+loadTasks()
+loadNotifications()
 </script>
 </body>
 </html>
