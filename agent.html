@@ -72,11 +72,24 @@ button:hover { background:#0277bd; }
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
 const supabaseUrl = "https://vkativialsvvbifhjrey.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODEwMzEwNSwiZXhwIjoyMDczNjc5MTA1fQ.xUR96RId88zr0VhJNuxEy55FSKUFTRVqxJQMMHNkoMY";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODEwMzEwNSwiZXhwIjoyMDczNjc5MTA1fQ.xUR96RId88zr0VhJNuxEy55FSKUFTRVqxJQMMHNkoMY"; // ⚠️ ضع هنا Anon Key فقط
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-let agentId = localStorage.getItem('userId');
-if(!agentId) alert('خطأ: معرف المندوب غير موجود');
+let agentId = null;
+
+// التحقق من المستخدم الحالي
+document.addEventListener('DOMContentLoaded', async () => {
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) {
+    alert("الرجاء تسجيل الدخول أولاً");
+    window.location.href = "login.html";
+    return;
+  }
+  agentId = user.id;
+  loadTasks();
+  loadNotifications();
+  loadMap();
+});
 
 const tabs = { tasks:'tasksSection', notifications:'notificationsSection', report:'reportSection', map:'mapSection' };
 Object.keys(tabs).forEach(key=>{
@@ -91,7 +104,13 @@ Object.keys(tabs).forEach(key=>{
 
 // تحميل المهام
 async function loadTasks(){
-  const { data: tasks } = await supabase.from('tasks').select('*').or(`assigned_to.eq.${agentId},assigned_to.is.null`);
+  const { data: tasks, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('assigned_to', agentId)
+    .order('created_at',{ascending:false});
+  if(error){ console.error(error); return; }
+
   const tbody = document.getElementById('tasksTableBody');
   tbody.innerHTML='';
   tasks.forEach(t=>{
@@ -111,7 +130,6 @@ async function loadTasks(){
     tbody.appendChild(tr);
   });
 
-  // إضافة مستمع لتغيير الحالة
   document.querySelectorAll('.statusSelect').forEach(sel=>{
     sel.addEventListener('change', async e=>{
       const taskId = e.target.getAttribute('data-task-id');
@@ -134,7 +152,13 @@ async function loadTasks(){
 
 // تحميل الإشعارات
 async function loadNotifications(){
-  const { data: notes } = await supabase.from('notifications').select('*').or(`user_id.eq.${agentId},user_id.is.null`).order('created_at',{ascending:false});
+  const { data: notes, error } = await supabase
+    .from('notifications')
+    .select('*')
+    .eq('user_id', agentId)
+    .order('created_at',{ascending:false});
+  if(error){ console.error(error); return; }
+
   const ul = document.getElementById('notificationsList');
   ul.innerHTML='';
   notes.forEach(n=>{
@@ -154,10 +178,10 @@ document.getElementById('reportForm').addEventListener('submit', async e=>{
 
   const fileExt = file.name.split('.').pop();
   const fileName = `reports/${taskId}_${Date.now()}.${fileExt}`;
-  const { data, error } = await supabase.storage.from('reports').upload(fileName, file);
-  if(error) return alert('خطأ رفع الصورة: '+error.message);
+  const { error: uploadError } = await supabase.storage.from('reports').upload(fileName, file);
+  if(uploadError) return alert('خطأ رفع الصورة: '+uploadError.message);
 
-  const imageUrl = `https://vkativialsvvbifhjrey.supabase.co/storage/v1/object/public/reports/${fileName}`;
+  const imageUrl = `${supabaseUrl}/storage/v1/object/public/reports/${fileName}`;
   await supabase.from('reports').insert([{ task_id: taskId, agent_id: agentId, report_text: reportText, image_url: imageUrl }]);
   alert('تم رفع التقرير بنجاح');
   document.getElementById('reportForm').reset();
@@ -172,7 +196,12 @@ async function loadMap(){
       attribution:'&copy; OpenStreetMap contributors'
     }).addTo(map);
   }
-  const { data: tasks } = await supabase.from('tasks').select('*').or(`assigned_to.eq.${agentId},assigned_to.is.null`);
+  const { data: tasks, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('assigned_to', agentId);
+  if(error){ console.error(error); return; }
+
   map.eachLayer(l=>{ if(l instanceof L.Marker) map.removeLayer(l); });
   tasks.forEach(t=>{
     if(t.client_address){
@@ -180,12 +209,6 @@ async function loadMap(){
     }
   });
 }
-
-// تحميل البيانات عند البداية
-loadTasks();
-loadNotifications();
-loadMap();
-
 </script>
 </body>
 </html>
