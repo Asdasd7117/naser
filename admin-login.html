@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>تسجيل دخول / إنشاء حساب مدير</title>
+<style>
+body { font-family: Arial; background:#e0f7fa; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
+.container { background:#fff; padding:30px; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.2); width:400px; }
+h2 { text-align:center; margin-bottom:20px; }
+input, button { width:100%; padding:10px; margin:8px 0; border-radius:6px; border:1px solid #ccc; box-sizing:border-box; }
+button.primary { background:#0288d1; color:#fff; border:none; cursor:pointer; }
+button.primary:hover { background:#0277bd; }
+.error { color:red; text-align:center; margin-bottom:10px; }
+.tab { display:flex; justify-content:space-around; margin-bottom:15px; }
+.tab button { flex:1; margin:0 5px; padding:10px; border:none; border-radius:8px; background:#4dd0e1; cursor:pointer; color:#000; }
+.tab button.active { background:#0288d1; color:#fff; }
+form { display:none; }
+form.active { display:block; }
+</style>
+</head>
+<body>
+<div class="container">
+<h2>لوحة المدير</h2>
+<div class="tab">
+  <button id="loginTab" class="active">تسجيل الدخول</button>
+  <button id="signupTab">إنشاء حساب</button>
+</div>
+
+<div class="error" id="errorMsg"></div>
+
+<form id="loginForm" class="active">
+  <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" required>
+  <input type="password" id="loginPassword" placeholder="كلمة المرور" required>
+  <button type="submit" class="primary">دخول</button>
+</form>
+
+<form id="signupForm">
+  <input type="email" id="signupEmail" placeholder="البريد الإلكتروني" required>
+  <input type="password" id="signupPassword" placeholder="كلمة المرور" required>
+  <button type="submit" class="primary">إنشاء الحساب</button>
+</form>
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+const SUPABASE_URL = 'https://vkativialsvvbifhjrey.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODEwMzEwNSwiZXhwIjoyMDczNjc5MTA1fQ.xUR96RId88zr0VhJNuxEy55FSKUFTRVqxJQMMHNkoMY'; // ضع هنا مفتاح Anon Key الصحيح
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const loginTab = document.getElementById('loginTab');
+const signupTab = document.getElementById('signupTab');
+const loginForm = document.getElementById('loginForm');
+const signupForm = document.getElementById('signupForm');
+const errorMsg = document.getElementById('errorMsg');
+
+loginTab.addEventListener('click', () => {
+  loginForm.classList.add('active');
+  signupForm.classList.remove('active');
+  loginTab.classList.add('active');
+  signupTab.classList.remove('active');
+  errorMsg.textContent='';
+});
+
+signupTab.addEventListener('click', () => {
+  signupForm.classList.add('active');
+  loginForm.classList.remove('active');
+  signupTab.classList.add('active');
+  loginTab.classList.remove('active');
+  errorMsg.textContent='';
+});
+
+// تسجيل الدخول
+loginForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  errorMsg.textContent='';
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if(error) throw error;
+    if(!data.user) throw new Error('حدث خطأ أثناء تسجيل الدخول');
+
+    // التحقق من الدور
+    const { data: userData, error: roleError } = await supabase.from('users').select('role').eq('id', data.user.id).single();
+    if(roleError) throw roleError;
+    if(userData.role !== 'admin') throw new Error('هذا الحساب ليس مديراً');
+
+    // إعادة التوجيه للوحة المدير
+    window.location.href = 'admin.html';
+  } catch(err) {
+    console.error(err);
+    errorMsg.textContent = 'البريد الإلكتروني أو كلمة المرور غير صحيحة / أو ليس مدير';
+  }
+});
+
+// إنشاء حساب مدير
+signupForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  errorMsg.textContent='';
+  const email = document.getElementById('signupEmail').value.trim();
+  const password = document.getElementById('signupPassword').value;
+
+  try {
+    // إنشاء المستخدم في Auth
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if(error) throw error;
+    if(!data.user) throw new Error('لم يتم إنشاء المستخدم');
+
+    // إدراج المستخدم في جدول users بدور admin
+    const { error: insertError } = await supabase.from('users').insert([{
+      id: data.user.id,
+      email,
+      role: 'admin',
+      password: 'default123' // لتجاوز العمود NOT NULL إن وجد
+    }]);
+    if(insertError) throw insertError;
+
+    alert('تم إنشاء الحساب بنجاح، يمكنك الآن تسجيل الدخول');
+    signupForm.reset();
+    loginTab.click(); // انتقل لنموذج تسجيل الدخول
+  } catch(err) {
+    console.error(err);
+    errorMsg.textContent = 'حدث خطأ أثناء إنشاء الحساب';
+  }
+});
+</script>
+</body>
+</html>
