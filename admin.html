@@ -107,7 +107,7 @@ button.primary { background:#0288d1; color:#fff; border:none; cursor:pointer; pa
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
 const SUPABASE_URL = 'https://vkativialsvvbifhjrey.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODEwMzEwNSwiZXhwIjoyMDczNjc5MTA1fQ.xUR96RId88zr0VhJNuxEy55FSKUFTRVqxJQMMHNkoMY';
+const SUPABASE_KEY = 'YOUR_ANON_KEY_HERE';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 document.addEventListener('DOMContentLoaded', async ()=>{
@@ -118,7 +118,7 @@ const tabs = {
   reports:'reportsSection', 
   performance:'performanceSection', 
   users:'usersSection' 
-}
+};
 
 Object.keys(tabs).forEach(key=>{
   document.getElementById(key+'Tab').addEventListener('click', ()=>{
@@ -126,159 +126,160 @@ Object.keys(tabs).forEach(key=>{
     document.getElementById(tabs[key]).classList.add('active')
     Object.keys(tabs).forEach(k=>document.getElementById(k+'Tab').classList.remove('active'))
     document.getElementById(key+'Tab').classList.add('active')
-  })
-})
+  });
+});
 
-let agents = []
+let agents = [];
 
 async function loadAgents(){
   try{
-    const { data, error } = await supabase.from('users').select('id,email,role').eq('role','agent')
-    if(error) throw error
-    agents = data || []
-    const assignedTo = document.getElementById('assignedTo')
-    const notifySelect = document.getElementById('notifySelect')
-    assignedTo.innerHTML = '<option value="">اختر مندوب</option>'
-    notifySelect.innerHTML = '<option value="all">إلى الجميع</option>'
+    const { data, error } = await supabase.from('users').select('id,email,role').eq('role','agent');
+    if(error) throw error;
+    agents = data || [];
+    const assignedTo = document.getElementById('assignedTo');
+    const notifySelect = document.getElementById('notifySelect');
+    assignedTo.innerHTML = '<option value="">اختر مندوب</option>';
+    notifySelect.innerHTML = '<option value="all">إلى الجميع</option>';
     agents.forEach(a=>{
-      const o1 = document.createElement('option'); o1.value = a.id; o1.textContent = a.email; assignedTo.appendChild(o1)
-      const o2 = document.createElement('option'); o2.value = a.id; o2.textContent = a.email; notifySelect.appendChild(o2)
-    })
-  }catch(err){ console.error('خطأ جلب المناديب:', err) }
+      const o1 = document.createElement('option'); o1.value = a.id; o1.textContent = a.email; assignedTo.appendChild(o1);
+      const o2 = document.createElement('option'); o2.value = a.id; o2.textContent = a.email; notifySelect.appendChild(o2);
+    });
+  }catch(err){ console.error('خطأ جلب المناديب:', err); }
 }
 
 async function loadTasks(){
   try{
-    const { data: tasks } = await supabase.from('tasks').select('*')
-    const tbody = document.getElementById('tasksTableBody')
-    tbody.innerHTML=''
+    const { data: tasks } = await supabase.from('tasks').select('*');
+    const tbody = document.getElementById('tasksTableBody');
+    tbody.innerHTML='';
     tasks.forEach(t=>{
-      const agent = agents.find(a=>a.id === t.assigned_to)
-      const tr = document.createElement('tr')
-      tr.innerHTML = `<td>${t.client_name||'-'}</td><td>${t.client_address||'-'}</td><td>${t.visit_time||'-'}</td><td>${agent?.email||'-'}</td><td>${t.status||'-'}</td><td><button data-id="${t.id}" class="deleteTaskBtn">حذف</button></td>`
-      tbody.appendChild(tr)
-    })
-    updatePerformance(tasks)
-  }catch(err){ console.error('خطأ تحميل المهام:', err) }
+      const agent = agents.find(a=>a.id === t.assigned_to);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${t.client_name||'-'}</td><td>${t.client_address||'-'}</td><td>${t.visit_time||'-'}</td><td>${agent?.email||'-'}</td><td>${t.status||'-'}</td><td><button data-id="${t.id}" class="deleteTaskBtn">حذف</button></td>`;
+      tbody.appendChild(tr);
+    });
+    updatePerformance(tasks);
+  }catch(err){ console.error('خطأ تحميل المهام:', err); }
 }
 
 function updatePerformance(tasks){
-  const tbody = document.getElementById('performanceTableBody')
-  tbody.innerHTML=''
+  const tbody = document.getElementById('performanceTableBody');
+  tbody.innerHTML='';
   agents.forEach(agent=>{
-    const executing = tasks.filter(t=>t.assigned_to===agent.id && t.status==='pending').length
-    const postponed = tasks.filter(t=>t.assigned_to===agent.id && t.status==='postponed').length
-    const done = tasks.filter(t=>t.assigned_to===agent.id && t.status==='done').length
-    const tr = document.createElement('tr')
-    tr.innerHTML = `<td>${agent.email}</td><td>${executing}</td><td>${postponed}</td><td>${done}</td>`
-    tbody.appendChild(tr)
-  })
+    const executing = tasks.filter(t=>t.assigned_to===agent.id && t.status==='pending').length;
+    const postponed = tasks.filter(t=>t.assigned_to===agent.id && t.status==='postponed').length;
+    const done = tasks.filter(t=>t.assigned_to===agent.id && t.status==='done').length;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${agent.email}</td><td>${executing}</td><td>${postponed}</td><td>${done}</td>`;
+    tbody.appendChild(tr);
+  });
 }
 
 document.getElementById('tasksTableBody').addEventListener('click', async e=>{
   if(e.target.classList.contains('deleteTaskBtn')){
-    const id = e.target.dataset.id
-    if(!confirm('هل تريد حذف هذه المهمة؟')) return
-    await supabase.from('tasks').delete().eq('id',id)
-    await loadTasks()
+    const id = e.target.dataset.id;
+    if(!confirm('هل تريد حذف هذه المهمة؟')) return;
+    await supabase.from('tasks').delete().eq('id',id);
+    await loadTasks();
   }
-})
+});
 
 document.getElementById('taskForm').addEventListener('submit', async e=>{
-  e.preventDefault()
-  const client_name = document.getElementById('clientName').value.trim()
-  const client_address = document.getElementById('clientAddress').value.trim()
-  const visit_time = document.getElementById('visitTime').value
-  const assigned_to = document.getElementById('assignedTo').value
-  if(!assigned_to) return alert('اختر مندوب')
-  await supabase.from('tasks').insert([{ client_name, client_address, visit_time, assigned_to, status:'pending' }])
-  e.target.reset()
-  await loadTasks()
-})
+  e.preventDefault();
+  const client_name = document.getElementById('clientName').value.trim();
+  const client_address = document.getElementById('clientAddress').value.trim();
+  const visit_time = document.getElementById('visitTime').value;
+  const assigned_to = document.getElementById('assignedTo').value;
+  if(!assigned_to) return alert('اختر مندوب');
+  await supabase.from('tasks').insert([{ client_name, client_address, visit_time, assigned_to, status:'pending' }]);
+  e.target.reset();
+  await loadTasks();
+});
 
 document.getElementById('sendNotificationBtn').addEventListener('click', async ()=>{
-  const msg = document.getElementById('notificationMessage').value.trim()
-  const target = document.getElementById('notifySelect').value
-  if(!msg) return alert('أدخل رسالة')
+  const msg = document.getElementById('notificationMessage').value.trim();
+  const target = document.getElementById('notifySelect').value;
+  if(!msg) return alert('أدخل رسالة');
   if(target==='all'){
-    const inserts = agents.map(a=>({ user_id:a.id, message:msg }))
-    await supabase.from('notifications').insert(inserts)
+    const inserts = agents.map(a=>({ user_id:a.id, message:msg }));
+    await supabase.from('notifications').insert(inserts);
   } else {
-    await supabase.from('notifications').insert([{ user_id:target, message:msg }])
+    await supabase.from('notifications').insert([{ user_id:target, message:msg }]);
   }
-  document.getElementById('notificationMessage').value=''
-  alert('تم الإرسال')
-})
+  document.getElementById('notificationMessage').value='';
+  alert('تم الإرسال');
+});
 
 async function loadReports(){
-  const { data: reports } = await supabase.from('reports').select('*')
-  const { data: tasks } = await supabase.from('tasks').select('id,client_name')
-  const tbody = document.getElementById('reportsTableBody')
-  tbody.innerHTML=''
+  const { data: reports } = await supabase.from('reports').select('*');
+  const { data: tasks } = await supabase.from('tasks').select('id,client_name');
+  const tbody = document.getElementById('reportsTableBody');
+  tbody.innerHTML='';
   reports.forEach(r=>{
-    const agent = agents.find(a=>a.id===r.agent_id)
-    const task = tasks.find(t=>t.id===r.task_id)
-    const tr = document.createElement('tr')
-    tr.innerHTML = `<td>${agent?.email||'-'}</td><td>${task?.client_name||'-'}</td><td>${r.report_text||'-'}</td><td>${r.image_url?`<a href="${r.image_url}" target="_blank">رابط الصورة</a>`:'-'}</td>`
-    tbody.appendChild(tr)
-  })
+    const agent = agents.find(a=>a.id===r.agent_id);
+    const task = tasks.find(t=>t.id===r.task_id);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${agent?.email||'-'}</td><td>${task?.client_name||'-'}</td><td>${r.report_text||'-'}</td><td>${r.image_url?`<a href="${r.image_url}" target="_blank">رابط الصورة</a>`:'-'}</td>`;
+    tbody.appendChild(tr);
+  });
 }
 
 async function loadUsers(){
-  const { data: users } = await supabase.from('users').select('*').in('role',['agent','supervisor'])
-  const tbody = document.getElementById('usersTableBody')
-  tbody.innerHTML=''
+  const { data: users } = await supabase.from('users').select('*').in('role',['agent','supervisor']);
+  const tbody = document.getElementById('usersTableBody');
+  tbody.innerHTML='';
   users.forEach(u=>{
-    const tr = document.createElement('tr')
-    tr.innerHTML = `<td>${u.email||'-'}</td><td>${u.role||'-'}</td><td><button data-id="${u.id}" class="deleteUserBtn">حذف</button></td>`
-    tbody.appendChild(tr)
-  })
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${u.email||'-'}</td><td>${u.role||'-'}</td><td><button data-id="${u.id}" class="deleteUserBtn">حذف</button></td>`;
+    tbody.appendChild(tr);
+  });
 }
 
 document.getElementById('usersTableBody').addEventListener('click', async e=>{
   if(e.target.classList.contains('deleteUserBtn')){
-    const id = e.target.dataset.id
-    if(!confirm('هل تريد حذف هذا المستخدم؟')) return
-    await supabase.from('users').delete().eq('id',id)
-    await loadUsers()
-    await loadAgents()
-    await loadTasks()
+    const id = e.target.dataset.id;
+    if(!confirm('هل تريد حذف هذا المستخدم؟')) return;
+    await supabase.from('users').delete().eq('id',id);
+    await loadUsers();
+    await loadAgents();
+    await loadTasks();
   }
-})
+});
 
+// إنشاء مستخدم جديد مع حفظ معرفه الصحيح
 document.getElementById('createUserForm').addEventListener('submit', async e=>{
-  e.preventDefault()
-  const email = document.getElementById('newUserEmail').value.trim()
-  const password = document.getElementById('newUserPassword').value
-  const role = document.getElementById('newUserRole').value
-  if(!email || !password || !role) return alert('أكمل جميع الحقول')
-
+  e.preventDefault();
+  const email = document.getElementById('newUserEmail').value.trim();
+  const password = document.getElementById('newUserPassword').value;
+  const role = document.getElementById('newUserRole').value;
+  if(!email || !password || !role) return alert('أكمل جميع الحقول');
   try{
-    // إنشاء حساب في Auth
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password })
-    if(signUpError) throw signUpError
-    const userId = signUpData.user?.id
-    if(!userId) throw new Error('لم يتم الحصول على معرف المستخدم من Auth')
+    const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
+    if(signUpError) throw signUpError;
+    const userId = data.user?.id;
+    if(!userId) throw new Error('لم يتم الحصول على معرف المستخدم من Auth');
 
-    // إدراج المستخدم في جدول users مع الانتظار حتى يتم الانتهاء
-    const { error: insertError } = await supabase.from('users').insert([{ id:userId, email, role, password }])
-    if(insertError) throw insertError
+    // إدراج المستخدم بنفس الـ id في جدول users
+    const { error: insertError } = await supabase.from('users').insert([{
+      id: userId,
+      email,
+      role,
+      password: 'default123'
+    }]);
+    if(insertError) throw insertError;
 
-    alert('تم إنشاء الحساب بنجاح')
-    e.target.reset()
-    await loadUsers()
-    await loadAgents()
-    await loadTasks()
-  }catch(err){
-    console.error(err)
-    alert('حدث خطأ: '+err.message)
-  }
-})
+    alert('تم إنشاء الحساب بنجاح');
+    e.target.reset();
+    await loadUsers();
+    await loadAgents();
+    await loadTasks();
+  }catch(err){ console.error(err); alert('حدث خطأ: '+err.message); }
+});
 
-await loadAgents()
-await loadTasks()
-await loadReports()
-await loadUsers()
+await loadAgents();
+await loadTasks();
+await loadReports();
+await loadUsers();
 });
 </script>
 </body>
