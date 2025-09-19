@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>تسجيل الدخول</title>
+<style>
+body { font-family: Arial; background:#e0f7fa; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
+.container { background:#fff; padding:30px; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.2); width:350px; }
+h2 { text-align:center; margin-bottom:20px; }
+input, button { width:100%; padding:10px; margin:8px 0; border-radius:6px; border:1px solid #ccc; box-sizing:border-box; }
+button.primary { background:#0288d1; color:#fff; border:none; cursor:pointer; }
+button.primary:hover { background:#0277bd; }
+.error { color:red; text-align:center; }
+</style>
+</head>
+<body>
+<div class="container">
+<h2>تسجيل الدخول</h2>
+<div class="error" id="errorMsg"></div>
+<form id="loginForm">
+  <input type="email" id="email" placeholder="البريد الإلكتروني" required>
+  <input type="password" id="password" placeholder="كلمة المرور" required>
+  <button type="submit" class="primary">دخول</button>
+</form>
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+const SUPABASE_URL = 'https://vkativialsvvbifhjrey.supabase.co';
+const SUPABASE_KEY = 'YOUR_SUPABASE_KEY_HERE';
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const loginForm = document.getElementById('loginForm');
+const errorMsg = document.getElementById('errorMsg');
+
+loginForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  errorMsg.textContent = '';
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+
+  try {
+    // تسجيل الدخول عبر Supabase Auth
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    if (!data.user) throw new Error('حدث خطأ، لم يتم تسجيل الدخول');
+
+    // جلب الدور من جدول users
+    const { data: users, error: userError } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', data.user.id)
+      .single();
+
+    if (userError) throw userError;
+    const role = users?.role || 'agent';
+
+    // إعادة التوجيه حسب الدور
+    if(role === 'agent'){
+      window.location.href = 'agent.html'; 
+    } else if(role === 'supervisor'){
+      window.location.href = 'supervisor.html';
+    } else {
+      window.location.href = 'admin.html'; 
+    }
+
+  } catch(err){
+    console.error('خطأ تسجيل الدخول:', err);
+    errorMsg.textContent = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
+  }
+});
+</script>
+</body>
+</html>
