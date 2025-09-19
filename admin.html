@@ -252,19 +252,27 @@ document.getElementById('createUserForm').addEventListener('submit', async e=>{
   const password = document.getElementById('newUserPassword').value
   const role = document.getElementById('newUserRole').value
   if(!email || !password || !role) return alert('أكمل جميع الحقول')
+
   try{
-    const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
+    // إنشاء حساب في Auth
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password })
     if(signUpError) throw signUpError
-    const userId = data.user?.id
+    const userId = signUpData.user?.id
     if(!userId) throw new Error('لم يتم الحصول على معرف المستخدم من Auth')
-    const { error: insertError } = await supabase.from('users').insert([{ id:userId, email, role, password:'default123' }])
+
+    // إدراج المستخدم في جدول users مع الانتظار حتى يتم الانتهاء
+    const { error: insertError } = await supabase.from('users').insert([{ id:userId, email, role, password }])
     if(insertError) throw insertError
+
     alert('تم إنشاء الحساب بنجاح')
     e.target.reset()
     await loadUsers()
     await loadAgents()
     await loadTasks()
-  }catch(err){ console.error(err); alert('حدث خطأ: '+err.message) }
+  }catch(err){
+    console.error(err)
+    alert('حدث خطأ: '+err.message)
+  }
 })
 
 await loadAgents()
