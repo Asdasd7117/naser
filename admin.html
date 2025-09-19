@@ -32,7 +32,6 @@ button.primary { background:#0288d1; color:#fff; border:none; cursor:pointer; pa
   <button id="usersTab">حسابات المستخدمين</button>
 </nav>
 
-<!-- المهام -->
 <section id="tasksSection" class="active">
   <h3>إنشاء مهمة جديدة</h3>
   <form id="taskForm">
@@ -56,7 +55,6 @@ button.primary { background:#0288d1; color:#fff; border:none; cursor:pointer; pa
   </table>
 </section>
 
-<!-- الإشعارات -->
 <section id="notificationsSection">
 <h3>إرسال إشعار لمندوب محدد أو للجميع</h3>
 <select id="notifySelect"><option value="all">إلى الجميع</option></select>
@@ -64,7 +62,6 @@ button.primary { background:#0288d1; color:#fff; border:none; cursor:pointer; pa
 <button id="sendNotificationBtn" class="primary">إرسال الإشعار</button>
 </section>
 
-<!-- تقارير المندوبين -->
 <section id="reportsSection">
 <h3>تقارير المندوبين</h3>
 <table>
@@ -73,7 +70,6 @@ button.primary { background:#0288d1; color:#fff; border:none; cursor:pointer; pa
 </table>
 </section>
 
-<!-- خريطة العملاء -->
 <section id="mapSection">
 <h3>خريطة المهام</h3>
 <div id="map" style="height:400px;background:#f3f3f3;display:flex;align-items:center;justify-content:center;color:#666;">
@@ -81,7 +77,6 @@ button.primary { background:#0288d1; color:#fff; border:none; cursor:pointer; pa
 </div>
 </section>
 
-<!-- إدارة المستخدمين -->
 <section id="usersSection">
 <h3>إدارة حسابات المندوب والمشرف</h3>
 <form id="createUserForm">
@@ -110,11 +105,11 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const SUPABASE_URL = 'https://vkativialsvvbifhjrey.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3MzY3OTEwNX0.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0';
+
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 document.addEventListener('DOMContentLoaded', async ()=>{
 
-// التبويبات
 const tabs = { tasks:'tasksSection', notifications:'notificationsSection', reports:'reportsSection', map:'mapSection', users:'usersSection' }
 Object.keys(tabs).forEach(key=>{
   document.getElementById(key+'Tab').addEventListener('click', ()=>{
@@ -127,7 +122,6 @@ Object.keys(tabs).forEach(key=>{
 
 let agents = []
 
-// تحميل المندوبين
 async function loadAgents(){
   try{
     const { data, error } = await supabase.from('users').select('id,email,role').eq('role','agent')
@@ -144,7 +138,6 @@ async function loadAgents(){
   }catch(err){ console.error('خطأ جلب المناديب:', err) }
 }
 
-// تحميل المهام
 async function loadTasks(){
   try{
     const { data: tasks } = await supabase.from('tasks').select('*').order('created_at',{ascending:false})
@@ -159,7 +152,6 @@ async function loadTasks(){
   }catch(err){ console.error('خطأ تحميل المهام:', err) }
 }
 
-// حذف مهمة
 document.getElementById('tasksTableBody').addEventListener('click', async e=>{
   if(e.target.classList.contains('deleteTaskBtn')){
     const id = e.target.dataset.id
@@ -169,7 +161,6 @@ document.getElementById('tasksTableBody').addEventListener('click', async e=>{
   }
 })
 
-// إنشاء مهمة
 document.getElementById('taskForm').addEventListener('submit', async e=>{
   e.preventDefault()
   const client_name = document.getElementById('clientName').value.trim()
@@ -182,7 +173,6 @@ document.getElementById('taskForm').addEventListener('submit', async e=>{
   await loadTasks()
 })
 
-// إرسال إشعار
 document.getElementById('sendNotificationBtn').addEventListener('click', async ()=>{
   const msg = document.getElementById('notificationMessage').value.trim()
   const target = document.getElementById('notifySelect').value
@@ -197,7 +187,6 @@ document.getElementById('sendNotificationBtn').addEventListener('click', async (
   alert('تم الإرسال')
 })
 
-// تحميل التقارير
 async function loadReports(){
   const { data: reports } = await supabase.from('reports').select('*').order('created_at',{ascending:false})
   const { data: tasks } = await supabase.from('tasks').select('id,client_name')
@@ -212,7 +201,6 @@ async function loadReports(){
   })
 }
 
-// تحميل المستخدمين
 async function loadUsers(){
   const { data: users } = await supabase.from('users').select('*').in('role',['agent','supervisor'])
   const tbody = document.getElementById('usersTableBody')
@@ -224,7 +212,6 @@ async function loadUsers(){
   })
 }
 
-// حذف مستخدم
 document.getElementById('usersTableBody').addEventListener('click', async e=>{
   if(e.target.classList.contains('deleteUserBtn')){
     const id = e.target.dataset.id
@@ -236,7 +223,7 @@ document.getElementById('usersTableBody').addEventListener('click', async e=>{
   }
 })
 
-// إنشاء مستخدم جديد بدون إدخال كلمة مرور في جدول users
+// إنشاء مستخدم جديد مع تجاوز عمود password
 document.getElementById('createUserForm').addEventListener('submit', async e=>{
   e.preventDefault();
   const email = document.getElementById('newUserEmail').value.trim();
@@ -245,13 +232,20 @@ document.getElementById('createUserForm').addEventListener('submit', async e=>{
   if(!email || !password || !role) return alert('أكمل جميع الحقول');
 
   try {
-    // إنشاء المستخدم في Supabase Auth
     const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
     if(signUpError) throw signUpError;
     const userId = data.user?.id;
+    if(!userId) throw new Error('لم يتم الحصول على معرف المستخدم من Auth');
 
-    // إدراج بيانات المستخدم في جدول users بدون كلمة مرور
-    await supabase.from('users').insert([{ id: userId, email, role }]);
+    // إدراج المستخدم في جدول users مع قيمة افتراضية لكلمة المرور
+    const { error: insertError } = await supabase.from('users').insert([{
+      id: userId,
+      email,
+      role,
+      password: 'default123' // تجاوز العمود NOT NULL
+    }]);
+    if(insertError) throw insertError;
+
     alert('تم إنشاء الحساب بنجاح');
     e.target.reset();
     await loadUsers();
@@ -263,12 +257,10 @@ document.getElementById('createUserForm').addEventListener('submit', async e=>{
   }
 });
 
-// تحميل البيانات عند فتح الصفحة
 await loadAgents();
 await loadTasks();
 await loadReports();
 await loadUsers();
-
 });
 </script>
 </body>
