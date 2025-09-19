@@ -31,26 +31,21 @@
     padding: 10px 20px;
     border: none;
     border-radius: 8px;
-    background: #e0e0e0;
+    background: #4caf50;
+    color: #fff;
     cursor: pointer;
     font-weight: bold;
     transition: 0.3s;
   }
   nav button.active {
-    background: #2c6df2;
-    color: #fff;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    background: #388e3c;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.2);
   }
   nav button:hover {
-    background: #2c6df2;
-    color: #fff;
+    background: #2e7d32;
   }
   section {
     display: none;
-    background: #fff;
-    border-radius: 10px;
-    padding: 20px;
-    box-shadow: 0 5px 18px rgba(0,0,0,0.1);
     margin-bottom: 25px;
   }
   section.active {
@@ -58,24 +53,33 @@
   }
   h3 {
     margin-bottom: 15px;
-    color: #2c6df2;
+    color: #388e3c;
   }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-    font-size: 15px;
+  .tasks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill,minmax(250px,1fr));
+    gap: 15px;
   }
-  table, th, td {
-    border: 1px solid #ddd;
+  .task-card {
+    padding: 15px;
+    border-radius: 10px;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
   }
-  th {
-    background: #f0f0f0;
-    font-weight: bold;
+  .task-card:hover {
+    transform: translateY(-3px);
   }
-  th, td {
-    padding: 10px;
-    text-align: center;
+  .pending { background: #e53935; }    /* قيد التنفيذ */
+  .completed { background: #43a047; }  /* تم التنفيذ */
+  .delayed { background: #fbc02d; color: #000; } /* مؤجلة */
+  .task-card h4 {
+    margin: 0 0 10px 0;
+    font-size: 16px;
+  }
+  .task-card p {
+    margin: 5px 0;
+    font-size: 14px;
   }
   select, textarea, input[type="file"], button {
     padding: 10px;
@@ -89,16 +93,16 @@
     min-height: 100px;
     resize: vertical;
   }
-  button {
-    background: #2c6df2;
+  button.submit-btn {
+    background: #4caf50;
     color: #fff;
     font-weight: bold;
     cursor: pointer;
     border: none;
     transition: 0.3s;
   }
-  button:hover {
-    background: #1d4ecb;
+  button.submit-btn:hover {
+    background: #388e3c;
   }
   ul {
     list-style: none;
@@ -126,12 +130,7 @@
   <!-- المهام -->
   <section id="tasksSection" class="active">
     <h3>مهامي الحالية</h3>
-    <table>
-      <thead>
-        <tr><th>العميل</th><th>العنوان</th><th>الوقت</th><th>الحالة</th><th>تغيير الحالة</th></tr>
-      </thead>
-      <tbody id="tasksTableBody"></tbody>
-    </table>
+    <div class="tasks-grid" id="tasksGrid"></div>
   </section>
 
   <!-- الإشعارات -->
@@ -147,7 +146,7 @@
       <select id="taskSelect" required></select>
       <textarea id="reportText" placeholder="اكتب تقريرك هنا..." required></textarea>
       <input type="file" id="reportImage" accept="image/*" required>
-      <button type="submit">رفع التقرير</button>
+      <button type="submit" class="submit-btn">رفع التقرير</button>
     </form>
   </section>
 </div>
@@ -193,23 +192,23 @@ async function loadTasks(){
     .order('created_at',{ascending:false});
   if(error){ console.error(error); return; }
 
-  const tbody = document.getElementById('tasksTableBody');
-  tbody.innerHTML='';
+  const grid = document.getElementById('tasksGrid');
+  grid.innerHTML='';
   tasks.forEach(t=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${t.client_name || '-'}</td>
-      <td>${t.client_address || '-'}</td>
-      <td>${t.visit_time || '-'}</td>
-      <td>${t.status || '-'}</td>
-      <td>
-        <select data-task-id="${t.id}" class="statusSelect">
-          <option value="pending" ${t.status==='pending'?'selected':''}>قيد التنفيذ</option>
-          <option value="completed" ${t.status==='completed'?'selected':''}>تم التنفيذ</option>
-          <option value="delayed" ${t.status==='delayed'?'selected':''}>مؤجلة</option>
-        </select>
-      </td>`;
-    tbody.appendChild(tr);
+    const div = document.createElement('div');
+    div.className = `task-card ${t.status}`;
+    div.innerHTML = `
+      <h4>${t.client_name || '-'}</h4>
+      <p>العنوان: ${t.client_address || '-'}</p>
+      <p>الوقت: ${t.visit_time || '-'}</p>
+      <p>الحالة: ${t.status || '-'}</p>
+      <select data-task-id="${t.id}" class="statusSelect">
+        <option value="pending" ${t.status==='pending'?'selected':''}>قيد التنفيذ</option>
+        <option value="completed" ${t.status==='completed'?'selected':''}>تم التنفيذ</option>
+        <option value="delayed" ${t.status==='delayed'?'selected':''}>مؤجلة</option>
+      </select>
+    `;
+    grid.appendChild(div);
   });
 
   document.querySelectorAll('.statusSelect').forEach(sel=>{
