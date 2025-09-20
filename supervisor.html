@@ -4,12 +4,34 @@
 <meta charset="UTF-8">
 <title>لوحة المشرف</title>
 <style>
-body { font-family: Arial; margin:0; padding:0; background:#e0f7fa; }
+body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f0f4f8; }
 .container { max-width:1200px; margin:20px auto; padding:20px; }
-h2 { text-align:center; color:#0277bd; }
-section { margin-bottom:30px; padding:15px; background:#fff; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.1);}
-table { width:100%; border-collapse: collapse; margin-top:10px; }
-table, th, td { border:1px solid #ccc; }
+h2 { text-align:center; color:#0277bd; margin-bottom:20px; }
+
+/* التبويبات */
+.tabs { display:flex; border-bottom:2px solid #ccc; margin-bottom:20px; }
+.tab {
+  flex:1; text-align:center; padding:12px; cursor:pointer; font-weight:bold;
+  border-radius:10px 10px 0 0; transition:0.3s;
+}
+.tab.active { border-bottom:3px solid #0288d1; color:#fff; }
+
+/* ألوان التبويبات */
+.tab-tasks { background:#e1f5fe; }
+.tab-reports { background:#f1f8e9; }
+.tab-notifications { background:#fff3e0; }
+.tab-orders { background:#fce4ec; }
+.tab.active.tab-tasks { background:#0288d1; }
+.tab.active.tab-reports { background:#689f38; }
+.tab.active.tab-notifications { background:#ef6c00; }
+.tab.active.tab-orders { background:#ad1457; }
+
+/* محتوى التبويبات */
+.tab-content { display:none; padding:20px; background:#fff; border-radius:0 0 12px 12px; box-shadow:0 4px 10px rgba(0,0,0,0.1); }
+.tab-content.active { display:block; }
+
+table { width:100%; border-collapse: collapse; margin-top:10px; background:#fafafa; }
+table, th, td { border:1px solid #ddd; }
 th, td { padding:8px; text-align:center; }
 input, select, textarea { padding:8px; margin:5px 0; border-radius:6px; border:1px solid #ccc; width:100%; }
 button { background:#0288d1; color:#fff; border:none; padding:10px 15px; border-radius:6px; cursor:pointer; }
@@ -22,44 +44,48 @@ button:hover { background:#0277bd; }
 
   <!-- اختيار المندوب -->
   <section>
-    <h3>عرض بيانات المندوب</h3>
-    <label>اختر المندوب:
+    <label><b>اختر المندوب:</b>
       <select id="filterAgent">
         <option value="">الكل</option>
       </select>
     </label>
   </section>
 
-  <!-- المهام -->
-  <section>
+  <!-- التبويبات -->
+  <div class="tabs">
+    <div class="tab tab-tasks active" data-tab="tasks">المهام</div>
+    <div class="tab tab-reports" data-tab="reports">التقارير</div>
+    <div class="tab tab-notifications" data-tab="notifications">الإشعارات</div>
+    <div class="tab tab-orders" data-tab="orders">طلبات العملاء</div>
+  </div>
+
+  <!-- المحتويات -->
+  <div id="tasks" class="tab-content active">
     <h3>المهام</h3>
     <table>
       <thead id="tasksHeader"></thead>
       <tbody id="tasksTableBody"></tbody>
     </table>
-  </section>
+  </div>
 
-  <!-- التقارير -->
-  <section>
+  <div id="reports" class="tab-content">
     <h3>التقارير</h3>
     <table>
       <thead id="reportsHeader"></thead>
       <tbody id="reportsTableBody"></tbody>
     </table>
-  </section>
+  </div>
 
-  <!-- الإشعارات -->
-  <section>
+  <div id="notifications" class="tab-content">
     <h3>الإشعارات</h3>
     <table>
       <thead id="notificationsHeader"></thead>
       <tbody id="notificationsTableBody"></tbody>
     </table>
-  </section>
+  </div>
 
-  <!-- طلبات العملاء -->
-  <section>
-    <h3>طلبات العملاء</h3>
+  <div id="orders" class="tab-content">
+    <h3>إضافة طلب عميل</h3>
     <form id="orderForm">
       <label>اسم العميل:</label>
       <input type="text" id="customerName" required>
@@ -90,16 +116,25 @@ button:hover { background:#0277bd; }
       </thead>
       <tbody id="ordersTableBody"></tbody>
     </table>
-  </section>
-
+  </div>
 </div>
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
 const supabaseUrl = "https://vkativialsvvbifhjrey.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODEwMzEwNSwiZXhwIjoyMDczNjc5MTA1fQ.xUR96RId88zr0VhJNuxEy55FSKUFTRVqxJQMMHNkoMY";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODEwMzEwNSwiZXhwIjoyMDczNjc5MTA1fQ.xUR96RId88zr0VhJNuxEy55FSKUFTRVqxJQMMHNkoMY"; // 🔴 غيّرها بمفتاحك
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+// تفعيل التبويبات
+document.querySelectorAll(".tab").forEach(tab=>{
+  tab.addEventListener("click", ()=>{
+    document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+    document.querySelectorAll(".tab-content").forEach(c=>c.classList.remove("active"));
+    tab.classList.add("active");
+    document.getElementById(tab.dataset.tab).classList.add("active");
+  });
+});
 
 // تحميل المندوبين
 async function loadAgents(){
