@@ -11,10 +11,9 @@ section { margin-bottom:30px; padding:15px; background:#fff; border-radius:12px;
 table { width:100%; border-collapse: collapse; margin-top:10px; }
 table, th, td { border:1px solid #ccc; }
 th, td { padding:8px; text-align:center; }
-input, select { padding:8px; margin:5px 0; border-radius:6px; border:1px solid #ccc; }
-img { max-width:150px; max-height:150px; border-radius:6px; }
-.map-container { height:300px; margin-bottom:20px; border:1px solid #ccc; border-radius:6px; }
-.agent-map-title { font-weight:bold; margin-bottom:5px; }
+input, select, textarea { padding:8px; margin:5px 0; border-radius:6px; border:1px solid #ccc; width:100%; }
+button { background:#0288d1; color:#fff; border:none; padding:10px 15px; border-radius:6px; cursor:pointer; }
+button:hover { background:#0277bd; }
 </style>
 </head>
 <body>
@@ -58,18 +57,48 @@ img { max-width:150px; max-height:150px; border-radius:6px; }
     </table>
   </section>
 
-  <!-- الخرائط لكل مندوب -->
+  <!-- طلبات العملاء -->
   <section>
-    <h3>خرائط المندوبين</h3>
-    <div id="mapsContainer"></div>
+    <h3>طلبات العملاء</h3>
+    <form id="orderForm">
+      <label>اسم العميل:</label>
+      <input type="text" id="customerName" required>
+      <label>العنوان:</label>
+      <input type="text" id="customerAddress" required>
+      <label>رقم الهاتف:</label>
+      <input type="text" id="customerPhone" required>
+      <label>الطلبات:</label>
+      <textarea id="customerOrders" required></textarea>
+      <label>السعر:</label>
+      <input type="number" id="orderPrice" required>
+      <label>المجموع:</label>
+      <input type="number" id="orderTotal" required>
+      <button type="submit">إرسال الطلب</button>
+    </form>
+    <hr>
+    <h3>قائمة الطلبات</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>اسم العميل</th>
+          <th>العنوان</th>
+          <th>الهاتف</th>
+          <th>الطلبات</th>
+          <th>السعر</th>
+          <th>المجموع</th>
+        </tr>
+      </thead>
+      <tbody id="ordersTableBody"></tbody>
+    </table>
   </section>
+
 </div>
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
 const supabaseUrl = "https://vkativialsvvbifhjrey.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMDMxMDUsImV4cCI6MjA3MzY3OTEwNX0.iC-gq-uuXnK_1cJ_gYcjig8sr-bQfhqPk0SnuqbAeL0";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXRpdmlhbHN2dmJpZmhqcmV5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODEwMzEwNSwiZXhwIjoyMDczNjc5MTA1fQ.xUR96RId88zr0VhJNuxEy55FSKUFTRVqxJQMMHNkoMY";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // تحميل المندوبين
@@ -79,139 +108,118 @@ async function loadAgents(){
   agents.forEach(a=>{
     const opt = document.createElement('option');
     opt.value = a.id;
-    opt.text = a.email || a.email_or_phone || a.id;
+    opt.text = a.email || a.id;
     select.appendChild(opt);
   });
 }
 
-// تحميل المهام ديناميكياً
+// تحميل المهام
 async function loadTasks(agentId=null){
   let query = supabase.from('tasks').select('*');
   if(agentId) query = query.eq('assigned_to', agentId);
   const { data: tasks } = await query;
-
   const tbody = document.getElementById('tasksTableBody');
   const thead = document.getElementById('tasksHeader');
-  tbody.innerHTML='';
-  thead.innerHTML='';
-
-  if(tasks.length){
+  tbody.innerHTML=''; thead.innerHTML='';
+  if(tasks?.length){
     const headerRow = document.createElement('tr');
     Object.keys(tasks[0]).forEach(k=>{
-      const th = document.createElement('th');
-      th.textContent = k;
-      headerRow.appendChild(th);
+      const th = document.createElement('th'); th.textContent = k; headerRow.appendChild(th);
     });
     thead.appendChild(headerRow);
-
     tasks.forEach(t=>{
       const tr = document.createElement('tr');
       Object.keys(t).forEach(k=>{
-        const td = document.createElement('td');
-        td.textContent = t[k] || '-';
-        tr.appendChild(td);
+        const td = document.createElement('td'); td.textContent = t[k] || '-'; tr.appendChild(td);
       });
       tbody.appendChild(tr);
     });
   }
 }
 
-// تحميل التقارير ديناميكياً
+// تحميل التقارير
 async function loadReports(agentId=null){
   let query = supabase.from('reports').select('*');
   if(agentId) query = query.eq('agent_id', agentId);
   const { data: reports } = await query;
-
   const tbody = document.getElementById('reportsTableBody');
   const thead = document.getElementById('reportsHeader');
-  tbody.innerHTML='';
-  thead.innerHTML='';
-
-  if(reports.length){
+  tbody.innerHTML=''; thead.innerHTML='';
+  if(reports?.length){
     const headerRow = document.createElement('tr');
     Object.keys(reports[0]).forEach(k=>{
-      const th = document.createElement('th'); th.textContent = k;
-      headerRow.appendChild(th);
+      const th = document.createElement('th'); th.textContent = k; headerRow.appendChild(th);
     });
     thead.appendChild(headerRow);
-
     reports.forEach(r=>{
       const tr = document.createElement('tr');
       Object.keys(r).forEach(k=>{
-        const td = document.createElement('td');
-        td.textContent = r[k] || '-';
-        tr.appendChild(td);
+        const td = document.createElement('td'); td.textContent = r[k] || '-'; tr.appendChild(td);
       });
       tbody.appendChild(tr);
     });
   }
 }
 
-// تحميل الإشعارات ديناميكياً
+// تحميل الإشعارات
 async function loadNotifications(agentId=null){
   let query = supabase.from('notifications').select('*');
   if(agentId) query = query.eq('user_id', agentId);
   const { data: notifications } = await query;
-
   const tbody = document.getElementById('notificationsTableBody');
   const thead = document.getElementById('notificationsHeader');
-  tbody.innerHTML='';
-  thead.innerHTML='';
-
-  if(notifications.length){
+  tbody.innerHTML=''; thead.innerHTML='';
+  if(notifications?.length){
     const headerRow = document.createElement('tr');
     Object.keys(notifications[0]).forEach(k=>{
-      const th = document.createElement('th'); th.textContent = k;
-      headerRow.appendChild(th);
+      const th = document.createElement('th'); th.textContent = k; headerRow.appendChild(th);
     });
     thead.appendChild(headerRow);
-
     notifications.forEach(n=>{
       const tr = document.createElement('tr');
       Object.keys(n).forEach(k=>{
-        const td = document.createElement('td');
-        td.textContent = n[k] || '-';
-        tr.appendChild(td);
+        const td = document.createElement('td'); td.textContent = n[k] || '-'; tr.appendChild(td);
       });
       tbody.appendChild(tr);
     });
   }
 }
 
-// تحميل الخرائط
-async function loadMaps(){
-  const { data: agents } = await supabase.from('users').select('*').eq('role','agent');
-  const { data: tasks } = await supabase.from('tasks').select('*');
-  const container = document.getElementById('mapsContainer');
-  container.innerHTML='';
+// إرسال الطلب
+document.getElementById("orderForm").addEventListener("submit", async e=>{
+  e.preventDefault();
+  const order = {
+    customer_name: document.getElementById("customerName").value,
+    customer_address: document.getElementById("customerAddress").value,
+    customer_phone: document.getElementById("customerPhone").value,
+    orders: document.getElementById("customerOrders").value,
+    price: parseFloat(document.getElementById("orderPrice").value),
+    total: parseFloat(document.getElementById("orderTotal").value)
+  };
+  const { error } = await supabase.from("orders").insert([order]);
+  if(error) alert("خطأ: "+error.message); else {
+    alert("تم إضافة الطلب");
+    document.getElementById("orderForm").reset();
+    loadOrders();
+  }
+});
 
-  agents.forEach(agent=>{
-    const div = document.createElement('div');
-    div.classList.add('map-container');
-
-    const title = document.createElement('div');
-    title.classList.add('agent-map-title');
-    title.textContent = agent.email || agent.id;
-    div.appendChild(title);
-
-    const mapDiv = document.createElement('div');
-    mapDiv.style.height='250px';
-    div.appendChild(mapDiv);
-    container.appendChild(div);
-
-    // إيجاد أي أعمدة lat/lng
-    const t = tasks.find(task => task.assigned_to===agent.id && (task.lat || task.latitude));
-    if(t){
-      const lat = t.lat || t.latitude;
-      const lng = t.lng || t.longitude;
-      if(lat && lng){
-        import('https://unpkg.com/leaflet/dist/leaflet.js').then(L=>{
-          const map = L.map(mapDiv).setView([lat,lng], 13);
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'&copy; OpenStreetMap contributors' }).addTo(map);
-          L.marker([lat,lng]).addTo(map);
-        });
-      }
-    }
+// تحميل الطلبات
+async function loadOrders(){
+  const { data: orders } = await supabase.from("orders").select("*").order("id",{ascending:false});
+  const tbody = document.getElementById("ordersTableBody");
+  tbody.innerHTML='';
+  orders?.forEach(o=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${o.customer_name}</td>
+      <td>${o.customer_address}</td>
+      <td>${o.customer_phone}</td>
+      <td>${o.orders}</td>
+      <td>${o.price}</td>
+      <td>${o.total}</td>
+    `;
+    tbody.appendChild(tr);
   });
 }
 
@@ -223,12 +231,12 @@ document.getElementById('filterAgent').addEventListener('change', e=>{
   loadNotifications(agentId);
 });
 
-// تحميل البيانات عند البداية
+// تشغيل أولي
 loadAgents().then(()=>{
   loadTasks();
   loadReports();
   loadNotifications();
-  loadMaps();
+  loadOrders();
 });
 </script>
 </body>
